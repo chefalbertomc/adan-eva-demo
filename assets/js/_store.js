@@ -875,6 +875,50 @@ class Store {
                 this._save();
             }
         });
+
+        // 4. SYNC WAITLIST
+        const waitlistRef = collection(db, "waitlist");
+        onSnapshot(waitlistRef, (snapshot) => {
+            let changes = false;
+            if (!this.data.waitlist) this.data.waitlist = [];
+
+            snapshot.docChanges().forEach((change) => {
+                const entry = change.doc.data();
+                const idx = this.data.waitlist.findIndex(w => w.id === entry.id);
+
+                if (change.type === "added") {
+                    if (idx === -1) {
+                        this.data.waitlist.push(entry);
+                        changes = true;
+                    }
+                }
+                if (change.type === "modified") {
+                    if (idx !== -1) {
+                        this.data.waitlist[idx] = entry;
+                        changes = true;
+                    }
+                }
+                if (change.type === "removed") {
+                    if (idx !== -1) {
+                        this.data.waitlist.splice(idx, 1);
+                        changes = true;
+                    }
+                }
+            });
+
+            if (changes) {
+                console.log("☁️ Lista de Espera sincronizada");
+                this._save();
+                if (typeof renderHostessDashboard === 'function' && document.getElementById('content-waitlist')) {
+                    // Refresh if we are viewing waitlist
+                    if (document.getElementById('content-waitlist').classList.contains('active')) {
+                        if (typeof window.switchHostessTab === 'function') window.switchHostessTab('waitlist');
+                    }
+                    // Force refresh dashboard to update badges
+                    if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
+                }
+            }
+        });
     }
 
     _syncMenuCatalog() {
@@ -1285,6 +1329,14 @@ class Store {
         };
         this.data.waitlist.push(entry);
         this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'waitlist', entry.id), entry)
+                .catch(e => console.error('🔥 Sync waitlist add error', e));
+        }
+
         return entry;
     }
 
@@ -1300,6 +1352,15 @@ class Store {
             this.data.waitlist[idx].removed = true;
             this.data.waitlist[idx].removedAt = new Date().toISOString();
             this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'waitlist', id), {
+                    removed: true,
+                    removedAt: this.data.waitlist[idx].removedAt
+                }).catch(e => console.error('🔥 Sync waitlist remove error', e));
+            }
         }
     }
 
