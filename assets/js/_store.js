@@ -785,7 +785,7 @@ class Store {
     }
 
     initRealtimeSync() {
-        const { onSnapshot, collection, query, where } = window.FB;
+        const { onSnapshot, collection, query, where, doc } = window.FB;
         const db = window.dbFirestore;
 
         // 1. SYNC VISITS (Active Tables)
