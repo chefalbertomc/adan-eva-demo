@@ -805,7 +805,11 @@ function doCheckIn() {
       return;
     }
 
-    // Buscar o crear cliente
+    // LOCK BUTTON TO PREVENT DUPLICATES
+    if (checkinBtn.getAttribute('data-processing') === 'true') return;
+    checkinBtn.setAttribute('data-processing', 'true');
+    checkinBtn.innerHTML = '⏳ PROCESANDO...';
+    checkinBtn.style.opacity = '0.7';
     let customer = selectedCustomer;
     if (!customer || customer.firstName !== fname || customer.lastName !== lname) {
       customer = window.db.createCustomer({
@@ -839,6 +843,11 @@ function doCheckIn() {
   } catch (error) {
     console.error('Error en check-in:', error);
     showCheckinStatus('❌ Error en check-in. Ver consola.', 'error');
+    if (checkinBtn) {
+      checkinBtn.removeAttribute('data-processing');
+      checkinBtn.innerHTML = 'ASIGNAR MESA';
+      checkinBtn.style.opacity = '1';
+    }
   }
 }
 
