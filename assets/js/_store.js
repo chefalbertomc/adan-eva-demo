@@ -1,0 +1,2154 @@
+
+const STORE_KEY = 'ADANYEVA_DATA_V1';
+
+// --- GLOBAL MENU DATA ---
+// Moved outside so GENERATE_DATA can access it for realistic history
+const MENU_DATA = {
+    alimentos: [
+        // PARA COMPARTIR
+        { id: 'F001', name: 'Dip Duo', category: 'Para Compartir', available: true, price: 189 },
+        { id: 'F002', name: 'Corn Riblets', category: 'Para Compartir', available: true, price: 149 },
+        { id: 'F003', name: 'Mozzarella Sticks', category: 'Para Compartir', available: true, price: 169 },
+        { id: 'F004', name: 'Onion Rings Basket', category: 'Para Compartir', available: true, price: 129 },
+        { id: 'F005', name: 'Jalapeño Pepper Bites', category: 'Para Compartir', available: true, price: 159 },
+        { id: 'F006', name: 'Chicken Quesadilla', category: 'Para Compartir', available: true, price: 199 },
+        { id: 'F007', name: 'Potato Wedges', category: 'Para Compartir', available: true, price: 119 },
+        { id: 'F008', name: 'Spicy Cheese Bites', category: 'Para Compartir', available: true, price: 149 },
+        { id: 'F009', name: 'Loaded Potato Wedges', category: 'Para Compartir', available: true, price: 179 },
+        { id: 'F010', name: 'French Fries Basket', category: 'Para Compartir', available: true, price: 99 },
+
+        // SAMPLERS & COMBOS
+        { id: 'F020', name: 'House Sampler', category: 'Samplers', available: true, price: 349 },
+        { id: 'F021', name: 'All Sports Pack', category: 'Samplers', available: true, price: 399 },
+        { id: 'F022', name: 'Ultimate Nachos con Chili', category: 'Samplers', available: true, price: 229 },
+        { id: 'F023', name: 'Loaded BBQ Pork Nachos', category: 'Samplers', available: true, price: 249 },
+        { id: 'F024', name: 'Mix and Match', category: 'Samplers', available: true, price: 299 },
+
+        // BURGERS
+        { id: 'F030', name: 'Stadium Burger', category: 'Burgers', available: true, price: 189 },
+        { id: 'F031', name: 'Smoky Guacamole Burger', category: 'Burgers', available: true, price: 209 },
+        { id: 'F032', name: 'Chili Burger', category: 'Burgers', available: true, price: 199 },
+        { id: 'F033', name: 'Classic Cheeseburger', category: 'Burgers', available: true, price: 179 },
+        { id: 'F034', name: 'Barbacoa Burger', category: 'Burgers', available: true, price: 219 },
+        { id: 'F035', name: 'Wild Bacon Burger', category: 'Burgers', available: true, price: 229 },
+        { id: 'F036', name: 'Big Jack Daddy Burger', category: 'Burgers', available: true, price: 249 },
+
+        // SANDWICHES
+        { id: 'F040', name: 'Chipotle Chicken Sandwich', category: 'Sandwiches', available: true, price: 179 },
+        { id: 'F041', name: 'Buffalo Ranch Crispy Chicken Sandwich', category: 'Sandwiches', available: true, price: 189 },
+        { id: 'F042', name: 'Buffalo Ranch Grilled Chicken Sandwich', category: 'Sandwiches', available: true, price: 189 },
+
+        // PLATILLOS
+        { id: 'F050', name: 'Crispy Tenders (3 pzas)', category: 'Platillos', available: true, price: 149 },
+        { id: 'F051', name: 'Crispy Tenders (5 pzas)', category: 'Platillos', available: true, price: 199 },
+        { id: 'F052', name: 'Grilled Tenders (3 pzas)', category: 'Platillos', available: true, price: 159 },
+        { id: 'F053', name: 'Grilled Tenders (5 pzas)', category: 'Platillos', available: true, price: 209 },
+        { id: 'F054', name: 'Grilled & Crispy Tenders Combo', category: 'Platillos', available: true, price: 219 },
+        { id: 'F055', name: 'Ribs and Wings Combo', category: 'Platillos', available: true, price: 349 },
+        { id: 'F056', name: 'Ribs and Boneless Combo', category: 'Platillos', available: true, price: 329 },
+        { id: 'F057', name: 'Buffalo Mac & Cheese', category: 'Platillos', available: true, price: 169 },
+        { id: 'F058', name: 'BBQ Pork & Corn Burlets', category: 'Platillos', available: true, price: 189 },
+
+        // ENSALADAS
+        { id: 'F060', name: 'Chicken Caesar Salad', category: 'Ensaladas', available: true, price: 169 },
+        { id: 'F061', name: 'Garden Crispy Chicken Salad', category: 'Ensaladas', available: true, price: 179 },
+        { id: 'F062', name: 'Garden Grilled Chicken Salad', category: 'Ensaladas', available: true, price: 179 },
+        { id: 'F063', name: 'Side Caesar Salad', category: 'Ensaladas', available: true, price: 79 },
+        { id: 'F064', name: 'Side Garden Salad', category: 'Ensaladas', available: true, price: 79 },
+        { id: 'F065', name: 'Santa Fe Chicken Salad', category: 'Ensaladas', available: true, price: 189 },
+        { id: 'F066', name: 'Honey BBQ Chicken Salad', category: 'Ensaladas', available: true, price: 189 },
+
+        // KIDS MENU
+        { id: 'F070', name: 'Boneless Kids', category: 'Kids', available: true, price: 99 },
+        { id: 'F071', name: 'Mac & Cheese Kids', category: 'Kids', available: true, price: 99 },
+        { id: 'F072', name: 'Grilled Tenders Kids', category: 'Kids', available: true, price: 99 },
+
+        // POSTRES
+        { id: 'F080', name: 'Sweet Apple Crisp', category: 'Postres', available: true, price: 109 },
+        { id: 'F081', name: 'Waffle', category: 'Postres', available: true, price: 89 },
+        { id: 'F082', name: 'Cheesecake Fresa', category: 'Postres', available: true, price: 99 },
+        { id: 'F083', name: 'Cheesecake Caramelo', category: 'Postres', available: true, price: 99 },
+        { id: 'F084', name: 'Chocolate Fudge Cake', category: 'Postres', available: true, price: 119 },
+        { id: 'F085', name: 'Ice Cream', category: 'Postres', available: true, price: 49 },
+
+        // ALITAS (TRADICIONALES)
+        { id: 'F130', name: 'Alitas Small', category: 'Alitas', available: true, price: 149 },
+        { id: 'F131', name: 'Alitas Medium', category: 'Alitas', available: true, price: 229 },
+        { id: 'F132', name: 'Alitas Large', category: 'Alitas', available: true, price: 299 },
+        { id: 'F133', name: 'Wings Platter', category: 'Alitas', available: true, price: 549 },
+
+        // BONELESS
+        { id: 'F140', name: 'Boneless Small', category: 'Boneless', available: true, price: 139 },
+        { id: 'F141', name: 'Boneless Medium', category: 'Boneless', available: true, price: 219 },
+        { id: 'F142', name: 'Boneless Large', category: 'Boneless', available: true, price: 289 },
+        { id: 'F143', name: 'Boneless Platter', category: 'Boneless', available: true, price: 519 },
+
+
+        // SALSAS
+        { id: 'F090', name: "Blazin' Knock Out", category: 'Salsas', available: true, price: 0 },
+        { id: 'F091', name: 'Wild Buffalo', category: 'Salsas', available: true, price: 0 },
+        { id: 'F092', name: 'Mango Habanero', category: 'Salsas', available: true, price: 0 },
+        { id: 'F093', name: 'Hot Buffalo', category: 'Salsas', available: true, price: 0 },
+        { id: 'F094', name: 'Hot BBQ', category: 'Salsas', available: true, price: 0 },
+        { id: 'F095', name: 'Asian Zing', category: 'Salsas', available: true, price: 0 },
+        { id: 'F096', name: 'Spicy Garlic', category: 'Salsas', available: true, price: 0 },
+        { id: 'F097', name: 'Medium Buffalo', category: 'Salsas', available: true, price: 0 },
+        { id: 'F098', name: 'Honey BBQ', category: 'Salsas', available: true, price: 0 },
+        { id: 'F099', name: 'Lemon Pepper', category: 'Salsas', available: true, price: 0 },
+        { id: 'F100', name: 'Parmesan Garlic', category: 'Salsas', available: true, price: 0 },
+        { id: 'F101', name: 'Buffalo Mild', category: 'Salsas', available: true, price: 0 },
+        { id: 'F102', name: 'Teriyaki', category: 'Salsas', available: true, price: 0 },
+        { id: 'F103', name: 'Sweet BBQ', category: 'Salsas', available: true, price: 0 },
+
+        // SAZONADORES
+        { id: 'F110', name: 'Desert Heat', category: 'Sazonadores', available: true, price: 0 },
+        { id: 'F111', name: 'Buffalo', category: 'Sazonadores', available: true, price: 0 },
+        { id: 'F112', name: 'Chipotle BBQ', category: 'Sazonadores', available: true, price: 0 },
+        { id: 'F113', name: 'Lemmon Pepper', category: 'Sazonadores', available: true, price: 0 },
+        { id: 'F114', name: 'Salt & Vinegar', category: 'Sazonadores', available: true, price: 0 },
+
+        // ADEREZOS
+        { id: 'F120', name: 'Ranch', category: 'Aderezos', available: true, price: 0 },
+        { id: 'F121', name: 'Blue Cheese', category: 'Aderezos', available: true, price: 0 }
+    ],
+    bebidas: [
+        // RON
+        { id: 'B001', name: 'Appleton State', category: 'Ron', available: true, price: 95 },
+        { id: 'B002', name: 'Bacardi Blanco', category: 'Ron', available: true, price: 85 },
+        { id: 'B003', name: 'Captain Morgan', category: 'Ron', available: true, price: 85 },
+        { id: 'B004', name: 'Captain Morgan Blanco', category: 'Ron', available: true, price: 80 },
+        { id: 'B005', name: 'Matusalem Clásico', category: 'Ron', available: true, price: 95 },
+        { id: 'B006', name: 'Matusalem Platino', category: 'Ron', available: true, price: 90 },
+        { id: 'B007', name: 'Zacapa 23', category: 'Ron', available: true, price: 210 },
+
+        // TEQUILA
+        { id: 'B010', name: '1800 Añejo', category: 'Tequila', available: true, price: 120 },
+        { id: 'B011', name: 'Centenario Plata', category: 'Tequila', available: true, price: 95 },
+        { id: 'B012', name: 'Centenario Reposado', category: 'Tequila', available: true, price: 105 },
+        { id: 'B013', name: 'Don Julio 70', category: 'Tequila', available: true, price: 160 },
+        { id: 'B014', name: 'Don Julio Blanco', category: 'Tequila', available: true, price: 125 },
+        { id: 'B015', name: 'Don Julio Reposado', category: 'Tequila', available: true, price: 135 },
+        { id: 'B016', name: 'Gran Majo', category: 'Tequila', available: true, price: 140 },
+        { id: 'B017', name: 'Herradura Plata', category: 'Tequila', available: true, price: 115 },
+        { id: 'B018', name: 'Jose Cuervo Tradicional', category: 'Tequila', available: true, price: 100 },
+        { id: 'B019', name: 'Maestro Dobel Diamante', category: 'Tequila', available: true, price: 145 },
+        { id: 'B020', name: 'Tradicional Cristalino', category: 'Tequila', available: true, price: 110 },
+
+        // MEZCAL
+        { id: 'B030', name: '400 Conejos', category: 'Mezcal', available: true, price: 130 },
+        { id: 'B031', name: 'Ojo de Tigre', category: 'Mezcal', available: true, price: 125 },
+        { id: 'B032', name: 'Gusano Rojo', category: 'Mezcal', available: true, price: 110 },
+
+        // GINEBRA
+        { id: 'B040', name: 'Beefeater', category: 'Ginebra', available: true, price: 115 },
+        { id: 'B041', name: 'Bombay Sapphire', category: 'Ginebra', available: true, price: 125 },
+        { id: 'B042', name: 'Tanqueray', category: 'Ginebra', available: true, price: 120 },
+        { id: 'B043', name: "Hendrick's", category: 'Ginebra', available: true, price: 155 },
+
+        // BRANDY
+        { id: 'B050', name: 'Torres 10', category: 'Brandy', available: true, price: 105 },
+        { id: 'B051', name: 'Terry Centenario', category: 'Brandy', available: true, price: 95 },
+
+        // WHISKEY
+        { id: 'B060', name: "Jack Daniel's", category: 'Whiskey', available: true, price: 110 },
+        { id: 'B061', name: 'Captain Walker Black Label 12', category: 'Whiskey', available: true, price: 165 },
+        { id: 'B062', name: 'Johnnie Walker Red Label', category: 'Whiskey', available: true, price: 120 },
+        { id: 'B063', name: "Jameson's", category: 'Whiskey', available: true, price: 115 },
+        { id: 'B064', name: 'Glenlivet', category: 'Whiskey', available: true, price: 175 },
+        { id: 'B065', name: 'Macallan 12', category: 'Whiskey', available: true, price: 210 },
+
+        // VODKA
+        { id: 'B070', name: 'Absolut', category: 'Vodka', available: true, price: 95 },
+        { id: 'B071', name: 'Grey Goose', category: 'Vodka', available: true, price: 155 },
+        { id: 'B072', name: 'Smirnoff', category: 'Vodka', available: true, price: 85 },
+        { id: 'B073', name: 'Smirnoff Tamarindo', category: 'Vodka', available: true, price: 90 },
+        { id: 'B074', name: 'Stolichnaya', category: 'Vodka', available: true, price: 100 },
+
+        // DIGESTIVOS
+        { id: 'B080', name: 'Baileys', category: 'Digestivos', available: true, price: 95 },
+        { id: 'B081', name: 'Jagermeister', category: 'Digestivos', available: true, price: 95 },
+        { id: 'B082', name: 'Licor 43', category: 'Digestivos', available: true, price: 105 },
+
+        // CERVEZA BARRIL
+        { id: 'B100', name: 'Tecate Light (Barril)', category: 'Cerveza Barril', available: true, price: 65 },
+        { id: 'B101', name: 'Indio (Barril)', category: 'Cerveza Barril', available: true, price: 65 },
+        { id: 'B102', name: 'XX Ambar (Barril)', category: 'Cerveza Barril', available: true, price: 69 },
+        { id: 'B103', name: 'XX Lager (Barril)', category: 'Cerveza Barril', available: true, price: 69 },
+        { id: 'B104', name: 'Heineken (Barril)', category: 'Cerveza Barril', available: true, price: 75 },
+
+        // CERVEZA BOTELLA
+        { id: 'B110', name: 'Amstel Ultra', category: 'Cerveza Botella', available: true, price: 69 },
+        { id: 'B111', name: 'Bohemia Clásica', category: 'Cerveza Botella', available: true, price: 72 },
+        { id: 'B112', name: 'Bohemia Cristal', category: 'Cerveza Botella', available: true, price: 72 },
+        { id: 'B113', name: 'Bohemia Oscura', category: 'Cerveza Botella', available: true, price: 72 },
+        { id: 'B114', name: 'Bohemia Weizen', category: 'Cerveza Botella', available: true, price: 72 },
+        { id: 'B115', name: 'Carta Blanca', category: 'Cerveza Botella', available: true, price: 60 },
+        { id: 'B116', name: 'Heineken', category: 'Cerveza Botella', available: true, price: 75 },
+        { id: 'B117', name: 'Indio', category: 'Cerveza Botella', available: true, price: 65 },
+        { id: 'B118', name: 'Miller High Life', category: 'Cerveza Botella', available: true, price: 65 },
+        { id: 'B119', name: 'Miller Lite', category: 'Cerveza Botella', available: true, price: 65 },
+        { id: 'B120', name: 'Sol', category: 'Cerveza Botella', available: true, price: 62 },
+        { id: 'B121', name: 'Tecate', category: 'Cerveza Botella', available: true, price: 62 },
+        { id: 'B122', name: 'Tecate Light', category: 'Cerveza Botella', available: true, price: 62 },
+        { id: 'B123', name: 'XX Ambar', category: 'Cerveza Botella', available: true, price: 65 },
+        { id: 'B124', name: 'XX Lager', category: 'Cerveza Botella', available: true, price: 65 },
+        { id: 'B125', name: 'XX Ultra', category: 'Cerveza Botella', available: true, price: 67 },
+
+        // JARRA CERVEZA
+        { id: 'B130', name: 'Tecate Light (Jarra)', category: 'Jarra Cerveza', available: true, price: 185 },
+        { id: 'B131', name: 'Indio (Jarra)', category: 'Jarra Cerveza', available: true, price: 185 },
+        { id: 'B132', name: 'XX Ambar (Jarra)', category: 'Jarra Cerveza', available: true, price: 195 },
+        { id: 'B133', name: 'XX Lager (Jarra)', category: 'Jarra Cerveza', available: true, price: 195 },
+        { id: 'B134', name: 'Heineken (Jarra)', category: 'Jarra Cerveza', available: true, price: 215 },
+
+        // CAGUAMAS
+        { id: 'B140', name: 'Tecate (Caguama)', category: 'Caguamas', available: true, price: 110 },
+        { id: 'B141', name: 'Tecate Light (Caguama)', category: 'Caguamas', available: true, price: 110 },
+        { id: 'B142', name: 'XX Ambar (Caguama)', category: 'Caguamas', available: true, price: 115 },
+        { id: 'B143', name: 'XX Lager (Caguama)', category: 'Caguamas', available: true, price: 115 },
+        { id: 'B144', name: 'Indio (Caguama)', category: 'Caguamas', available: true, price: 110 },
+        { id: 'B145', name: 'Carta Blanca (Caguama)', category: 'Caguamas', available: true, price: 100 },
+
+        // REFRESCOS
+        { id: 'B150', name: 'Coca-Cola', category: 'Refrescos', available: true, price: 45 },
+        { id: 'B151', name: 'Sprite', category: 'Refrescos', available: true, price: 45 },
+        { id: 'B152', name: 'Fanta', category: 'Refrescos', available: true, price: 45 },
+        { id: 'B153', name: 'Sidral Mundet', category: 'Refrescos', available: true, price: 45 },
+        { id: 'B154', name: 'Fuzetea', category: 'Refrescos', available: true, price: 45 },
+        // Nuevos
+        { id: 'B155', name: 'Coca-Cola Light', category: 'Refrescos', available: true, price: 45 },
+        { id: 'B156', name: 'Coca-Cola Zero', category: 'Refrescos', available: true, price: 45 },
+        { id: 'B157', name: 'Agua Mineral Ciel', category: 'Refrescos', available: true, price: 40 },
+        { id: 'B158', name: 'Topo Chico', category: 'Refrescos', available: true, price: 49 },
+        { id: 'B159', name: 'Ginger Ale', category: 'Refrescos', available: true, price: 45 },
+        { id: 'B160', name: 'Agua Quina', category: 'Refrescos', available: true, price: 45 },
+        { id: 'B165', name: 'Fresca', category: 'Refrescos', available: true, price: 45 },
+        { id: 'B166', name: 'Agua Natural Ciel', category: 'Refrescos', available: true, price: 35 },
+
+        // LIMONADAS
+        { id: 'B161', name: 'Limonada', category: 'Limonadas', available: true, price: 55 },
+        { id: 'B162', name: 'Naranjada', category: 'Limonadas', available: true, price: 55 },
+        { id: 'B170', name: 'Limonada Mango', category: 'Limonadas', available: true, price: 65 },
+        { id: 'B171', name: 'Limonada Fresa', category: 'Limonadas', available: true, price: 65 },
+        { id: 'B172', name: 'Limonada Menta', category: 'Limonadas', available: true, price: 65 },
+        { id: 'B173', name: 'Limonada Frutos Rojos', category: 'Limonadas', available: true, price: 65 },
+
+        // CAFÉ
+        { id: 'B174', name: 'Café Expresso', category: 'Café', available: true, price: 45 },
+        { id: 'B175', name: 'Café Capuccino', category: 'Café', available: true, price: 55 },
+        { id: 'B176', name: 'Café Americano', category: 'Café', available: true, price: 45 },
+
+        // OTROS
+        { id: 'B160', name: 'Agua', category: 'Otros', available: true, price: 35 },
+        { id: 'B161', name: 'Café', category: 'Otros', available: true, price: 45 },
+        { id: 'B162', name: 'Refresco de Lata', category: 'Otros', available: true, price: 40 },
+        { id: 'B163', name: 'Agua Mineral', category: 'Otros', available: true, price: 40 },
+
+
+
+        // COCTELES
+        { id: 'B200', name: 'Lime Mojito', category: 'Cocteles', available: true, price: 110 },
+        { id: 'B201', name: 'Buffalo Zoo', category: 'Cocteles', available: true, price: 125 },
+        { id: 'B202', name: 'B-Dubs Mule', category: 'Cocteles', available: true, price: 115 },
+        { id: 'B203', name: 'Strawberry Daiquiri', category: 'Cocteles', available: true, price: 120 },
+        { id: 'B204', name: 'Carajillo', category: 'Cocteles', available: true, price: 130 },
+        { id: 'B205', name: 'Wild Bloody Mary', category: 'Cocteles', available: true, price: 115 },
+        { id: 'B206', name: 'Piña Colada', category: 'Cocteles', available: true, price: 110 },
+        { id: 'B207', name: 'Country Club Cooler', category: 'Cocteles', available: true, price: 105 },
+        { id: 'B208', name: 'Limada de Tequila', category: 'Cocteles', available: true, price: 115 },
+
+        // MARGARITAS
+        { id: 'B220', name: 'Dos-a-Rita', category: 'Margaritas', available: true, price: 155 },
+        { id: 'B221', name: 'Spicy Passion Fruit Margarita', category: 'Margaritas', available: true, price: 145 },
+        { id: 'B222', name: 'Top Shelf Margarita', category: 'Margaritas', available: true, price: 165 },
+        { id: 'B223', name: 'Twisted Margarita', category: 'Margaritas', available: true, price: 135 },
+        { id: 'B224', name: 'House Margarita', category: 'Margaritas', available: true, price: 125 },
+
+        // MEZCALITAS
+        { id: 'B230', name: 'Mezcal Mule', category: 'Mezcalitas', available: true, price: 135 },
+        { id: 'B231', name: 'Mezcal con Naranja', category: 'Mezcalitas', available: true, price: 140 },
+        { id: 'B232', name: 'Mezcal con Jamaica', category: 'Mezcalitas', available: true, price: 140 },
+
+        // EXTRAS BARRA
+        { id: 'B300', name: 'Vaso Chelado', category: 'Extras Barra', available: true, price: 15 },
+        { id: 'B301', name: 'Vaso Michelado', category: 'Extras Barra', available: true, price: 15 },
+        { id: 'B302', name: 'Vaso Clamato (Regular)', category: 'Extras Barra', available: true, price: 25 },
+        { id: 'B303', name: 'Vaso Clamato (Tall)', category: 'Extras Barra', available: true, price: 30 },
+        { id: 'B304', name: 'Mezcla Clamato (Regular)', category: 'Extras Barra', available: true, price: 25 },
+        { id: 'B305', name: 'Mezcla Clamato (Tall)', category: 'Extras Barra', available: true, price: 30 }
+    ]
+};
+
+
+// --- MOCK DATA GENERATOR (2025) - ENHANCED ---
+const GENERATE_DATA = () => {
+    const branches = ['juriquilla', 'paseo', 'alamos'];
+    const firstNames = ['Juan', 'Maria', 'Pedro', 'Luis', 'Ana', 'Sofia', 'Carlos', 'Miguel', 'Lucia', 'Elena', 'Diego', 'Valentina', 'Camila', 'Mateo', 'Lucas', 'Nicolas', 'Samuel', 'Alejandro', 'Daniel', 'Fernanda', 'Roberto', 'Patricia', 'Carmen', 'Ricardo', 'Isabella', 'Santiago', 'Emilia', 'Sebastian', 'Gabriela', 'Andres'];
+    const lastNames = ['Gomez', 'Perez', 'Lopez', 'Rodriguez', 'Martinez', 'Garcia', 'Hernandez', 'Gonzalez', 'Ramirez', 'Sanchez', 'Torres', 'Flores', 'Rivera', 'Diaz', 'Reyes', 'Morales', 'Jimenez', 'Castillo', 'Mendoza', 'Vargas'];
+
+    // Expanded sports teams
+    const nflTeams = ['Dallas Cowboys', 'San Francisco 49ers', 'Kansas City Chiefs', 'Philadelphia Eagles', 'Buffalo Bills', 'Green Bay Packers', 'Pittsburgh Steelers', 'New England Patriots'];
+    const nbaTeams = ['Los Angeles Lakers', 'Golden State Warriors', 'Chicago Bulls', 'Boston Celtics', 'Miami Heat', 'San Antonio Spurs'];
+    const mlbTeams = ['New York Yankees', 'Los Angeles Dodgers', 'Boston Red Sox', 'Houston Astros'];
+    const soccerTeams = ['Real Madrid', 'Barcelona', 'Manchester United', 'Bayern Munich', 'PSG', 'Juventus', 'Liverpool', 'AC Milan'];
+    const allTeams = [...nflTeams, ...nbaTeams, ...mlbTeams, ...soccerTeams];
+
+    // Diverse cities and countries
+    const cities = ['Querétaro', 'Ciudad de México', 'Guadalajara', 'Monterrey', 'San Miguel de Allende', 'León', 'Puebla', 'Cancún', 'Tijuana'];
+    const countries = ['México', 'Estados Unidos', 'España', 'Colombia', 'Argentina', 'Chile'];
+
+    // Food and drinks (REMOVED - Using MENU_DATA)
+
+    // 1. Generate 20 Customers with varied profiles (Reduced for performance)
+    const customers = [];
+    for (let i = 1; i <= 20; i++) {
+        const id = 'C' + i.toString().padStart(3, '0');
+        const fn = firstNames[Math.floor(Math.random() * firstNames.length)];
+        const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
+        const ln2 = lastNames[Math.floor(Math.random() * lastNames.length)];
+
+        // Birthdays - varied months
+        let bdayMonth = Math.floor(Math.random() * 12) + 1;
+        let bdayDay = Math.floor(Math.random() * 28) + 1;
+
+        // Force some birthdays for this month (December)
+        if (i <= 3) { bdayMonth = 12; bdayDay = Math.floor(Math.random() * 28) + 1; }
+
+        // Select 1-3 random teams from different sports
+        const numTeams = Math.floor(Math.random() * 3) + 1;
+        const customerTeams = [];
+        for (let j = 0; j < numTeams; j++) {
+            const team = allTeams[Math.floor(Math.random() * allTeams.length)];
+            if (!customerTeams.includes(team)) {
+                customerTeams.push(team);
+            }
+        }
+
+        customers.push({
+            id,
+            firstName: fn,
+            lastName: ln,
+            lastName2: ln2,
+            birthday: `1990-${bdayMonth.toString().padStart(2, '0')}-${bdayDay.toString().padStart(2, '0')}`,
+            email: `${fn.toLowerCase()}.${ln.toLowerCase()}${i}@gmail.com`,
+            phone: '442' + (Math.floor(Math.random() * 9000000) + 1000000),
+            city: cities[Math.floor(Math.random() * cities.length)],
+            country: countries[Math.floor(Math.random() * countries.length)],
+            colony: i % 5 === 0 ? 'Centro Histórico' : i % 4 === 0 ? 'El Refugio' : i % 3 === 0 ? 'Jurica' : 'Juriquilla',
+            visits: 0, // will count later
+            teams: customerTeams,
+            team: customerTeams[0] || 'Dallas Cowboys', // Primary team
+            // Select random top preferences from real menu
+            topFood: MENU_DATA.alimentos.sort(() => 0.5 - Math.random()).slice(0, 3).map(f => f.name),
+            topDrinks: MENU_DATA.bebidas.sort(() => 0.5 - Math.random()).slice(0, 3).map(d => d.name),
+            notes: 'Cliente generado automáticamente.',
+            couchCard: i % 7 === 0 // Some customers have Couch Card
+        });
+    }
+
+    // 2. Generate Visits with STRATEGIC distribution for good test data
+    const visits = [];
+    const now = new Date();
+    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // Helper: Generate random game for visit
+    const generateGame = () => {
+        const rand = Math.random();
+        let sport, league, teams;
+
+        if (rand < 0.40) { // 40% NFL
+            sport = 'Fútbol Americano';
+            league = 'NFL';
+            const team1 = nflTeams[Math.floor(Math.random() * nflTeams.length)];
+            let team2 = nflTeams[Math.floor(Math.random() * nflTeams.length)];
+            while (team2 === team1) team2 = nflTeams[Math.floor(Math.random() * nflTeams.length)];
+            teams = `${team1} vs ${team2}`;
+        } else if (rand < 0.65) { // 25% Soccer
+            sport = 'Fútbol Soccer';
+            league = 'Champions League';
+            const team1 = soccerTeams[Math.floor(Math.random() * soccerTeams.length)];
+            let team2 = soccerTeams[Math.floor(Math.random() * soccerTeams.length)];
+            while (team2 === team1) team2 = soccerTeams[Math.floor(Math.random() * soccerTeams.length)];
+            teams = `${team1} vs ${team2}`;
+        } else if (rand < 0.85) { // 20% NBA
+            sport = 'Basquetbol';
+            league = 'NBA';
+            const team1 = nbaTeams[Math.floor(Math.random() * nbaTeams.length)];
+            let team2 = nbaTeams[Math.floor(Math.random() * nbaTeams.length)];
+            while (team2 === team1) team2 = nbaTeams[Math.floor(Math.random() * nbaTeams.length)];
+            teams = `${team1} vs ${team2}`;
+        } else { // 15% MLB
+            sport = 'Beisbol';
+            league = 'MLB';
+            const team1 = mlbTeams[Math.floor(Math.random() * mlbTeams.length)];
+            let team2 = mlbTeams[Math.floor(Math.random() * mlbTeams.length)];
+            while (team2 === team1) team2 = mlbTeams[Math.floor(Math.random() * mlbTeams.length)];
+            teams = `${team1} vs ${team2}`;
+        }
+
+        return { sport, league, teams };
+    };
+
+    // Helper: Get waiters for specific branch
+    const getWaiterIdsForBranch = (branchId) => {
+        if (branchId === 'juriquilla') {
+            return ['wj1', 'wj2', 'wj3', 'wj4', 'wj5', 'wj6', 'wj7', 'wj8', 'wj9', 'wj10', 'wj11', 'wj12', 'wj13'];
+        } else if (branchId === 'alamos') {
+            return ['wa1', 'wa2', 'wa3', 'wa4', 'wa5', 'wa6', 'wa7', 'wa8', 'wa9', 'wa10', 'wa11'];
+        } else if (branchId === 'paseo') {
+            return ['wp1', 'wp2', 'wp3', 'wp4', 'wp5'];
+        }
+        return ['wj1']; // fallback
+    };
+
+    // Strategy: Create different customer archetypes
+    // --- GENERATE VISITS FOR DIFFERENT SEGMENTS (Adjusted for 20 Customers) ---
+
+    // 1. VIP / LOYAL Customers (Index 0-3: 4 customers)
+    for (let i = 0; i < 4; i++) {
+        const cust = customers[i];
+        if (!cust) continue;
+        const numVisits = 10 + Math.floor(Math.random() * 5);
+        for (let v = 0; v < numVisits; v++) {
+            const dayOffset = Math.floor(Math.random() * 30);
+            const visitDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
+            const branchId = branches[Math.floor(Math.random() * branches.length)];
+            const amount = 1000 + Math.floor(Math.random() * 2000);
+            const branchWaiters = getWaiterIdsForBranch(branchId);
+            const waiterId = branchWaiters[Math.floor(Math.random() * branchWaiters.length)];
+            const game = generateGame();
+
+            cust.visits++;
+            visits.push({
+                id: 'V' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                branchId,
+                customerId: cust.id,
+                date: visitDate.toISOString(),
+                pax: Math.floor(Math.random() * 6) + 1,
+                table: Math.floor(Math.random() * 50) + 1,
+                waiterId,
+                status: 'closed',
+                totalAmount: amount,
+                isProspect: false,
+                gameWatched: game
+            });
+        }
+    }
+
+    // 2. BLAZIN Customers (Index 4-7: 4 customers)
+    for (let i = 4; i < 8; i++) {
+        const cust = customers[i];
+        if (!cust) continue;
+        const numVisits = 5 + Math.floor(Math.random() * 4);
+        for (let v = 0; v < numVisits; v++) {
+            const dayOffset = v < 3 ? Math.floor(Math.random() * 7) : Math.floor(Math.random() * 30);
+            const visitDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
+            const branchId = branches[Math.floor(Math.random() * branches.length)];
+            const amount = 800 + Math.floor(Math.random() * 1500);
+            const branchWaiters = getWaiterIdsForBranch(branchId);
+            const waiterId = branchWaiters[Math.floor(Math.random() * branchWaiters.length)];
+            const game = generateGame();
+
+            cust.visits++;
+            visits.push({
+                id: 'V' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                branchId,
+                customerId: cust.id,
+                date: visitDate.toISOString(),
+                pax: Math.floor(Math.random() * 4) + 1,
+                table: Math.floor(Math.random() * 50) + 1,
+                waiterId,
+                status: 'closed',
+                totalAmount: amount,
+                isProspect: false,
+                gameWatched: game
+            });
+        }
+    }
+
+    // 3. REGULAR Customers (Index 8-13: 6 customers)
+    for (let i = 8; i < 14; i++) {
+        const cust = customers[i];
+        if (!cust) continue;
+        const numVisits = 4 + Math.floor(Math.random() * 4);
+        for (let v = 0; v < numVisits; v++) {
+            const dayOffset = 7 + Math.floor(Math.random() * 60);
+            const visitDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
+            const branchId = branches[Math.floor(Math.random() * branches.length)];
+            const amount = 500 + Math.floor(Math.random() * 1200);
+            const branchWaiters = getWaiterIdsForBranch(branchId);
+            const waiterId = branchWaiters[Math.floor(Math.random() * branchWaiters.length)];
+            const game = generateGame();
+
+            cust.visits++;
+            visits.push({
+                id: 'V' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                branchId,
+                customerId: cust.id,
+                date: visitDate.toISOString(),
+                pax: Math.floor(Math.random() * 5) + 1,
+                table: Math.floor(Math.random() * 50) + 1,
+                waiterId,
+                status: 'closed',
+                totalAmount: amount,
+                isProspect: false,
+                gameWatched: game
+            });
+        }
+    }
+
+    // 4. NEW Customers (Index 14-16: 3 customers)
+    for (let i = 14; i < 17; i++) {
+        const cust = customers[i];
+        if (!cust) continue;
+        const numVisits = 1 + Math.floor(Math.random() * 2);
+        for (let v = 0; v < numVisits; v++) {
+            const dayOffset = Math.floor(Math.random() * 14);
+            const visitDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
+            const branchId = branches[Math.floor(Math.random() * branches.length)];
+            const amount = 400 + Math.floor(Math.random() * 1000);
+            const branchWaiters = getWaiterIdsForBranch(branchId);
+            const waiterId = branchWaiters[Math.floor(Math.random() * branchWaiters.length)];
+            const game = generateGame();
+
+            cust.visits++;
+            visits.push({
+                id: 'V' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                branchId,
+                customerId: cust.id,
+                date: visitDate.toISOString(),
+                pax: Math.floor(Math.random() * 3) + 1,
+                table: Math.floor(Math.random() * 50) + 1,
+                waiterId,
+                status: 'closed',
+                totalAmount: amount,
+                isProspect: false,
+                gameWatched: game
+            });
+        }
+    }
+
+    // 5. AT RISK Customers (Index 17-19: 3 customers)
+    for (let i = 17; i < 20; i++) {
+        const cust = customers[i];
+        if (!cust) continue;
+        const numVisits = 5 + Math.floor(Math.random() * 5);
+        for (let v = 0; v < numVisits; v++) {
+            const dayOffset = 35 + Math.floor(Math.random() * 60);
+            const visitDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
+            const branchId = branches[Math.floor(Math.random() * branches.length)];
+            const amount = 600 + Math.floor(Math.random() * 1000);
+            const branchWaiters = getWaiterIdsForBranch(branchId);
+            const waiterId = branchWaiters[Math.floor(Math.random() * branchWaiters.length)];
+            const game = generateGame();
+
+            cust.visits++;
+            visits.push({
+                id: 'V' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                branchId,
+                customerId: cust.id,
+                date: visitDate.toISOString(),
+                pax: Math.floor(Math.random() * 4) + 1,
+                table: Math.floor(Math.random() * 50) + 1,
+                waiterId,
+                status: 'closed',
+                totalAmount: amount,
+                isProspect: false,
+                gameWatched: game
+            });
+        }
+    }
+
+
+    // NO ACTIVE VISITS - Real operations start today
+    console.log('✅ Se generaron 20 clientes con distribución estratégica de visitas:');
+    console.log('   - 4 Clientes VIP/Leales (visitas frecuentes, gasto alto)');
+    console.log('   - 4 Clientes Blazin (visitas semanales)');
+    console.log('   - 6 Clientes Regulares (actividad moderada)');
+    console.log('   - 3 Clientes Nuevos (1-3 visitas recientes)');
+    console.log('   - 3 Clientes en Riesgo (inactivos >30 días)');
+    console.log(`   - Total de visitas históricas: ${visits.length}`);
+    console.log('   ⚠️  SIN VISITAS ACTIVAS - Iniciando fresco para operación real');
+
+    // SIN VISITAS ACTIVAS INICIALES
+
+    return { customers, visits };
+};
+
+const MOCK = GENERATE_DATA();
+
+// Initial Data Structure
+const INITIAL_DATA = {
+    branches: [
+        {
+            id: 'juriquilla',
+            name: 'Juriquilla',
+            tables: {
+                regular: [111, 112, 113, 114, 121, 122, 123, 131, 132, 133, 134, 135, 141, 142, 143, 144, 151, 152, 153, 211, 212, 213, 214, 215, 216, 221, 222, 223, 224, 241, 242, 243, 244, 245, 251, 252, 253, 254, 411, 412, 413, 414, 415, 416, 417, 421, 422, 423, 424, 425, 426],
+                barra: [301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320]
+            }
+        },
+        {
+            id: 'paseo',
+            name: 'Paseo Querétaro',
+            tables: {
+                regular: Array.from({ length: 30 }, (_, i) => i + 1), // 1-30
+                barra: []
+            }
+        },
+        {
+            id: 'alamos',
+            name: 'Álamos',
+            tables: {
+                regular: Array.from({ length: 40 }, (_, i) => i + 1), // 1-40
+                barra: []
+            }
+        }
+    ],
+
+    // MENU SYSTEM - Food and Beverage Items
+    // MENU SYSTEM - Food and Beverage Items
+    menu: MENU_DATA,
+
+    // ORDERS - Sistema de órdenes
+    orders: [],
+
+    users: [
+        // Super Admin
+        { id: 'a1', username: 'raul', password: '123', role: 'admin', name: 'Raul' },
+
+        // Regional
+        { id: 'r1', username: 'adan', password: '123', role: 'regional', name: 'Adan' },
+
+        // JURIQUILLA - Gerentes (4)
+        { id: 'gj1', username: 'beto', password: '0252', role: 'manager', name: 'Beto', branchId: 'juriquilla' },
+        { id: 'gj2', username: 'nando', password: '123', role: 'manager', name: 'Nando', branchId: 'juriquilla' },
+        { id: 'gj3', username: 'roberto', password: '123', role: 'manager', name: 'Roberto', branchId: 'juriquilla' },
+        { id: 'gj4', username: 'omar', password: '123', role: 'manager', name: 'Omar', branchId: 'juriquilla' },
+
+        // ALAMOS - Gerentes (4)
+        { id: 'ga1', username: 'armando', password: '123', role: 'manager', name: 'Armando', branchId: 'alamos' },
+        { id: 'ga2', username: 'karen', password: '123', role: 'manager', name: 'Karen', branchId: 'alamos' },
+        { id: 'ga3', username: 'betty', password: '123', role: 'manager', name: 'Betty', branchId: 'alamos' },
+        { id: 'ga4', username: 'diego', password: '123', role: 'manager', name: 'Diego', branchId: 'alamos' },
+
+        // PASEO - Gerentes (2)
+        { id: 'gp1', username: 'isabel', password: '123', role: 'manager', name: 'Isabel', branchId: 'paseo' },
+        { id: 'gp2', username: 'edgar', password: '123', role: 'manager', name: 'Edgar', branchId: 'paseo' },
+
+        // HOSTESS (3)
+        { id: 'hj1', username: 'hossjur', password: '123', role: 'hostess', name: 'Hostess Juriquilla', branchId: 'juriquilla' },
+        { id: 'ha1', username: 'hossalamos', password: '123', role: 'hostess', name: 'Hostess Álamos', branchId: 'alamos' },
+        { id: 'hp1', username: 'hosspaseo', password: '123', role: 'hostess', name: 'Hostess Paseo', branchId: 'paseo' },
+
+        // JURIQUILLA - Meseros (13): 8 servers, 3 barra, 2 caja
+        { id: 'wj1', username: '1060', password: '1977', role: 'waiter', name: 'Alejandro Ortiz Martínez', position: 'SERVER', branchId: 'juriquilla' },
+        { id: 'wj2', username: 'mario.esperanza', password: '123', role: 'waiter', name: 'Mario Esperanza González', position: 'SERVER', branchId: 'juriquilla' },
+        { id: 'wj3', username: 'santiago.pacheco', password: '123', role: 'waiter', name: 'Santiago Pacheco Ferreiro', position: 'SERVER', branchId: 'juriquilla' },
+        { id: 'wj4', username: 'jessica.ortiz', password: '123', role: 'waiter', name: 'Jessica Ortiz Hernández', position: 'SERVER', branchId: 'juriquilla' },
+        { id: 'wj5', username: '10586', password: '4578', role: 'waiter', name: 'Anahí Briones Rodriguez', position: 'SERVER', branchId: 'juriquilla' },
+        { id: 'wj6', username: '10570', password: '1302', role: 'waiter', name: 'Jekob Guerrero Barron', position: 'SERVER', branchId: 'juriquilla' },
+        { id: 'wj7', username: '10421', password: '1170', role: 'waiter', name: 'Isaac Bravo Olvera', position: 'SERVER', branchId: 'juriquilla' },
+        { id: 'wj8', username: 'angel.vega', password: '123', role: 'waiter', name: 'Angel Vega Bautista', position: 'SERVER', branchId: 'juriquilla' },
+        { id: 'wj9', username: 'itati', password: '1212', role: 'waiter', name: 'Itati Salazar Maldonado', position: 'BARRA', branchId: 'juriquilla' },
+        { id: 'wj10', username: 'yovana.padilla', password: '123', role: 'waiter', name: 'Yovana Padilla Sanchez', position: 'BARRA', branchId: 'juriquilla' },
+        { id: 'wj11', username: 'mario.lobera', password: '123', role: 'waiter', name: 'Mario Lobera Huerta', position: 'BARRA', branchId: 'juriquilla' },
+        { id: 'wj12', username: 'jaime.vazquez', password: '123', role: 'waiter', name: 'Jaime Vazquez Maldonado', position: 'CAJA', branchId: 'juriquilla' },
+        { id: 'wj13', username: 'brenda.cruz', password: '123', role: 'waiter', name: 'Brenda Cruz Rocio', position: 'CAJA', branchId: 'juriquilla' },
+
+        // ALAMOS - Meseros (11): 9 servers, 2 barra
+        { id: 'wa1', username: 'veronica.camacho', password: '123', role: 'waiter', name: 'Verónica Camacho de Santiago', position: 'SERVER', branchId: 'alamos' },
+        { id: 'wa2', username: 'emiliano.contreras', password: '123', role: 'waiter', name: 'Emiliano Contreras Cruz', position: 'SERVER', branchId: 'alamos' },
+        { id: 'wa3', username: 'ivalu.maciel', password: '123', role: 'waiter', name: 'Ivalu Maciel Chavez', position: 'SERVER', branchId: 'alamos' },
+        { id: 'wa4', username: 'jose.ardon', password: '123', role: 'waiter', name: 'José Elías Ardón Vargas', position: 'SERVER', branchId: 'alamos' },
+        { id: 'wa5', username: 'montserrat.olvera', password: '123', role: 'waiter', name: 'María Montserrat Olvera Suasti', position: 'SERVER', branchId: 'alamos' },
+        { id: 'wa6', username: 'fabiola.cordova', password: '123', role: 'waiter', name: 'Fabiola Córdova Bolaños', position: 'SERVER', branchId: 'alamos' },
+        { id: 'wa7', username: 'aithor.cosme', password: '123', role: 'waiter', name: 'Aithor Eliot Cosme Perez', position: 'SERVER', branchId: 'alamos' },
+        { id: 'wa8', username: 'metzli.gonzalez', password: '123', role: 'waiter', name: 'Metzli Yamil González Morales', position: 'SERVER', branchId: 'alamos' },
+        { id: 'wa9', username: 'igor.gonzalez', password: '123', role: 'waiter', name: 'Igor Atahualpa González Ortiz', position: 'SERVER', branchId: 'alamos' },
+        { id: 'wa10', username: 'valeria.rocha', password: '123', role: 'waiter', name: 'Valeria Rocha Camacho', position: 'BARRA', branchId: 'alamos' },
+        { id: 'wa11', username: 'juan.pinal', password: '123', role: 'waiter', name: 'Juan Iván Pinal de la Hera', position: 'BARRA', branchId: 'alamos' },
+
+        // PASEO - Meseros (5): 4 servers, 1 barra
+        { id: 'wp1', username: 'martin.fuente', password: '123', role: 'waiter', name: 'Martín Fuente Garcia', position: 'SERVER', branchId: 'paseo' },
+        { id: 'wp2', username: 'rosario.meza', password: '123', role: 'waiter', name: 'Rosario Meza Meza', position: 'SERVER', branchId: 'paseo' },
+        { id: 'wp3', username: 'jesus.xalamihua', password: '123', role: 'waiter', name: 'Jesús Xalamihua Altamirano', position: 'SERVER', branchId: 'paseo' },
+        { id: 'wp4', username: 'gabriel.clemente', password: '123', role: 'waiter', name: 'Gabriel Clemente Adan', position: 'SERVER', branchId: 'paseo' },
+        { id: 'wp5', username: 'jonathan.torres', password: '123', role: 'waiter', name: 'Jonathan Javier Torres Adan', position: 'BARRA', branchId: 'paseo' }
+    ],
+    customers: MOCK.customers,
+    visits: MOCK.visits,
+    prospects: [],
+    waitlist: [],
+    reservations: [],
+    campaigns: [],
+    // MENU CATALOG - Para autocompletado en captura de consumo
+    menuCatalog: {
+        entries: [
+            'Aros de Cebolla', 'Nachos con Queso', 'Papas Fritas', 'Alitas Buffalo (6)', 'Alitas Buffalo (12)',
+            'Dedos de Queso', 'Boneless Buffalo (6)', 'Boneless BBQ (6)', 'Chips con Guacamole',
+            'Quesadilla Sencilla', 'Quesadilla con Carne', 'Jalapeño Poppers', 'Dip de Espinacas'
+        ],
+        mainDishes: [
+            'Boneless BBQ', 'Boneless Buffalo', 'Boneless Honey BBQ', 'Boneless Teriyaki',
+            'Alitas Tradicionales (12)', 'Alitas Tradicionales (18)', 'Alitas Tradicionales (24)',
+            'Hamburguesa Clásica', 'Hamburguesa Bacon', 'Hamburguesa BBQ', 'Hamburguesa Doble',
+            'Wrap de Pollo', 'Wrap Buffalo', 'Ensalada Caesar', 'Ensalada de Pollo',
+            'Costillas BBQ', 'Costillas Full Rack', 'Tacos de Pescado', 'Quesadilla Grande',
+            'Nachos Supremos', 'Fajitas de Res', 'Fajitas de Pollo'
+        ],
+        drinks: [
+            'Cerveza Corona', 'Cerveza Modelo', 'Cerveza Victoria', 'Cerveza Indio', 'Cerveza Pacífico',
+            'Cerveza Heineken', 'Cerveza Stella', 'Cerveza Bud Light', 'Cerveza Michelada',
+            'Margarita Natural', 'Margarita de Mango', 'Margarita de Jamaica', 'Margarita de Tamarindo',
+            'Mojito', 'Piña Colada', 'Cuba Libre', 'Paloma', 'Sangría',
+            'Coca Cola', 'Sprite', 'Fanta', 'Agua Mineral', 'Limonada', 'Té Helado',
+            'Café Americano', 'Cappuccino'
+        ],
+        desserts: [
+            'Volcán de Chocolate', 'Brownie con Helado', 'Cheesecake', 'Helado 3 Bolas',
+            'Flan Napolitano', 'Churros con Chocolate'
+        ]
+    },
+    // NEW: Daily Information System - Enhanced
+    dailyInfo: {
+        // Partidos de HOY
+        games: [
+            { id: 'g1', league: 'NFL', homeTeam: 'Dallas Cowboys', awayTeam: 'Philadelphia Eagles', time: '19:30', date: new Date().toISOString().split('T')[0] },
+            { id: 'g2', league: 'NBA', homeTeam: 'Lakers', awayTeam: 'Warriors', time: '21:00', date: new Date().toISOString().split('T')[0] },
+            { id: 'g3', league: 'Liga MX', homeTeam: 'América', awayTeam: 'Chivas', time: '20:00', date: new Date().toISOString().split('T')[0] },
+            { id: 'g4', league: 'NFL', homeTeam: 'Chiefs', awayTeam: 'Raiders', time: '16:00', date: new Date().toISOString().split('T')[0] }
+        ],
+        // Catálogo permanente de promociones
+        promoCatalog: [
+            { id: 'pc1', title: '2x1 en Cervezas Nacionales', description: 'Toda la noche', createdAt: new Date().toISOString() },
+            { id: 'pc2', title: 'Wings a $99', description: 'Orden de 10 piezas', createdAt: new Date().toISOString() },
+            { id: 'pc3', title: 'Margarita Happy Hour', description: '2x1 de 4pm a 7pm', createdAt: new Date().toISOString() }
+        ],
+        // Promociones activas HOY (ids del catálogo)
+        activePromoIds: ['pc1', 'pc2'],
+        // Catálogo permanente de dinámicas
+        dynamicCatalog: [
+            { id: 'dc1', title: 'Concurso de Postres', description: 'El mesero que venda más postres hoy gana $500', metric: 'postres', createdAt: new Date().toISOString() },
+            { id: 'dc2', title: 'Venta de Bebidas Premium', description: 'Más ventas de bebidas premium = premio', metric: 'bebidas_premium', createdAt: new Date().toISOString() }
+        ],
+        // Dinámica activa HOY
+        activeDynamic: {
+            catalogId: 'dc1',
+            date: new Date().toISOString().split('T')[0],
+            // Puntajes manuales por mesero (gerente los actualiza)
+            scores: [
+                { odoo_id: 'm1', waiterName: 'Carlos Mesero', score: 12 }
+            ]
+        },
+        // Productos: 86 (agotados), 85 (por agotarse), push (impulsar)
+        products: {
+            // 86 = Agotados
+            outOfStock86: [
+                { id: 'p86_1', name: 'Costillas BBQ', category: 'cocina' },
+                { id: 'p86_2', name: 'Cerveza Corona', category: 'meseros' }
+            ],
+            // 85 = Por agotarse (quedan pocos)
+            lowStock85: [
+                { id: 'p85_1', name: 'Nachos Supremos', category: 'cocina' }
+            ],
+            // Push = Productos a impulsar su venta
+            push: [
+                { id: 'push1', name: 'Postre Volcán de Chocolate', category: 'cocina' },
+                { id: 'push2', name: 'Margarita de Jamaica', category: 'meseros' }
+            ]
+        }
+    }
+};
+
+class Store {
+    constructor() {
+        this.data = this._load();
+        this._syncUsers();
+        this._syncMenuCatalog();
+        this._syncMenu();
+
+        // === FIREBASE SYNC ===
+        // Wait for Firebase to be ready
+        const startSync = () => {
+            if (window.dbFirestore && !this.syncStarted) {
+                console.log('🚀 Starting Firebase Realtime Sync...');
+                this.syncStarted = true;
+                this.initRealtimeSync();
+            }
+        };
+
+        if (window.dbFirestore) startSync();
+        window.addEventListener('firebase-ready', startSync);
+    }
+
+    initRealtimeSync() {
+        const { onSnapshot, collection, query, where } = window.FB;
+        const db = window.dbFirestore;
+
+        // 1. SYNC VISITS (Active Tables)
+        // Only sync active visits to reduce bandwidth
+        // But for simplicity in this demo, let's sync ALL visits created today or active
+        const visitsRef = collection(db, "visits");
+
+        onSnapshot(visitsRef, (snapshot) => {
+            let changes = false;
+            snapshot.docChanges().forEach((change) => {
+                const visitData = change.doc.data();
+                const localIdx = this.data.visits.findIndex(v => v.id === visitData.id);
+
+                if (change.type === "added") {
+                    if (localIdx === -1) {
+                        this.data.visits.push(visitData);
+                        changes = true;
+                    }
+                }
+                if (change.type === "modified") {
+                    if (localIdx !== -1) {
+                        this.data.visits[localIdx] = visitData; // Update local
+                        changes = true;
+                    }
+                }
+                if (change.type === "removed") {
+                    if (localIdx !== -1) {
+                        this.data.visits.splice(localIdx, 1);
+                        changes = true;
+                    }
+                }
+            });
+
+            if (changes) {
+                console.log("☁️ Actualización recibida de Firebase: Visitas");
+                this._save(); // Save to local storage
+                // Force UI Refresh if on dashboard
+                if (typeof renderHostessDashboard === 'function' && document.getElementById('content-tables')) renderHostessDashboard();
+                if (typeof renderManagerDashboard === 'function' && document.getElementById('manager-content')) renderManagerDashboard('tables');
+                if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard();
+            }
+        });
+
+        // 2. SYNC GAME REQUESTS (Global Daily Info)
+        // We will treat 'dailyInfo' as a single document 'config/daily'
+        const dailyRef = doc(db, "config", "daily");
+        onSnapshot(dailyRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const remoteDaily = docSnap.data();
+                // Check specifically for gameRequests changes
+                const localReqs = JSON.stringify(this.getDailyInfo().gameRequests || []);
+                const remoteReqs = JSON.stringify(remoteDaily.gameRequests || []);
+
+                if (localReqs !== remoteReqs) {
+                    console.log("☁️ Actualización recibida de Firebase: Solicitudes");
+                    const info = this.getDailyInfo();
+                    info.gameRequests = remoteDaily.gameRequests || [];
+                    this._save();
+                    // Refresh Manager UI if needed
+                    if (typeof renderManagerDashboard === 'function' && document.getElementById('managertab-games')) {
+                        document.getElementById('managertab-games').click(); // Reload tab
+                    }
+                }
+            }
+        });
+    }
+
+    _syncMenuCatalog() {
+        // If menuCatalog doesn't exist in stored data, add it from INITIAL_DATA
+        if (!this.data.menuCatalog) {
+            this.data.menuCatalog = INITIAL_DATA.menuCatalog;
+            this._save();
+            console.log('Migrated menuCatalog');
+        }
+    }
+
+    _syncMenu() {
+        // If menu doesn't exist, init from scratch
+        if (!this.data.menu) {
+            this.data.menu = INITIAL_DATA.menu;
+            this._save();
+            return;
+        }
+
+        // Force update: Inject missing categories (Alitas, Boneless) if they don't exist
+        const currentFoods = this.data.menu.alimentos || [];
+        const hasAlitas = currentFoods.some(i => i.category === 'Alitas');
+
+        if (!hasAlitas) {
+            console.log('Injecting missing Alitas/Boneless categories...');
+            const newItems = INITIAL_DATA.menu.alimentos.filter(i =>
+                i.category === 'Alitas' || i.category === 'Boneless'
+            );
+            this.data.menu.alimentos = [...currentFoods, ...newItems];
+            this._save();
+        }
+
+        // Force update: Inject 'Extras Barra' if missing
+        const currentDrinks = this.data.menu.bebidas || [];
+        const hasExtrasBarra = currentDrinks.some(i => i.category === 'Extras Barra');
+
+        if (!hasExtrasBarra) {
+            console.log('Injecting missing Extras Barra...');
+            const newDrinks = INITIAL_DATA.menu.bebidas.filter(i => i.category === 'Extras Barra');
+            this.data.menu.bebidas = [...currentDrinks, ...newDrinks];
+            this._save();
+        }
+    }
+
+    _syncUsers() {
+        let changed = false;
+        INITIAL_DATA.users.forEach(initUser => {
+            if (!this.data.users.find(u => u.username === initUser.username)) {
+                this.data.users.push(initUser);
+                changed = true;
+                console.log('Migrated user:', initUser.username);
+            }
+        });
+        if (changed) this._save();
+    }
+
+    _load() {
+        const s = localStorage.getItem(STORE_KEY);
+        return s ? JSON.parse(s) : JSON.parse(JSON.stringify(INITIAL_DATA));
+    }
+
+    _save() {
+        localStorage.setItem(STORE_KEY, JSON.stringify(this.data));
+    }
+
+    login(username, password) {
+        const user = this.data.users.find(u => u.username === username && u.password === password);
+        return user || null;
+    }
+
+    getBranches() {
+        return this.data.branches;
+    }
+
+    // Hostess Methods
+    searchCustomers(query) {
+        if (!query || query.length < 2) return [];
+        const q = query.toLowerCase();
+        return this.data.customers.filter(c =>
+            c.firstName.toLowerCase().includes(q) ||
+            c.lastName.toLowerCase().includes(q)
+        );
+    }
+
+    isTableOccupied(table, branchId) {
+        return this.data.visits.some(v =>
+            v.branchId === branchId &&
+            v.table === table &&
+            v.status === 'active'
+        );
+    }
+
+    // Get available table numbers for a branch based on user position
+    getAvailableTables(branchId, userPosition) {
+        const branch = this.data.branches.find(b => b.id === branchId);
+        if (!branch || !branch.tables) {
+            return Array.from({ length: 50 }, (_, i) => i + 1); // Fallback for old data
+        }
+
+        let availableTables = [...branch.tables.regular];
+
+        // BARRA staff can also use BARRA tables
+        if (userPosition === 'BARRA' && branch.tables.barra.length > 0) {
+            availableTables = [...availableTables, ...branch.tables.barra];
+        }
+
+        return availableTables.sort((a, b) => a - b);
+    }
+
+    // Validate if a table number is valid for a branch and user position
+    isValidTable(tableNumber, branchId, userPosition) {
+        const availableTables = this.getAvailableTables(branchId, userPosition);
+        return availableTables.includes(parseInt(tableNumber));
+    }
+
+
+    createUser(userData) {
+        const id = 'U' + Date.now();
+        const user = { id, ...userData };
+        this.data.users.push(user);
+        this._save();
+        return user;
+    }
+
+    createCustomer(data) {
+        const id = 'C' + (this.data.customers.length + 1).toString().padStart(3, '0');
+        const customer = { id, ...data, visits: 0, topDrinks: [], topFood: [] };
+        this.data.customers.push(customer);
+        this._save();
+        return customer;
+    }
+
+    createVisit(visitData) {
+        const visit = {
+            id: 'V' + Date.now(),
+            status: 'active',
+            ...visitData
+        };
+        this.data.visits.push(visit);
+
+        // Update customer visit count
+        const cust = this.data.customers.find(c => c.id === visitData.customerId);
+        if (cust) {
+            cust.visits = (cust.visits || 0) + 1;
+        }
+
+        this._save();
+
+        // SYNC TO FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'visits', visit.id), visit)
+                .then(() => console.log('🔥 Visit synced to cloud'))
+                .catch(e => console.error('🔥 Sync error', e));
+        }
+
+        return visit;
+    }
+
+    // MENU MANAGEMENT METHODS
+    getMenu() {
+        return this.data.menu;
+    }
+
+    getMenuItemsByCategory(type, category) {
+        // type: 'alimentos' or 'bebidas'
+        if (!this.data.menu || !this.data.menu[type]) return [];
+
+        if (category) {
+            return this.data.menu[type].filter(item => item.category === category);
+        }
+        return this.data.menu[type];
+    }
+
+    toggleItemAvailability(itemId) {
+        // Toggle 86 status for food or beverage item
+        let item = this.data.menu.alimentos.find(i => i.id === itemId);
+        if (!item) {
+            item = this.data.menu.bebidas.find(i => i.id === itemId);
+        }
+
+        if (item) {
+            item.available = !item.available;
+            this._save();
+            return item;
+        }
+        return null;
+    }
+
+    createOrder(orderData) {
+        // Create new order for a table
+        const order = {
+            id: 'O' + Date.now(),
+            visitId: orderData.visitId,
+            items: orderData.items, // [{itemId, name, quantity, observations}, ...]
+            timestamp: new Date().toISOString(),
+            status: 'pending' // pending, preparing, delivered
+        };
+        this.data.orders.push(order);
+        this._save();
+        return order;
+    }
+
+    getOrdersByVisit(visitId) {
+        return this.data.orders.filter(o => o.visitId === visitId);
+    }
+
+    // New Hostess Management
+    getActiveVisitsByBranch(branchId) {
+        return this.data.visits
+            .filter(v => v.branchId === branchId && v.status === 'active')
+            .map(v => ({
+                ...v,
+                customer: this.data.customers.find(c => c.id === v.customerId)
+            }));
+    }
+
+    updateVisitDetails(visitId, updatedFields) {
+        const visit = this.data.visits.find(v => v.id === visitId);
+        if (visit) {
+            // Merge all updated fields into the visit object
+            Object.assign(visit, updatedFields);
+            console.log('✅ updateVisitDetails called for visit', visitId, 'Updated fields:', updatedFields, 'Full visit:', visit);
+            this._save();
+            return visit;
+        } else {
+            console.warn('⚠️ updateVisitDetails: Visit not found:', visitId);
+        }
+    }
+
+    releaseTable(visitId) {
+        const visit = this.data.visits.find(v => v.id === visitId);
+        if (visit) {
+            visit.status = 'closed'; // Force close/release
+            visit.endTime = new Date().toISOString();
+            this._save();
+        }
+    }
+
+    // Waiter Methods
+    getActiveVisits(waiterId) {
+        // Return visits assigned to this waiter that are active
+        return this.data.visits
+            .filter(v => v.waiterId === waiterId && v.status === 'active')
+            .map(v => {
+                const customer = this.data.customers.find(c => c.id === v.customerId);
+                return { ...v, customer };
+            });
+    }
+
+    // Close visit and set consumption
+    closeVisit(visitId, amount) {
+        const visit = this.data.visits.find(v => v.id === visitId);
+        if (visit) {
+            visit.status = 'closed';
+            visit.totalAmount = amount;
+            visit.endTime = new Date().toISOString();
+            this._save();
+        }
+    }
+
+    updateVisit(visitId, updates) {
+        const idx = this.data.visits.findIndex(v => v.id === visitId);
+        if (idx !== -1) {
+            this.data.visits[idx] = { ...this.data.visits[idx], ...updates };
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), updates)
+                    .catch(e => console.error('🔥 Sync update error', e));
+            }
+        }
+    }
+
+    markProspect(visitId) {
+        const visit = this.data.visits.find(v => v.id === visitId);
+        if (visit) {
+            visit.isProspect = true;
+            this._save();
+        }
+    }
+
+    // Manager / Admin Methods
+    getActiveVisitsGlobal() {
+        return this.data.visits
+            .filter(v => v.status === 'active')
+            .map(v => ({
+                ...v,
+                customer: this.data.customers.find(c => c.id === v.customerId),
+                branchName: this.data.branches.find(b => b.id === v.branchId)?.name
+            }));
+    }
+
+    getProspects() {
+        // Return visits marked as prospect AND NOT reviewed
+        return this.data.visits
+            .filter(v => v.isProspect && !v.prospectReviewed)
+            .map(v => {
+                const customer = this.data.customers.find(c => c.id === v.customerId);
+                return { ...v, customer };
+            });
+    }
+
+    markProspectAsReviewed(visitId) {
+        const v = this.data.visits.find(v => v.id === visitId);
+        if (v) {
+            v.prospectReviewed = true;
+            this._save();
+        }
+    }
+
+    getBirthdaysToday() {
+        const today = new Date();
+        const m = (today.getMonth() + 1).toString().padStart(2, '0');
+        const d = today.getDate().toString().padStart(2, '0');
+        // Match MM-DD in birthday string YYYY-MM-DD
+        return this.data.customers.filter(c => c.birthday && c.birthday.endsWith(`${m} -${d} `));
+    }
+
+    getRetentionAlerts() {
+        // Mock logic: Customers with > 2 visits who haven't visited in 14 days
+        const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+
+        return this.data.customers.filter(c => {
+            if ((c.visits || 0) < 2) return false;
+            // Find last visit
+            const lastVisit = this.data.visits
+                .filter(v => v.customerId === c.id)
+                .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+            if (!lastVisit) return false;
+            return (now - new Date(lastVisit.date).getTime()) > TWO_WEEKS;
+        });
+    }
+
+    getVisitsByDate(dateStr) {
+        // dateStr YYYY-MM-DD
+        return this.data.visits.filter(v => {
+            const vDate = new Date(v.date).toISOString().split('T')[0];
+            return vDate === dateStr;
+        }).map(v => ({
+            ...v,
+            customer: this.data.customers.find(c => c.id === v.customerId)
+        }));
+    }
+
+    getVisitById(visitId) {
+        const v = this.data.visits.find(v => v.id === visitId);
+        if (!v) return null;
+        const customer = this.data.customers.find(c => c.id === v.customerId);
+        return { ...v, customer };
+    }
+
+    // Regional Reporting Helpers
+    getStatsByBranch(branchId, startDate, endDate) {
+        const visits = this.data.visits.filter(v => {
+            if (v.branchId !== branchId) return false;
+            if (v.status === 'active') return false; // Only count closed for sales? Or both? Let's use closed for sales.
+            const d = new Date(v.date);
+            return d >= startDate && d <= endDate;
+        });
+
+        const totalSales = visits.reduce((acc, v) => acc + Number(v.totalAmount || 0), 0);
+        const traffic = visits.length;
+        return { totalSales, traffic };
+    }
+
+    getActiveTablesCount(branchId) {
+        return this.data.visits.filter(v => v.branchId === branchId && v.status === 'active').length;
+    }
+
+    // ===== WAITLIST METHODS =====
+    addToWaitlist(data) {
+        const entry = {
+            id: 'W' + Date.now(),
+            branchId: data.branchId,
+            customerName: data.customerName,
+            pax: data.pax,
+            phone: data.phone,
+            addedAt: new Date().toISOString(),
+            estimatedWait: data.estimatedWait || 15,
+            notified: false
+        };
+        this.data.waitlist.push(entry);
+        this._save();
+        return entry;
+    }
+
+    getWaitlist(branchId) {
+        return this.data.waitlist
+            .filter(w => w.branchId === branchId && !w.removed)
+            .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt));
+    }
+
+    removeFromWaitlist(id) {
+        const idx = this.data.waitlist.findIndex(w => w.id === id);
+        if (idx !== -1) {
+            this.data.waitlist[idx].removed = true;
+            this.data.waitlist[idx].removedAt = new Date().toISOString();
+            this._save();
+        }
+    }
+
+    notifyNextInWaitlist(branchId) {
+        const next = this.getWaitlist(branchId)[0];
+        if (next) {
+            next.notified = true;
+            this._save();
+            return next;
+        }
+        return null;
+    }
+
+    // ===== RESERVATION METHODS =====
+    createReservation(data) {
+        const reservation = {
+            id: 'R' + Date.now(),
+            branchId: data.branchId,
+            customerName: data.customerName,
+            customerId: data.customerId || null,
+            phone: data.phone,
+            date: data.date, // ISO string
+            time: data.time, // HH:MM
+            pax: data.pax,
+            table: data.table || null,
+            status: 'pending', // pending, confirmed, cancelled, completed
+            notes: data.notes || '',
+            createdAt: new Date().toISOString()
+        };
+        this.data.reservations.push(reservation);
+        this._save();
+        return reservation;
+    }
+
+    getReservations(branchId, date) {
+        let filtered = this.data.reservations.filter(r => r.branchId === branchId);
+        if (date) {
+            const dateStr = new Date(date).toISOString().split('T')[0];
+            filtered = filtered.filter(r => r.date.startsWith(dateStr));
+        }
+        return filtered.sort((a, b) => {
+            const aTime = a.date + 'T' + a.time;
+            const bTime = b.date + 'T' + b.time;
+            return new Date(aTime) - new Date(bTime);
+        });
+    }
+
+    confirmReservation(id) {
+        const r = this.data.reservations.find(x => x.id === id);
+        if (r) {
+            r.status = 'confirmed';
+            this._save();
+        }
+    }
+
+    cancelReservation(id) {
+        const r = this.data.reservations.find(x => x.id === id);
+        if (r) {
+            r.status = 'cancelled';
+            this._save();
+        }
+    }
+
+    // ===== CLIENT CLASSIFICATION =====
+    getCustomerClassification(customerId) {
+        const customer = this.data.customers.find(c => c.id === customerId);
+        if (!customer) return 'none';
+
+        const visits = this.data.visits.filter(v => v.customerId === customerId);
+        if (visits.length === 0) return 'new';
+
+        const now = new Date();
+        const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        const twoWeeksAgo = new Date(now - 14 * 24 * 60 * 60 * 1000);
+
+        // Weekly visits
+        const visitsThisWeek = visits.filter(v => new Date(v.date) >= oneWeekAgo);
+        const visitsLastTwoWeeks = visits.filter(v => new Date(v.date) >= twoWeeksAgo);
+
+        // Total spending
+        const totalSpending = visits.reduce((sum, v) => sum + Number(v.totalAmount || 0), 0);
+        const avgPerVisit = visits.length > 0 ? totalSpending / visits.length : 0;
+
+        // Weekly spending
+        const weeklySpending = visitsThisWeek.reduce((sum, v) => sum + Number(v.totalAmount || 0), 0);
+
+        // Check branches visited
+        const branchesVisited = new Set(visits.map(v => v.branchId));
+        const multiSucursal = branchesVisited.size > 1;
+
+        // Classification logic
+        // Diamond: >1 visita/semana + >$2,500/semana
+        if (visitsLastTwoWeeks.length >= 2 && weeklySpending > 2500) {
+            return 'diamond';
+        }
+
+        // VIP: >$2,500 por visita + múltiples sucursales
+        if (avgPerVisit > 2500 && multiSucursal) {
+            return 'vip';
+        }
+
+        // Blazin: ≥1 visita/semana
+        if (visitsThisWeek.length >= 1 && visits.length >= 4) {
+            return 'blazin';
+        }
+
+        // New: <= 3 visits
+        if (visits.length <= 3) {
+            return 'new';
+        }
+
+        return 'regular';
+    }
+
+    getCustomersByClassification(type, branchId = null) {
+        let customers = this.data.customers;
+
+        return customers.filter(c => {
+            const classification = this.getCustomerClassification(c.id);
+            if (classification !== type) return false;
+
+            // Filter by branch if specified
+            if (branchId) {
+                const hasVisitInBranch = this.data.visits.some(v =>
+                    v.customerId === c.id && v.branchId === branchId
+                );
+                return hasVisitInBranch;
+            }
+            return true;
+        });
+    }
+
+    // ===== ADVANCED REPORTING =====
+    getTopProducts(type, startDate, endDate, branchId = null) {
+        // type: 'entry', 'food', 'drink'
+        let visits = this.data.visits.filter(v => {
+            const d = new Date(v.date);
+            const inRange = (!startDate || d >= startDate) && (!endDate || d <= endDate);
+            const inBranch = !branchId || v.branchId === branchId;
+            return inRange && inBranch && v.status === 'closed';
+        });
+
+        const productCounts = {};
+        visits.forEach(v => {
+            const customer = this.data.customers.find(c => c.id === v.customerId);
+            if (!customer) return;
+
+            let products = [];
+            if (type === 'entry') products = customer.topFood || []; // Simplified
+            else if (type === 'food') products = customer.topFood || [];
+            else if (type === 'drink') products = customer.topDrinks || [];
+
+            products.forEach(p => {
+                productCounts[p] = (productCounts[p] || 0) + 1;
+            });
+        });
+
+        return Object.entries(productCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
+    }
+
+    getBirthdaysThisMonth(branchId = null) {
+        const today = new Date();
+        const m = (today.getMonth() + 1).toString().padStart(2, '0');
+
+        let customers = this.data.customers.filter(c => {
+            if (!c.birthday) return false;
+            const match = c.birthday.includes(`-${m}-`);
+            if (!match) return false;
+
+            // Filter by branch if specified
+            if (branchId) {
+                return this.data.visits.some(v => v.customerId === c.id && v.branchId === branchId);
+            }
+            return true;
+        });
+
+        return customers.map(c => {
+            const dayMatch = c.birthday.match(/-(\d{2})\s*$/);
+            const day = dayMatch ? parseInt(dayMatch[1]) : 0;
+            return { ...c, birthdayDay: day };
+        }).sort((a, b) => a.birthdayDay - b.birthdayDay);
+    }
+
+    getSportAnalytics(branchId = null) {
+        let customers = this.data.customers;
+        if (branchId) {
+            const customerIdsInBranch = new Set(
+                this.data.visits
+                    .filter(v => v.branchId === branchId)
+                    .map(v => v.customerId)
+            );
+            customers = customers.filter(c => customerIdsInBranch.has(c.id));
+        }
+
+        const teamCounts = {};
+        customers.forEach(c => {
+            const teams = c.teams || (c.team ? [c.team] : []);
+            teams.forEach(t => {
+                teamCounts[t] = (teamCounts[t] || 0) + 1;
+            });
+        });
+
+        return Object.entries(teamCounts)
+            .map(([team, count]) => ({ team, count }))
+            .sort((a, b) => b.count - a.count);
+    }
+
+    getDemographics(branchId = null) {
+        let customers = this.data.customers;
+        if (branchId) {
+            const customerIdsInBranch = new Set(
+                this.data.visits
+                    .filter(v => v.branchId === branchId)
+                    .map(v => v.customerId)
+            );
+            customers = customers.filter(c => customerIdsInBranch.has(c.id));
+        }
+
+        const cityCounts = {};
+        const countryCounts = {};
+        const colonyCounts = {};
+
+        customers.forEach(c => {
+            if (c.city) cityCounts[c.city] = (cityCounts[c.city] || 0) + 1;
+            if (c.country) countryCounts[c.country] = (countryCounts[c.country] || 0) + 1;
+            if (c.colony) colonyCounts[c.colony] = (colonyCounts[c.colony] || 0) + 1;
+        });
+
+        return {
+            cities: Object.entries(cityCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+            countries: Object.entries(countryCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+            colonies: Object.entries(colonyCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count)
+        };
+    }
+
+    getAbsentCustomers(thresholdDays = 30, branchId = null) {
+        const threshold = thresholdDays * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+
+        return this.data.customers.filter(c => {
+            if ((c.visits || 0) < 2) return false;
+
+            const customerVisits = this.data.visits.filter(v => {
+                if (v.customerId !== c.id) return false;
+                return !branchId || v.branchId === branchId;
+            });
+
+            if (customerVisits.length === 0) return false;
+
+            const lastVisit = customerVisits
+                .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+            return (now - new Date(lastVisit.date).getTime()) > threshold;
+        });
+    }
+
+    // ===== NEW REPORTING METHODS (Step 2) =====
+
+    getCustomersByType(type, startDate, endDate, branchId = null) {
+        // Types: 'diamond', 'blazin', 'new', 'absent', 'couch_card'
+        // Filter by date range? For 'new', yes (joined in date range).
+        // For 'diamond', 'blazin' -> Status within range? Or current status?
+        // Usually reports allow seeing WHO was Diamond in that period, but current status is easier.
+        // Let's filter by: Active in that period + Current Status matches type.
+
+        let customers = this.data.customers;
+
+        // 1. Filter by Activity in Date Range (if provided)
+        if (startDate && endDate) {
+            const activeCustomerIds = new Set(this.data.visits
+                .filter(v => {
+                    const d = new Date(v.date);
+                    return d >= new Date(startDate) && d <= new Date(endDate);
+                })
+                .map(v => v.customerId));
+
+            customers = customers.filter(c => activeCustomerIds.has(c.id));
+        }
+
+        // 2. Filter by Type
+        return customers.filter(c => {
+            if (type === 'couch_card') return c.couchCard === true;
+
+            const classification = this.getCustomerClassification(c.id);
+            if (type === 'absent') return false; // Handled separately usually, or use getAbsent
+
+            // For 'new', check if first visit is in range?
+            if (type === 'new') {
+                // Simplification: classification 'new' means <= 3 visits total.
+                return classification === 'new';
+            }
+
+            return classification === type;
+        });
+    }
+
+    getCustomerBranchVisits(startDate, endDate) {
+        // Returns list of customers with visit counts per branch
+        const result = {}; // { custId: { name, phone, juriquilla: 5, paseo: 2 ... } }
+
+        const visits = this.data.visits.filter(v => {
+            const d = new Date(v.date);
+            return (!startDate || d >= new Date(startDate)) && (!endDate || d <= new Date(endDate));
+        });
+
+        visits.forEach(v => {
+            if (!result[v.customerId]) {
+                const c = this.data.customers.find(x => x.id === v.customerId);
+                if (c) {
+                    result[v.customerId] = {
+                        name: c.firstName + ' ' + c.lastName,
+                        phone: c.phone || 'N/A',
+                        total: 0,
+                        branches: {}
+                    };
+                }
+            }
+
+            if (result[v.customerId]) {
+                const entry = result[v.customerId];
+                entry.total++;
+                entry.branches[v.branchId] = (entry.branches[v.branchId] || 0) + 1;
+            }
+        });
+
+        return Object.values(result).sort((a, b) => b.total - a.total);
+    }
+
+    getDemographicReport(type, startDate, endDate) {
+        // type: 'city', 'country', 'birthday' (birthday filtered by month in range?)
+
+        // Filter active customers in range
+        const activeVisits = this.data.visits.filter(v => {
+            const d = new Date(v.date);
+            return (!startDate || d >= new Date(startDate)) && (!endDate || d <= new Date(endDate));
+        });
+        const activeCustIds = new Set(activeVisits.map(v => v.customerId));
+        const customers = this.data.customers.filter(c => activeCustIds.has(c.id));
+
+        const counts = {};
+
+        customers.forEach(c => {
+            let key = 'Desconocido';
+            if (type === 'city') key = c.city || 'Desconocido';
+            if (type === 'country') key = c.country || 'Desconocido';
+
+            if (type === 'birthday') {
+                // Group by Month?
+                // User wants "Cumpleaños del mes ... filtrar por periodo"
+                // Just list them?
+                // Let's return the list directly for birthday
+                return;
+            }
+
+            counts[key] = (counts[key] || 0) + 1;
+        });
+
+        if (type === 'birthday') {
+            // Return customers whose birthday (month-day) falls in selected date range
+            if (!startDate || !endDate) return [];
+
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+
+            return this.data.customers.filter(c => {
+                if (!c.birthday) return false;
+
+                // Parse birthday "YYYY-MM-DD"
+                const parts = c.birthday.split('-');
+                if (parts.length < 3) return false;
+
+                const month = parseInt(parts[1]) - 1; // 0-indexed
+                const day = parseInt(parts[2]);
+
+                // Create date in current year for comparison
+                const currentYear = new Date().getFullYear();
+                const birthdayThisYear = new Date(currentYear, month, day);
+
+                // Create comparable dates (same year) from start/end range
+                const startCompare = new Date(currentYear, start.getMonth(), start.getDate());
+                const endCompare = new Date(currentYear, end.getMonth(), end.getDate());
+
+                // Check if birthday falls within the month-day range
+                return birthdayThisYear >= startCompare && birthdayThisYear <= endCompare;
+            }).map(c => ({ name: c.firstName + ' ' + c.lastName, birthday: c.birthday, phone: c.phone, branch: 'N/A' }));
+        }
+
+        return Object.entries(counts)
+            .map(([label, value]) => ({ label, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 10);
+    }
+
+    getMostVisitedBranch(customerId) {
+        // Calculate which branch this customer visits most
+        const visits = this.data.visits.filter(v => v.customerId === customerId);
+        if (visits.length === 0) return 'N/A';
+
+        const branchCounts = {};
+        visits.forEach(v => {
+            branchCounts[v.branchId] = (branchCounts[v.branchId] || 0) + 1;
+        });
+
+        // Find max
+        let maxBranch = null;
+        let maxCount = 0;
+        Object.entries(branchCounts).forEach(([branchId, count]) => {
+            if (count > maxCount) {
+                maxCount = count;
+                maxBranch = branchId;
+            }
+        });
+
+        // Return branch name
+        const branch = this.data.branches.find(b => b.id === maxBranch);
+        return branch ? branch.name : maxBranch || 'N/A';
+    }
+
+    // ===== CAMPAIGN MANAGEMENT =====
+    createCampaign(data) {
+        const campaign = {
+            id: 'CAMP' + Date.now(),
+            name: data.name,
+            segment: data.segment, // 'vip', 'loyal', 'new', 'risk', 'all'
+            message: data.message,
+            imageUrl: data.imageUrl || null,
+            branchId: data.branchId || null, // null = all branches
+            customerIds: data.customerIds || [],
+            sentCount: 0,
+            createdAt: new Date().toISOString(),
+            createdBy: data.createdBy
+        };
+        this.data.campaigns.push(campaign);
+        this._save();
+        return campaign;
+    }
+
+    getCampaigns(branchId = null) {
+        if (!branchId) return this.data.campaigns;
+        return this.data.campaigns.filter(c => !c.branchId || c.branchId === branchId);
+    }
+
+    trackCampaignSend(customerId, campaignType) {
+        // Track that we sent a message
+        console.log(`Campaign sent to ${customerId}: ${campaignType}`);
+    }
+
+    // === DAILY INFO METHODS (Enhanced) ===
+    getMatches() {
+        return this.getDailyInfo().games || [];
+    }
+
+    getDailyInfo() {
+        if (!this.data.dailyInfo) {
+            this.data.dailyInfo = {
+                games: [],
+                gameRequests: [], // New: Requests from Hostess
+                promoCatalog: [],
+                activePromoIds: [],
+                dynamicCatalog: [],
+                activeDynamic: null,
+                products: { outOfStock86: [], lowStock85: [], push: [] }
+            };
+            this._save();
+        }
+        // Ensure products structure exists
+        if (!this.data.dailyInfo.products) {
+            this.data.dailyInfo.products = { outOfStock86: [], lowStock85: [], push: [] };
+            this._save();
+        }
+        // Ensure games array exists
+        if (!this.data.dailyInfo.games) {
+            this.data.dailyInfo.games = [];
+        }
+        // Ensure promo catalog exists
+        if (!this.data.dailyInfo.promoCatalog) {
+            this.data.dailyInfo.promoCatalog = [];
+        }
+        if (!this.data.dailyInfo.activePromoIds) {
+            this.data.dailyInfo.activePromoIds = [];
+        }
+
+        // BACKWARDS COMPATIBILITY: Create aliases for old code that still uses old property names
+        // This prevents errors when legacy code tries to access dailyInfo.promos, dailyInfo.products86, etc.
+        const info = this.data.dailyInfo;
+
+        // Legacy alias: promos -> active promos from catalog
+        if (!info.promos) {
+            Object.defineProperty(info, 'promos', {
+                get: () => (info.promoCatalog || []).filter(p => (info.activePromoIds || []).includes(p.id)),
+                configurable: true
+            });
+        }
+
+        // Legacy alias: products86 -> products.outOfStock86
+        if (!info.products86) {
+            Object.defineProperty(info, 'products86', {
+                get: () => info.products?.outOfStock86 || [],
+                configurable: true
+            });
+        }
+
+        // Legacy alias: dynamics
+        if (!info.dynamics) {
+            Object.defineProperty(info, 'dynamics', {
+                get: () => ({
+                    active: info.activeDynamic ? {
+                        ...((info.dynamicCatalog || []).find(d => d.id === info.activeDynamic?.catalogId) || {}),
+                        ...(info.activeDynamic || {})
+                    } : null,
+                    leaderboard: info.activeDynamic?.scores || []
+                }),
+                configurable: true
+            });
+        }
+
+        return this.data.dailyInfo;
+    }
+
+    // Get active promos for today (for waiter view)
+    getActivePromos() {
+        const info = this.getDailyInfo();
+        if (!info.promoCatalog || !info.activePromoIds) return [];
+        return info.promoCatalog.filter(p => info.activePromoIds.includes(p.id));
+    }
+
+    // Get active dynamic with merged data
+    getActiveDynamic() {
+        const info = this.getDailyInfo();
+        if (!info.activeDynamic || !info.activeDynamic.catalogId) return null;
+        const catalog = info.dynamicCatalog || [];
+        const dynamicDef = catalog.find(d => d.id === info.activeDynamic.catalogId);
+        if (!dynamicDef) return null;
+        return {
+            ...dynamicDef,
+            scores: info.activeDynamic.scores || []
+        };
+    }
+
+    // Get all waiters for scoring
+    getWaiters() {
+        return this.data.users.filter(u => u.role === 'waiter');
+    }
+
+    // === GAMES ===
+    updateDailyGames(games) {
+        const info = this.getDailyInfo();
+        info.games = games;
+        this._save();
+    }
+
+    addGame(sport, league, teams, time) {
+        const info = this.getDailyInfo();
+        info.games.push({
+            id: 'g' + Date.now(),
+            sport,
+            league,
+            teams,
+            time,
+            date: new Date().toISOString().split('T')[0]
+        });
+        this._save();
+    }
+
+    deleteGame(index) {
+        const info = this.getDailyInfo();
+        info.games.splice(index, 1);
+        this._save();
+    }
+
+    // === PROMOS ===
+    addPromoToCatalog(title, description) {
+        const info = this.getDailyInfo();
+        if (!info.promoCatalog) info.promoCatalog = [];
+        const id = 'pc' + Date.now();
+        info.promoCatalog.push({ id, title, description, createdAt: new Date().toISOString() });
+        this._save();
+        return id;
+    }
+
+    deletePromoFromCatalog(promoId) {
+        const info = this.getDailyInfo();
+        info.promoCatalog = (info.promoCatalog || []).filter(p => p.id !== promoId);
+        info.activePromoIds = (info.activePromoIds || []).filter(id => id !== promoId);
+        this._save();
+    }
+
+    togglePromoActive(promoId) {
+        const info = this.getDailyInfo();
+        if (!info.activePromoIds) info.activePromoIds = [];
+        const idx = info.activePromoIds.indexOf(promoId);
+        if (idx >= 0) {
+            info.activePromoIds.splice(idx, 1);
+        } else {
+            info.activePromoIds.push(promoId);
+        }
+        this._save();
+    }
+
+    // === DYNAMICS ===
+    addDynamicToCatalog(title, description, metric) {
+        const info = this.getDailyInfo();
+        if (!info.dynamicCatalog) info.dynamicCatalog = [];
+        const id = 'dc' + Date.now();
+        info.dynamicCatalog.push({ id, title, description, metric, createdAt: new Date().toISOString() });
+        this._save();
+        return id;
+    }
+
+    deleteDynamicFromCatalog(dynamicId) {
+        const info = this.getDailyInfo();
+        info.dynamicCatalog = (info.dynamicCatalog || []).filter(d => d.id !== dynamicId);
+        if (info.activeDynamic && info.activeDynamic.catalogId === dynamicId) {
+            info.activeDynamic = null;
+        }
+        this._save();
+    }
+
+    activateDynamic(catalogId) {
+        const info = this.getDailyInfo();
+        // Initialize scores with all waiters at 0
+        const waiters = this.getWaiters();
+        info.activeDynamic = {
+            catalogId,
+            date: new Date().toISOString().split('T')[0],
+            scores: waiters.map(w => ({
+                odoo_id: w.odoo_id,
+                waiterName: w.name,
+                score: 0
+            }))
+        };
+        this._save();
+    }
+
+    deactivateDynamic() {
+        const info = this.getDailyInfo();
+        info.activeDynamic = null;
+        this._save();
+    }
+
+    updateWaiterScore(odoo_id, newScore) {
+        const info = this.getDailyInfo();
+        if (!info.activeDynamic || !info.activeDynamic.scores) return;
+        const entry = info.activeDynamic.scores.find(s => s.odoo_id === odoo_id);
+        if (entry) {
+            entry.score = parseInt(newScore) || 0;
+        }
+        // Sort by score descending
+        info.activeDynamic.scores.sort((a, b) => b.score - a.score);
+        this._save();
+    }
+
+    // === PRODUCTS 86/85/PUSH ===
+    addProduct(type, name, category) {
+        // type: 'outOfStock86', 'lowStock85', 'push'
+        // category: 'cocina' or 'meseros'
+        const info = this.getDailyInfo();
+        if (!info.products) info.products = { outOfStock86: [], lowStock85: [], push: [] };
+        if (!info.products[type]) info.products[type] = [];
+        info.products[type].push({
+            id: type + '_' + Date.now(),
+            name,
+            category
+        });
+        this._save();
+    }
+
+    deleteProduct(type, index) {
+        const info = this.getDailyInfo();
+        if (info.products && info.products[type]) {
+            info.products[type].splice(index, 1);
+            this._save();
+        }
+    }
+
+    // Legacy compatibility
+    updateDailyPromos(promos) {
+        // For backward compat - convert to new structure
+        const info = this.getDailyInfo();
+        info.promoCatalog = promos;
+        info.activePromoIds = promos.map(p => p.id);
+        this._save();
+    }
+
+    updateDailyDynamics(dynamicsData) {
+        const info = this.getDailyInfo();
+        if (dynamicsData && dynamicsData.active) {
+            // Legacy format
+            if (!info.dynamicCatalog) info.dynamicCatalog = [];
+            const existing = info.dynamicCatalog.find(d => d.id === dynamicsData.active.id);
+            if (!existing) {
+                info.dynamicCatalog.push({
+                    id: dynamicsData.active.id,
+                    title: dynamicsData.active.title,
+                    description: dynamicsData.active.description,
+                    metric: dynamicsData.active.metric || 'count'
+                });
+            }
+            info.activeDynamic = {
+                catalogId: dynamicsData.active.id,
+                date: new Date().toISOString().split('T')[0],
+                scores: (dynamicsData.leaderboard || []).map(l => ({
+                    odoo_id: l.waiterId,
+                    waiterName: l.waiterName,
+                    score: l.score || 0
+                }))
+            };
+        } else {
+            info.activeDynamic = null;
+        }
+        this._save();
+    }
+
+    updateProducts86(products) {
+        // Legacy - maps to outOfStock86
+        const info = this.getDailyInfo();
+        if (!info.products) info.products = { outOfStock86: [], lowStock85: [], push: [] };
+        info.products.outOfStock86 = products.map(p => ({
+            id: p.id,
+            name: p.name,
+            category: p.category === 'Platillos' || p.category === 'cocina' ? 'cocina' : 'meseros'
+        }));
+        this._save();
+    }
+
+    // === AI SUGGESTIONS (Personalized) ===
+    generateAISuggestion(customerId) {
+        const customer = this.data.customers.find(c => c.id === customerId);
+        if (!customer) return 'Cliente nuevo - ofrecer menú completo.';
+
+        const visits = this.data.visits.filter(v => v.customerId === customerId);
+        const classification = this.getCustomerClassification(customerId);
+
+        let suggestions = [];
+
+        // Based on classification
+        if (classification === 'Diamond' || classification === 'VIP') {
+            suggestions.push('Cliente premium - ofrecer platillos especiales o promociones VIP');
+        }
+
+        // Based on visit frequency
+        if (visits.length >= 5) {
+            suggestions.push('Cliente frecuente');
+        } else if (visits.length === 1) {
+            suggestions.push('Segunda visita - impresionar para fidelizar');
+        }
+
+        // Based on top drinks
+        if (customer.topDrinks && customer.topDrinks.length > 0) {
+            const topDrink = customer.topDrinks[0];
+            // Check if there's a promo for drinks
+            const dailyInfo = this.getDailyInfo();
+            const drinkPromo = dailyInfo.promos.find(p => p.title.toLowerCase().includes('cerveza') || p.title.toLowerCase().includes('bebida'));
+            if (drinkPromo) {
+                suggestions.push(`Ofrecer "${drinkPromo.title}" - cliente suele pedir ${topDrink}`);
+            } else {
+                suggestions.push(`Cliente prefiere ${topDrink}`);
+            }
+        }
+
+        // Based on top food
+        if (customer.topFood && customer.topFood.length > 0) {
+            const topFood = customer.topFood[0];
+            suggestions.push(`Suele pedir ${topFood}`);
+        }
+
+        // Based on team (if there's a game today)
+        if (customer.team) {
+            const dailyInfo = this.getDailyInfo();
+            const game = dailyInfo.games.find(g =>
+                g.homeTeam === customer.team || g.awayTeam === customer.team
+            );
+            if (game) {
+                suggestions.push(`¡Su equipo juega hoy! ${game.homeTeam} vs ${game.awayTeam} a las ${game.time}`);
+            }
+        }
+
+        // Default if no suggestions
+        if (suggestions.length === 0) {
+            return 'Nuevo cliente - ofrecer promociones del día y menú recomendado.';
+        }
+
+        return suggestions.join('. ');
+    }
+
+    // --- INVENTORY / ADMIN METHODS ---
+
+    toggleItemAvailability(itemId) {
+        if (!itemId) return false;
+
+        // Helper to find and toggle
+        const toggleInList = (list) => {
+            const item = list.find(i => i.id === itemId);
+            if (item) {
+                if (item.available === undefined) item.available = true;
+                item.available = !item.available;
+                return true;
+            }
+            return false;
+        };
+
+        const foundInFood = toggleInList(this.menu.alimentos);
+        const foundInDrinks = !foundInFood && toggleInList(this.menu.bebidas);
+
+        if (foundInFood || foundInDrinks) {
+            this._save();
+            return true;
+        }
+        return false;
+    }
+
+    addNewProduct(name, category, price, type) {
+        // type should be 'alimentos' or 'bebidas'
+        if (!this.menu[type]) return false;
+
+        const newId = (type === 'alimentos' ? 'A' : 'B') + Date.now().toString().slice(-4);
+
+        const newItem = {
+            id: newId,
+            name: name,
+            category: category,
+            price: parseFloat(price) || 0,
+            available: true
+        };
+
+        this.menu[type].push(newItem);
+        this._save();
+        return newItem;
+    }
+
+    addGame(gameData) {
+        const info = this.getDailyInfo();
+        const newGame = {
+            id: 'g' + Date.now(),
+            league: gameData.league || 'General',
+            homeTeam: gameData.homeTeam,
+            awayTeam: gameData.awayTeam,
+            time: gameData.time,
+            date: new Date().toISOString().split('T')[0]
+        };
+        info.games.push(newGame);
+        this._save();
+        return newGame;
+    }
+
+    removeGame(gameId) {
+        const info = this.getDailyInfo();
+        info.games = info.games.filter(g => g.id !== gameId);
+        this._save();
+    }
+
+    // === GAME REQUESTS ===
+    addGameRequest(gameName) {
+        const info = this.getDailyInfo();
+        if (!info.gameRequests) info.gameRequests = [];
+
+        // Avoid duplicates
+        if (info.gameRequests.find(r => r.name === gameName)) return false;
+
+        const req = {
+            id: 'req' + Date.now(),
+            name: gameName,
+            createdAt: new Date().toISOString()
+        };
+        info.gameRequests.push(req);
+        this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'config', 'daily'), { gameRequests: info.gameRequests }, { merge: true })
+                .catch(e => console.error('🔥 Sync remote request error', e));
+        }
+        return req;
+    }
+
+    removeGameRequest(reqId) {
+        const info = this.getDailyInfo();
+        if (info.gameRequests) {
+            info.gameRequests = info.gameRequests.filter(r => r.id !== reqId);
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, setDoc } = window.FB;
+                setDoc(doc(window.dbFirestore, 'config', 'daily'), { gameRequests: info.gameRequests }, { merge: true })
+                    .catch(e => console.error('🔥 Sync remote request error', e));
+            }
+        }
+    }
+}
+
+
+const db = new Store();
+window.db = db; // Expose to global for ease
