@@ -191,6 +191,7 @@ function selectBranch(id, name) {
 
 // ------ HOSTESS ------
 function renderHostessDashboard() {
+  appContainer.innerHTML = ''; // Prevent duplicates
   // Safety check: ensure new data structures exist
   if (!window.db.data.waitlist) window.db.data.waitlist = [];
   if (!window.db.data.reservations) window.db.data.reservations = [];
@@ -1437,6 +1438,7 @@ function manageVisit(visitId) {
 // ------ WAITER ------
 
 function renderWaiterDashboard() {
+  appContainer.innerHTML = '';
   // SAFETY CHECK
   if (!STATE.user || !STATE.user.id) {
     console.warn("Waiter dashboard accessed without user.");
@@ -4129,6 +4131,7 @@ function submitOrder() {
 // ------ MANAGER DASHBOARD (TABBED UI - v9.6) ------
 
 window.renderManagerDashboard = function (activeTab = 'tables') {
+  appContainer.innerHTML = '';
   console.log('Rendering Manager Dashboard, Tab:', activeTab);
   const branchId = STATE.branch?.id;
   if (!branchId) { alert('Selecciona sucursal'); renderLogin(); return; }
