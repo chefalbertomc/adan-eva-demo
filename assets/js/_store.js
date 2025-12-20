@@ -851,6 +851,29 @@ class Store {
                 }
             }
         });
+
+        // 3. SYNC CUSTOMERS
+        const custRef = collection(db, "customers");
+        onSnapshot(custRef, (snapshot) => {
+            let changed = false;
+            snapshot.docChanges().forEach((change) => {
+                const custData = change.doc.data();
+                const idx = this.data.customers.findIndex(c => c.id === custData.id);
+                if (change.type === 'added' || change.type === 'modified') {
+                    if (idx === -1) {
+                        this.data.customers.push(custData);
+                        changed = true;
+                    } else {
+                        this.data.customers[idx] = { ...this.data.customers[idx], ...custData };
+                        changed = true;
+                    }
+                }
+            });
+            if (changed) {
+                console.log("☁️ Clientes sincronizados");
+                this._save();
+            }
+        });
     }
 
     _syncMenuCatalog() {
@@ -980,6 +1003,14 @@ class Store {
         const customer = { id, ...data, visits: 0, topDrinks: [], topFood: [] };
         this.data.customers.push(customer);
         this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'customers', customer.id), customer)
+                .catch(e => console.error('🔥 Customer sync error', e));
+        }
+
         return customer;
     }
 
@@ -1087,6 +1118,13 @@ class Store {
             visit.status = 'closed'; // Force close/release
             visit.endTime = new Date().toISOString();
             this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), { status: 'closed', endTime: visit.endTime })
+                    .catch(e => console.error('🔥 Sync release error', e));
+            }
         }
     }
 
@@ -1109,6 +1147,13 @@ class Store {
             visit.totalAmount = amount;
             visit.endTime = new Date().toISOString();
             this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), { status: 'closed', totalAmount: amount, endTime: visit.endTime })
+                    .catch(e => console.error('🔥 Sync close error', e));
+            }
         }
     }
 
