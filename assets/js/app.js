@@ -1329,6 +1329,7 @@ window.saveVisitInfo = function (visitId) {
 window.updateHostessGame = function (visitId, selectEl) {
   const selectedGame = selectEl.value;
   const customDiv = document.getElementById(`hostess-custom-game-${visitId}`);
+  const teamSelect = document.getElementById(`favorite-team-${visitId}`);
 
   if (selectedGame === 'OTRO') {
     if (customDiv) {
@@ -1336,9 +1337,27 @@ window.updateHostessGame = function (visitId, selectEl) {
       const input = customDiv.querySelector('input');
       if (input) input.focus();
     }
+    // Clear team select if custom
+    if (teamSelect) teamSelect.innerHTML = '<option value="">Escribe el partido primero</option>';
   } else {
     if (customDiv) customDiv.classList.add('hidden');
     window.db.updateVisitDetails(visitId, { selectedGame });
+
+    // Update Team Select Options
+    if (teamSelect && selectedGame) {
+      const game = window.db.getMatches().find(m => (m.match || (m.homeTeam + ' vs ' + m.awayTeam)) === selectedGame);
+      if (game && game.homeTeam && game.awayTeam) {
+        teamSelect.innerHTML = `
+                <option value="">-- ¿A quién apoya? --</option>
+                <option value="${game.homeTeam}">${game.homeTeam}</option>
+                <option value="${game.awayTeam}">${game.awayTeam}</option>
+             `;
+      } else {
+        teamSelect.innerHTML = '<option value="">Datos de equipos no disponibles</option>';
+      }
+    } else if (teamSelect) {
+      teamSelect.innerHTML = '<option value="">Primero selecciona un partido</option>';
+    }
   }
 };
 
