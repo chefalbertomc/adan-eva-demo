@@ -640,6 +640,7 @@ const INITIAL_DATA = {
 
         // HOSTESS (3)
         { id: 'hj1', username: 'hossjur', password: '123', role: 'hostess', name: 'Hostess Juriquilla', branchId: 'juriquilla' },
+        { id: 'hj2', username: 'hossden', password: '2308', role: 'hostess', name: 'Hostess Denisse', branchId: 'juriquilla' },
         { id: 'ha1', username: 'hossalamos', password: '123', role: 'hostess', name: 'Hostess Álamos', branchId: 'alamos' },
         { id: 'hp1', username: 'hosspaseo', password: '123', role: 'hostess', name: 'Hostess Paseo', branchId: 'paseo' },
 
