@@ -473,16 +473,31 @@ function renderHostessDashboard() {
                                        onchange="window.saveFavoriteTeam('${v.id}', '${v.customerId}', this.value)"
                                        class="w-full bg-black text-yellow-400 border border-yellow-600 rounded-lg p-3 text-base font-bold h-12">
                                   <option value="">-- ¿A quién apoya? --</option>
-                                  ${v.selectedGame ? (() => {
+                                  ${(() => {
+        if (!v.selectedGame) return '<option value="" disabled>Selecciona un partido primero</option>';
+
+        // 1. Try to find official game object
         const game = window.db.getMatches().find(m => (m.match || (m.homeTeam + ' vs ' + m.awayTeam)) === v.selectedGame);
         if (game && game.homeTeam && game.awayTeam) {
           return `
-                                          <option value="${game.homeTeam}" ${customer.team === game.homeTeam ? 'selected' : ''}>${game.homeTeam}</option>
-                                          <option value="${game.awayTeam}" ${customer.team === game.awayTeam ? 'selected' : ''}>${game.awayTeam}</option>
-                                       `;
+                                              <option value="${game.homeTeam}" ${customer.team === game.homeTeam ? 'selected' : ''}>${game.homeTeam}</option>
+                                              <option value="${game.awayTeam}" ${customer.team === game.awayTeam ? 'selected' : ''}>${game.awayTeam}</option>
+                                          `;
         }
-        return '<option value="">Primero selecciona un partido</option>';
-      })() : '<option value="">Primero selecciona un partido</option>'}
+
+        // 2. Fallback: Parse string "Team A vs Team B"
+        if (v.selectedGame.includes(' vs ')) {
+          const parts = v.selectedGame.split(' vs ');
+          if (parts.length === 2) {
+            return `
+                                                  <option value="${parts[0].trim()}" ${customer.team === parts[0].trim() ? 'selected' : ''}>${parts[0].trim()}</option>
+                                                  <option value="${parts[1].trim()}" ${customer.team === parts[1].trim() ? 'selected' : ''}>${parts[1].trim()}</option>
+                                              `;
+          }
+        }
+
+        return '<option disabled>Equipos no identificados</option>';
+      })()}
                                </select>
                             </div>
                          </div>
