@@ -1319,6 +1319,13 @@ class Store {
         if (visit) {
             visit.isProspect = true;
             this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), { isProspect: true })
+                    .catch(e => console.error('🔥 Sync mark prospect error', e));
+            }
         }
     }
 
@@ -1348,6 +1355,13 @@ class Store {
         if (v) {
             v.prospectReviewed = true;
             this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), { prospectReviewed: true })
+                    .catch(e => console.error('🔥 Sync mark prospect reviewed error', e));
+            }
         }
     }
 
