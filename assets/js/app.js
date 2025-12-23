@@ -4363,12 +4363,14 @@ function renderManagerTablesTab(container) {
     // Prepare visit reason display
     let reasonDisplay = '';
     if (v.reason) {
-      if (v.reason === 'Partido') {
+      if (v.reason === 'Partido' || v.selectedGame) { // Trust selectedGame even if reason isn't explicitly 'Partido' yet
         let sportIcon = '📺';
+        // Try to find more info, but don't block display if not found
         if (v.selectedGame) {
           const game = window.db.getMatches().find(m => (m.match || (m.homeTeam + ' vs ' + m.awayTeam)) === v.selectedGame);
           if (game && game.league) sportIcon = window.getSportIcon(game.league);
         }
+
         reasonDisplay = `
           <div class="mt-3 bg-white/5 p-3 rounded-lg border border-white/10">
             <div class="flex items-start gap-2">
@@ -4376,7 +4378,7 @@ function renderManagerTablesTab(container) {
               <div class="flex-1">
                 <div class="text-[10px] text-green-400 font-bold uppercase tracking-widest">PARTIDO</div>
                 <div class="text-sm font-black text-white leading-tight mt-0.5">
-                  ${v.selectedGame || 'Sin partido asig.'}
+                  ${v.selectedGame || 'Seleccionar Partido...'}
                 </div>
                 ${v.isFavoriteTeamMatch ? '<div class="mt-1 inline-block bg-yellow-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded shadow animate-pulse">🌟 EQUIPO FAVORITO</div>' : ''}
               </div>
