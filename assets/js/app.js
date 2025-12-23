@@ -4169,6 +4169,10 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
   const activeVisits = window.db.getActiveVisitsByBranch(branchId);
   window.CURRENT_MANAGER_TAB = activeTab;
 
+  // RENDER UI FIRST to prevent black screen
+  const div = document.createElement('div');
+  div.className = 'bg-gray-900 min-h-screen pb-24'; // Padding for bottom nav
+
   // AUTO-REPAIR: Ensure config/daily exists (Fix for Hosts 0 matches)
   if (window.dbFirestore && window.FB) {
     const { doc, getDoc, setDoc } = window.FB;
@@ -4185,10 +4189,6 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
       }
     });
   }
-
-
-  const div = document.createElement('div');
-  div.className = 'bg-gray-900 min-h-screen pb-24'; // Padding for bottom nav
 
   // HEADER FIXED
   div.innerHTML = `
