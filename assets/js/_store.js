@@ -1900,7 +1900,12 @@ class Store {
 
     // === DAILY INFO METHODS (Enhanced) ===
     getMatches() {
-        return this.getDailyInfo().games || [];
+        // RETURN ALL games regardless of date.
+        // It's better to show yesterday's game than nothing.
+        // The manager is responsible for deleting old games.
+        const games = this.getDailyInfo().games || [];
+        console.log(`Getting matches: found ${games.length} games.`, games);
+        return games;
     }
 
     getDailyInfo() {
