@@ -7,6 +7,20 @@ let STATE = {
 // DOM Elements
 const appContainer = document.getElementById('app');
 
+// Database of Standard Team Names for Autocomplete
+window.KNOWN_TEAMS = [
+  // LIGA MX
+  "América", "Chivas", "Cruz Azul", "Pumas", "Tigres", "Monterrey", "Toluca", "Santos", "Pachuca", "León", "Atlas", "Querétaro", "Puebla", "San Luis", "Mazatlán", "Necaxa", "Xolos", "Juárez",
+  // NFL
+  "Chiefs", "49ers", "Cowboys", "Steelers", "Patriots", "Eagles", "Ravens", "Bills", "Dolphins", "Jets", "Bengals", "Browns", "Texans", "Colts", "Jaguars", "Titans", "Broncos", "Raiders", "Chargers", "Giants", "Commanders", "Packers", "Lions", "Vikings", "Bears", "Buccaneers", "Saints", "Falcons", "Panthers", "Rams", "Seahawks", "Cardinals",
+  // NBA
+  "Lakers", "Warriors", "Celtics", "Bulls", "Heat", "Knicks", "Nets", "76ers", "Raptors", "Bucks", "Pistons", "Pacers", "Cavaliers", "Magic", "Hornets", "Hawks", "Wizards", "Nuggets", "Timberwolves", "Thunder", "Trail Blazers", "Jazz", "Suns", "Clippers", "Kings", "Mavericks", "Rockets", "Spurs", "Grizzlies", "Pelicans",
+  // MLB
+  "Yankees", "Dodgers", "Red Sox", "Cubs", "Cardinals", "Giants", "Braves", "Astros", "Mets", "Phillies", "Rangers", "Blue Jays", "Mariners", "Orioles", "Rays", "Twins", "Tigers", "White Sox", "Guardians", "Royals", "Angels", "Athletics", "Padres", "Diamondbacks", "Rockies", "Marlins", "Nationals", "Reds", "Pirates", "Brewers",
+  // EUROPEAN SOCCER
+  "Real Madrid", "Barcelona", "Atlético Madrid", "Man City", "Liverpool", "Arsenal", "Man United", "Chelsea", "Tottenham", "Bayern Munich", "Dortmund", "PSG", "Juventus", "Inter Milan", "AC Milan", "Napoli", "Roma"
+].sort();
+
 // Router / Navigation
 function navigateTo(view, params = {}) {
   appContainer.innerHTML = '';
@@ -442,15 +456,35 @@ function renderHostessDashboard() {
                             ${window.generateGameOptions(v.selectedGame)}
                          </select>
                          
-                         <!-- Custom Game Input -->
+                         <!-- Datalist for Autocomplete (Global or per card, using global ID is fine if content is static) -->
+                         <datalist id="team-suggestions">
+                            ${window.KNOWN_TEAMS.map(t => `<option value="${t}">`).join('')}
+                         </datalist>
+
+                         <!-- Custom Game Input (Split) -->
                          <div id="hostess-custom-game-${v.id}" class="${(v.selectedGame && !window.db.getMatches().find(m => (m.match || `${m.homeTeam} vs ${m.awayTeam}`) === v.selectedGame)) ? '' : 'hidden'} mb-4">
-                              <div class="flex gap-2">
-                                  <input type="text" 
-                                         placeholder="Escribe el partido..." 
-                                         value="${(v.selectedGame && !window.db.getMatches().find(m => (m.match || `${m.homeTeam} vs ${m.awayTeam}`) === v.selectedGame)) ? v.selectedGame : ''}"
-                                         onchange="window.saveCustomGame('${v.id}', this)" 
-                                         class="flex-1 bg-gray-800 text-white border border-yellow-500 rounded-lg px-4 py-3 text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/50 transition-all">
+                              <div class="flex gap-2 items-center">
+                                  <div class="relative flex-1">
+                                    <input type="text" 
+                                           id="custom-home-${v.id}"
+                                           list="team-suggestions"
+                                           placeholder="Local" 
+                                           value="${(v.selectedGame && v.selectedGame.includes(' vs ')) ? v.selectedGame.split(' vs ')[0].trim() : ''}"
+                                           onchange="window.saveCustomGameSplit('${v.id}')" 
+                                           class="w-full bg-gray-800 text-white border border-yellow-500 rounded-lg px-3 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-bold uppercase">
+                                  </div>
+                                  <span class="text-yellow-600 font-bold text-xs">VS</span>
+                                  <div class="relative flex-1">
+                                    <input type="text" 
+                                           id="custom-away-${v.id}"
+                                           list="team-suggestions"
+                                           placeholder="Visita" 
+                                           value="${(v.selectedGame && v.selectedGame.includes(' vs ')) ? v.selectedGame.split(' vs ')[1].trim() : ''}"
+                                           onchange="window.saveCustomGameSplit('${v.id}')" 
+                                           class="w-full bg-gray-800 text-white border border-yellow-500 rounded-lg px-3 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-bold uppercase">
+                                  </div>
                               </div>
+                              <div class="text-[10px] text-gray-500 mt-1 text-center italic">* Escribe para ver sugerencias</div>
                          </div>
                          
                          <!-- Checkbox Equipo Favorito (Rediseñado) -->
@@ -1357,6 +1391,53 @@ window.toggleFavoriteTeamSection = function (visitId, checkbox) {
     if (teamSelectDiv) teamSelectDiv.classList.add('hidden');
     window.db.updateVisitDetails(visitId, { isFavoriteTeamMatch: false });
   }
+};
+
+// Helper for Split Custom Game Input
+window.saveCustomGameSplit = function (visitId) {
+  const homeInput = document.getElementById(`custom-home-${visitId}`);
+  const awayInput = document.getElementById(`custom-away-${visitId}`);
+
+  if (homeInput && awayInput) {
+    const home = homeInput.value.trim();
+    const away = awayInput.value.trim();
+
+    if (home && away) {
+      const combinedName = `${home} vs ${away}`;
+      window.db.updateVisitDetails(visitId, { selectedGame: combinedName });
+    } else if (home || away) {
+      // If only one is filled, save partial input if necessary, but ideally wait for both
+    }
+  }
+};
+
+// Helper for Manager Add Game Form
+window.addGameFromManager = function () {
+  const league = document.getElementById('new-league').value;
+  const time = document.getElementById('new-time').value;
+  const home = document.getElementById('new-home').value.trim();
+  const away = document.getElementById('new-away').value.trim();
+
+  if (!home || !away || !time) {
+    alert('Por favor completa todos los campos (Local, Visitante, Hora)');
+    return;
+  }
+
+  // Auto-formatting (optional)
+  window.db.addGame({
+    league,
+    homeTeam: home,
+    awayTeam: away,
+    time
+  });
+
+  // Clear and refresh
+  document.getElementById('new-home').value = '';
+  document.getElementById('new-away').value = '';
+  // Optional: Hide form
+  document.getElementById('add-game-form').classList.add('hidden');
+
+  renderManagerDashboard('games');
 };
 
 window.saveFavoriteTeam = function (visitId, customerId, teamName) {
@@ -4482,14 +4563,37 @@ function renderManagerGamesTab(container) {
     <div class="card bg-blue-900/10 border-2 border-blue-600 shadow-xl mb-20">
       <div class="flex justify-between items-center mb-4 border-b border-blue-800 pb-2">
           <h2 class="text-xl font-bold text-blue-400 flex items-center gap-2">📺 Partidos Hoy</h2>
-          <button onclick="
-              const league = prompt('Liga (NFL, NBA...):', 'General'); if(!league) return;
-              const home = prompt('Local:', ''); if(!home) return;
-              const away = prompt('Visitante:', ''); if(!away) return;
-              const time = prompt('Hora:', '19:00');
-              if(home && away && time) { window.db.addGame({league, homeTeam: home, awayTeam: away, time}); renderManagerDashboard('games'); }
-          " class="bg-blue-600 text-white px-3 py-1.5 rounded font-bold text-xs flex items-center gap-1 shadow-lg active:scale-95 transition hover:bg-blue-500"><span>+</span> AGREGAR</button>
+          <button onclick="document.getElementById('add-game-form').classList.toggle('hidden')" class="bg-blue-600 px-3 py-1 rounded text-white text-sm font-bold shadow hover:bg-blue-500 transition">
+             + Nuevo
+          </button>
       </div>
+      
+      <!-- ADD GAME FORM -->
+      <div id="add-game-form" class="hidden bg-black/40 p-4 rounded-lg border border-blue-500/30 mb-4 animate-fade-in">
+          <div class="grid grid-cols-2 gap-2 mb-2">
+             <select id="new-league" class="bg-gray-800 text-white p-2 rounded border border-gray-600 text-sm">
+                <option value="NFL">NFL</option>
+                <option value="NBA">NBA</option>
+                <option value="MLB">MLB</option>
+                <option value="LIGA MX">LIGA MX</option>
+                <option value="FUTBOL">FUTBOL</option>
+                <option value="UFC">UFC</option>
+                <option value="BOX">BOX</option>
+                <option value="General">Otro</option>
+             </select>
+             <input type="time" id="new-time" class="bg-gray-800 text-white p-2 rounded border border-gray-600 text-sm" value="19:00">
+          </div>
+          <div class="grid grid-cols-2 gap-2 mb-2">
+             <input list="team-suggestions" id="new-home" placeholder="Local" class="bg-gray-800 text-white p-2 rounded border border-gray-600 text-sm w-full">
+             <input list="team-suggestions" id="new-away" placeholder="Visitante" class="bg-gray-800 text-white p-2 rounded border border-gray-600 text-sm w-full">
+          </div>
+          <button onclick="window.addGameFromManager()" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-bold shadow-lg">AGREGAR PARTIDO</button>
+      </div>
+
+      <!-- Datalist (Fail-safe re-injection) -->
+      <datalist id="team-suggestions">
+          ${window.KNOWN_TEAMS.map(t => `<option value="${t}">`).join('')}
+      </datalist>
       
       ${games.length === 0 ? '<p class="text-gray-400 text-center py-8 text-sm">No hay partidos. Agrega uno.</p>' : `
       <div class="grid grid-cols-1 gap-3">
