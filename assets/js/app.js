@@ -4165,8 +4165,26 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
   if (!branchId) { alert('Selecciona sucursal'); renderLogin(); return; }
 
   // Get active visits for badge count
+  // Get active visits for badge count
   const activeVisits = window.db.getActiveVisitsByBranch(branchId);
   window.CURRENT_MANAGER_TAB = activeTab;
+
+  // AUTO-REPAIR: Ensure config/daily exists (Fix for Hosts 0 matches)
+  if (window.dbFirestore && window.FB) {
+    const { doc, getDoc, setDoc } = window.FB;
+    const dailyRef = doc(window.dbFirestore, 'config', 'daily');
+    getDoc(dailyRef).then(snap => {
+      if (!snap.exists()) {
+        console.log("🛠️ REPAIRING: Creating missing config/daily document...");
+        const info = window.db.getDailyInfo();
+        setDoc(dailyRef, JSON.parse(JSON.stringify(info)))
+          .then(() => console.log("✅ REPAIR SUCCESS: config/daily created! Matches should sync now."))
+          .catch(e => console.error("❌ REPAIR FAILED:", e));
+      } else {
+        console.log("✅ Config Check: config/daily valid.");
+      }
+    });
+  }
 
 
   const div = document.createElement('div');
