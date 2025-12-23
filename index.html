@@ -84,7 +84,7 @@
   <!-- FIREBASE CONFIGURATION (CLOUD DATABASE) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, setDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, setDoc, getDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAHSZYI1UQ7p_O3dl1-xU8c9zxFdjH9HFk",
@@ -101,17 +101,17 @@
 
     // Expose to global scope for _store.js
     window.dbFirestore = db;
-    window.FB = { collection, onSnapshot, addDoc, updateDoc, doc, setDoc, query, where, getDocs, deleteDoc };
+    window.FB = { collection, onSnapshot, addDoc, updateDoc, doc, setDoc, getDoc, query, where, getDocs, deleteDoc };
 
     console.log("🔥 Firebase Conectado y Listo");
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
 
   <!-- Scripts -->
-  <script src="assets/js/_store.js?v=13.4"></script>
+  <script src="assets/js/_store.js?v=13.5"></script>
   <script src="assets/js/client-classifier.js?v=3.0"></script>
-  <script src="assets/js/hostess_helpers.js?v=13.4"></script>
-  <script src="assets/js/app.js?v=13.4"></script>
+  <script src="assets/js/hostess_helpers.js?v=13.5"></script>
+  <script src="assets/js/app.js?v=13.5"></script>
 
   <script>
     // Hide splash after app loads - REDUCED DELAY for old tablets
