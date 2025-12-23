@@ -1236,8 +1236,18 @@ class Store {
         if (visit) {
             // Merge all updated fields into the visit object
             Object.assign(visit, updatedFields);
-            console.log('✅ updateVisitDetails called for visit', visitId, 'Updated fields:', updatedFields, 'Full visit:', visit);
+            console.log('✅ updateVisitDetails called for visit', visitId, 'Updated fields:', updatedFields);
             this._save();
+
+            // SYNC FIREBASE (CRITICAL FIX)
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                // Only send the updated fields to save bandwidth
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), updatedFields)
+                    .then(() => console.log('☁️ Synced updated details to Firebase'))
+                    .catch(e => console.error('🔥 Sync update details error', e));
+            }
+
             return visit;
         } else {
             console.warn('⚠️ updateVisitDetails: Visit not found:', visitId);
