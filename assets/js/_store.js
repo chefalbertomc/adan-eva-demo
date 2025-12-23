@@ -2022,6 +2022,7 @@ class Store {
                 homeTeam: arg1.homeTeam,
                 awayTeam: arg1.awayTeam,
                 teams: arg1.homeTeam + ' vs ' + arg1.awayTeam,
+                match: arg1.homeTeam + ' vs ' + arg1.awayTeam, // BACKWARD COMPATIBILITY
                 time: arg1.time
             };
         } else {
@@ -2029,6 +2030,7 @@ class Store {
                 sport: arg1,
                 league: league,
                 teams: teams,
+                match: teams, // BACKWARD COMPATIBILITY
                 time: time
             };
         }
