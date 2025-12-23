@@ -448,23 +448,24 @@ function renderHostessDashboard() {
                                   <input type="text" 
                                          placeholder="Escribe el partido..." 
                                          value="${(v.selectedGame && !window.db.getMatches().find(m => (m.match || `${m.homeTeam} vs ${m.awayTeam}`) === v.selectedGame)) ? v.selectedGame : ''}"
-                                         oninput="window.saveCustomGame('${v.id}', this)" 
-                                         class="flex-1 bg-gray-800 text-white border border-yellow-500 rounded px-4 py-3 text-base placeholder-gray-500 focus:outline-none">
-                                  <button onclick="window.requestGameToManager('${v.id}')" class="bg-yellow-600 hover:bg-yellow-500 text-black font-black w-14 rounded-lg shadow-lg hover:shadow-yellow-500/50 transition active:scale-95 flex items-center justify-center text-xl" title="Notificar al Gerente">
-                                    📤
-                                  </button>
+                                         onchange="window.saveCustomGame('${v.id}', this)" 
+                                         class="flex-1 bg-gray-800 text-white border border-yellow-500 rounded-lg px-4 py-3 text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/50 transition-all">
                               </div>
                          </div>
                          
-                         <!-- Checkbox Equipo Favorito -->
-                         <div class="bg-yellow-900/10 p-4 rounded-lg border border-yellow-600/20">
-                            <label class="flex items-center gap-4 cursor-pointer select-none">
-                               <input type="checkbox" id="fav-team-${v.id}" 
+                         <!-- Checkbox Equipo Favorito (Rediseñado) -->
+                         <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700 flex items-center justify-between">
+                            <label class="flex items-center gap-3 cursor-pointer select-none w-full">
+                               <div class="relative">
+                                    <input type="checkbox" id="fav-team-${v.id}" 
                                       ${v.isFavoriteTeamMatch ? 'checked' : ''} 
                                       onchange="window.toggleFavoriteTeamSection('${v.id}', this)"
-                                      class="w-6 h-6 text-yellow-500 rounded border-gray-600 focus:ring-offset-0 focus:ring-0 accent-yellow-500 bg-gray-800 scale-125">
-                               <span class="text-base text-yellow-200 font-bold uppercase tracking-wide">🌟 Viene por su Equipo</span>
+                                      class="peer sr-only">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                               </div>
+                               <span class="text-sm text-gray-300 font-bold uppercase tracking-wide">🌟 Viene x su Equipo</span>
                             </label>
+                         </div>
                             
                             <!-- Select Equipo Favorito -->
                             <div id="team-select-${v.id}" class="${v.isFavoriteTeamMatch ? '' : 'hidden'} mt-4 pl-0 animate-fade-in">
