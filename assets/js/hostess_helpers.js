@@ -3,9 +3,13 @@
 window.generateGameOptions = function (selected) {
     const matches = window.db.getMatches() || [];
     if (matches.length === 0) return '<option disabled>Sin partidos registrados hoy</option>';
-    return matches.map(m =>
-        `<option value="${m.match}" ${m.match === selected ? 'selected' : ''}>${m.match} (${m.time})</option>`
-    ).join('');
+
+    return matches.map(m => {
+        // Handle both structure types (legacy vs new)
+        const matchName = m.match || (m.homeTeam && m.awayTeam ? `${m.homeTeam} vs ${m.awayTeam}` : 'Partido Desconocido');
+        const isSelected = matchName === selected;
+        return `<option value="${matchName}" ${isSelected ? 'selected' : ''}>${matchName} (${m.time})</option>`;
+    }).join('');
 };
 
 window.updateHostessReason = function (visitId, selectEl) {

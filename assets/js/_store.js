@@ -773,10 +773,34 @@ class Store {
 
         // === FIREBASE SYNC ===
         // Wait for Firebase to be ready
-        const startSync = () => {
+        // === FIREBASE SYNC ===
+        // Wait for Firebase to be ready
+        const startSync = async () => {
             if (window.dbFirestore && !this.syncStarted) {
                 console.log('🚀 Starting Firebase Realtime Sync...');
                 this.syncStarted = true;
+
+                // 1. FORCE INITIAL FETCH (To fix "refresh doesn't show data" issue)
+                try {
+                    const { doc, getDoc } = window.FB;
+                    const dailyRef = doc(window.dbFirestore, "config", "daily");
+                    const snapshot = await getDoc(dailyRef);
+                    if (snapshot.exists()) {
+                        console.log("📥 INITIAL FETCH: Daily config loaded immediately.");
+                        const remoteData = snapshot.data();
+
+                        // Merge immediately
+                        const info = this.getDailyInfo();
+                        info.games = remoteData.games || [];
+                        info.gameRequests = remoteData.gameRequests || [];
+                        this._save();
+                        console.log("✅ Initial Data Merged. Games count:", info.games.length);
+                    }
+                } catch (e) {
+                    console.error("⚠️ Initial fetch failed, relying on listeners:", e);
+                }
+
+                // 2. Start Listeners
                 this.initRealtimeSync();
             }
         };
@@ -801,12 +825,14 @@ class Store {
                 const localIdx = this.data.visits.findIndex(v => v.id === visitData.id);
 
                 if (change.type === "added") {
+                    console.log(`🔥 SYNC ADD: Visit ${visitData.id} | Table ${visitData.table} | Branch ${visitData.branchId} | Status ${visitData.status}`);
                     if (localIdx === -1) {
                         this.data.visits.push(visitData);
                         changes = true;
                     }
                 }
                 if (change.type === "modified") {
+                    console.log(`🔥 SYNC MOD: Visit ${visitData.id} | Status ${visitData.status}`);
                     if (localIdx !== -1) {
                         this.data.visits[localIdx] = visitData; // Update local
                         changes = true;
@@ -821,36 +847,87 @@ class Store {
             });
 
             if (changes) {
-                console.log("☁️ Actualización recibida de Firebase: Visitas");
+                console.log("☁️ Actualización recibida de Firebase: Visitas. Total Local:", this.data.visits.length);
                 this._save(); // Save to local storage
-                // Force UI Refresh if on dashboard
-                if (typeof renderHostessDashboard === 'function' && document.getElementById('content-tables')) renderHostessDashboard();
-                if (typeof renderManagerDashboard === 'function' && document.getElementById('manager-content')) renderManagerDashboard('tables');
-                if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard();
+
+                // Use setTimeout to allow logic to settle before rendering logic checks the DOM
+                setTimeout(() => {
+                    // Force UI Refresh if on dashboard
+                    if (typeof window.renderHostessDashboard === 'function' && document.getElementById('content-tables')) {
+                        console.log('🔄 Refreshing Hostess UI (Auto)');
+                        window.renderHostessDashboard();
+                    }
+                    if (typeof window.renderManagerDashboard === 'function' && document.getElementById('manager-content')) {
+                        console.log('🔄 Refreshing Manager UI (Auto)');
+                        // Refresh current tab if known, otherwise default to 'tables'
+                        const currentTab = window.CURRENT_MANAGER_TAB || 'tables';
+                        window.renderManagerDashboard(currentTab);
+                    }
+                    if (typeof window.renderWaiterDashboard === 'function' && document.getElementById('waitercontent-mesas')) {
+                        console.log('🔄 Refreshing Waiter UI (Auto)');
+                        window.renderWaiterDashboard();
+                    }
+                }, 100);
             }
         });
 
         // 2. SYNC GAME REQUESTS (Global Daily Info)
         // We will treat 'dailyInfo' as a single document 'config/daily'
+        // 2. SYNC GAME REQUESTS & GAMES (Global Daily Info)
         const dailyRef = doc(db, "config", "daily");
         onSnapshot(dailyRef, (docSnap) => {
+            console.log("☁️ FIREBASE SNAPSHOT: config/daily", docSnap.exists() ? "EXISTS" : "DOES NOT EXIST", docSnap.metadata.fromCache ? "(CACHE)" : "(SERVER)");
+
             if (docSnap.exists()) {
                 const remoteDaily = docSnap.data();
-                // Check specifically for gameRequests changes
+                console.log("📦 REMOTE DATA:", JSON.stringify(remoteDaily));
+
+                // 2A. REQUESTS
                 const localReqs = JSON.stringify(this.getDailyInfo().gameRequests || []);
                 const remoteReqs = JSON.stringify(remoteDaily.gameRequests || []);
 
                 if (localReqs !== remoteReqs) {
-                    console.log("☁️ Actualización recibida de Firebase: Solicitudes");
+                    console.log("☁️ UPDATE: Game Requests");
                     const info = this.getDailyInfo();
                     info.gameRequests = remoteDaily.gameRequests || [];
                     this._save();
-                    // Refresh Manager UI if needed
-                    if (typeof renderManagerDashboard === 'function' && document.getElementById('managertab-games')) {
-                        document.getElementById('managertab-games').click(); // Reload tab
+                    // UI Refresh...
+                    if (typeof window.renderManagerDashboard === 'function' && document.getElementById('managertab-games')) {
+                        if (window.CURRENT_MANAGER_TAB === 'games') document.querySelector('#managertab-games').click();
                     }
                 }
+
+                // 2B. GAMES
+                const localGames = JSON.stringify(this.getDailyInfo().games || []);
+                const remoteGames = JSON.stringify(remoteDaily.games || []);
+
+                console.log(`🎮 Comparing Games:\nLocal: ${this.getDailyInfo().games?.length} items\nRemote: ${remoteDaily.games?.length} items`);
+
+                if (localGames !== remoteGames) {
+                    console.log("☁️ UPDATE: Games detected! Overwriting local data.");
+                    const info = this.getDailyInfo();
+                    info.games = remoteDaily.games || [];
+                    this._save();
+
+                    // Refresh UIs
+                    // Manager:
+                    if (typeof window.renderManagerDashboard === 'function' && document.getElementById('managertab-games')) {
+                        console.log('🔄 Reloading Manager Game Tab');
+                        if (window.CURRENT_MANAGER_TAB === 'games') document.querySelector('#managertab-games').click();
+                    }
+                    // Hostess
+                    if (typeof window.renderHostessDashboard === 'function' && document.getElementById('content-tables')) {
+                        console.log('🔄 Refreshing Hostess UI for Games Update (Games Changed)');
+                        window.renderHostessDashboard();
+                    }
+                } else {
+                    console.log("🎮 Games are identical. No update needed.");
+                }
+            } else {
+                console.warn("⚠️ config/daily document does not exist in Firestore! Manager needs to create it.");
             }
+        }, (error) => {
+            console.error("🔥 Error listening to config/daily:", error);
         });
 
         // 3. SYNC CUSTOMERS
@@ -977,7 +1054,17 @@ class Store {
 
     _load() {
         const s = localStorage.getItem(STORE_KEY);
-        return s ? JSON.parse(s) : JSON.parse(JSON.stringify(INITIAL_DATA));
+        if (s) {
+            const parsed = JSON.parse(s);
+            // CRITICAL FIX: If local data has NO games but initialization expects them,
+            // or if structure is old, we might want to merge or reset dailyInfo part.
+            // For now, let's just trust it but verify dailyInfo exists.
+            if (!parsed.dailyInfo) {
+                parsed.dailyInfo = JSON.parse(JSON.stringify(INITIAL_DATA.dailyInfo));
+            }
+            return parsed;
+        }
+        return JSON.parse(JSON.stringify(INITIAL_DATA));
     }
 
     _save() {
@@ -1913,25 +2000,66 @@ class Store {
         const info = this.getDailyInfo();
         info.games = games;
         this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
+                .catch(e => console.error('🔥 Sync update games error', e));
+        }
     }
 
-    addGame(sport, league, teams, time) {
+    addGame(arg1, league, teams, time) {
+        // Support both signatures:
+        // 1. addGame({ league, homeTeam, awayTeam, time }) -> Used by Manager App
+        // 2. addGame(sport, league, teams, time) -> Legacy / Internal
+        let gameData = {};
+
+        if (typeof arg1 === 'object') {
+            gameData = {
+                sport: 'General', // Default if object passed
+                league: arg1.league,
+                homeTeam: arg1.homeTeam,
+                awayTeam: arg1.awayTeam,
+                teams: arg1.homeTeam + ' vs ' + arg1.awayTeam,
+                time: arg1.time
+            };
+        } else {
+            gameData = {
+                sport: arg1,
+                league: league,
+                teams: teams,
+                time: time
+            };
+        }
+
         const info = this.getDailyInfo();
         info.games.push({
             id: 'g' + Date.now(),
-            sport,
-            league,
-            teams,
-            time,
+            ...gameData,
             date: new Date().toISOString().split('T')[0]
         });
         this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
+                .catch(e => console.error('🔥 Sync add game error', e));
+        }
     }
 
     deleteGame(index) {
         const info = this.getDailyInfo();
         info.games.splice(index, 1);
         this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
+                .catch(e => console.error('🔥 Sync delete game error', e));
+        }
     }
 
     // === PROMOS ===
@@ -2206,6 +2334,13 @@ class Store {
         };
         info.games.push(newGame);
         this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
+                .catch(e => console.error('🔥 Sync add game error', e));
+        }
         return newGame;
     }
 

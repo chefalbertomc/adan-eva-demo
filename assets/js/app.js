@@ -19,9 +19,25 @@ function navigateTo(view, params = {}) {
       renderBranchSelect();
       break;
     case 'hostess-dashboard':
+      if (STATE.user?.role !== 'hostess') {
+        alert('Acceso denegado: Se requiere rol Hostess');
+        renderLogin();
+        return;
+      }
       renderHostessDashboard();
       break;
     case 'waiter-dashboard':
+      // SECURITY CHECK: If Hostess tries to load Waiter Dashboard by mistake
+      if (STATE.user?.role !== 'waiter') {
+        console.error("⛔ Security Alert: User " + STATE.user?.username + " (Role: " + STATE.user?.role + ") tried to access Waiter Dashboard.");
+        // If role is hostess, force redirect to hostess dashboard
+        if (STATE.user?.role === 'hostess') {
+          navigateTo('hostess-dashboard');
+          return;
+        }
+        renderLogin();
+        return;
+      }
       renderWaiterDashboard();
       break;
     case 'waiter-detail':
@@ -131,16 +147,28 @@ function handleLogin() {
     // localStorage.setItem('ADANYEVA_SESSION', JSON.stringify({ user, branch: STATE.branch }));
 
     // Redirect
-    if (user.role === 'waiter') {
-      navigateTo('waiter-dashboard');
-    } else if (user.role === 'hostess') {
-      navigateTo('hostess-dashboard');
-    } else if (user.role === 'manager') {
-      navigateTo('manager-dashboard');
-    } else if (user.role === 'regional') {
-      navigateTo('regional-dashboard');
-    } else if (user.role === 'admin') {
-      navigateTo('super-admin-dashboard');
+    console.log('Login successful. Role:', user.role);
+
+    // STRICT REDIRECTION BY ROLE
+    switch (user.role) {
+      case 'waiter':
+        navigateTo('waiter-dashboard');
+        break;
+      case 'hostess':
+        navigateTo('hostess-dashboard');
+        break;
+      case 'manager':
+        navigateTo('manager-dashboard');
+        break;
+      case 'regional':
+        navigateTo('regional-dashboard');
+        break;
+      case 'admin':
+        navigateTo('super-admin-dashboard');
+        break;
+      default:
+        alert('Rol desconocido: ' + user.role);
+        renderLogin();
     }
   } else {
     alert('Credenciales inválidas');
@@ -4138,6 +4166,8 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
 
   // Get active visits for badge count
   const activeVisits = window.db.getActiveVisitsByBranch(branchId);
+  window.CURRENT_MANAGER_TAB = activeTab;
+
 
   const div = document.createElement('div');
   div.className = 'bg-gray-900 min-h-screen pb-24'; // Padding for bottom nav
@@ -4151,8 +4181,13 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
          </h1>
          <p class="text-[10px] text-gray-400 font-mono">${STATE.branch.name} • ${STATE.user.name}</p>
        </div>
-       <div class="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded border border-blue-800 font-mono">
-          ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+       <div class="flex items-center gap-2">
+           <button onclick="renderManagerDashboard(window.CURRENT_MANAGER_TAB || 'tables')" class="text-xs bg-gray-700 hover:bg-yellow-600 hover:text-black text-yellow-500 px-3 py-1 rounded border border-yellow-600/50 transition-colors uppercase font-bold flex items-center gap-1">
+             🔄 Actualizar
+           </button>
+           <div class="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded border border-blue-800 font-mono">
+              ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+           </div>
        </div>
     </header>
     
@@ -4228,9 +4263,14 @@ function renderManagerGameRequests(container) {
 
 function renderManagerTablesTab(container) {
   const branchId = STATE.branch?.id;
+  console.log(`🍽️ MANAGER: Rendering Tables for BranchID: "${branchId}"`);
   // Sort by table number if possible, or naturally
   const activeVisits = window.db.getActiveVisitsByBranch(branchId)
-    .sort((a, b) => parseInt(a.table) - parseInt(b.table));
+    .sort((a, b) => {
+      const tA = a.table.toString();
+      const tB = b.table.toString();
+      return tA.localeCompare(tB, undefined, { numeric: true, sensitivity: 'base' });
+    });
 
   const prospects = window.db.getProspects();
 
