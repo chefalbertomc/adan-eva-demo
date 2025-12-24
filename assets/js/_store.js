@@ -773,44 +773,62 @@ class Store {
         this._syncMenu();
 
         // === FIREBASE SYNC ===
-        // Wait for Firebase to be ready
-        // === FIREBASE SYNC ===
-        // Wait for Firebase to be ready
         const startSync = async () => {
-            if (window.dbFirestore && !this.syncStarted) {
-                console.log('🚀 Starting Firebase Realtime Sync...');
-                this.syncStarted = true;
+            // Wait for dbFirestore to be actually available
+            if (!window.dbFirestore || !window.FB) {
+                console.log('⏳ Firebase not ready yet, waiting...');
+                return;
+            }
 
-                // 1. FORCE INITIAL FETCH (To fix "refresh doesn't show data" issue)
-                try {
-                    const { doc, getDoc } = window.FB;
-                    const dailyRef = doc(window.dbFirestore, "config", "daily");
-                    const snapshot = await getDoc(dailyRef);
-                    if (snapshot.exists()) {
-                        console.log("📥 INITIAL FETCH: Daily config loaded immediately.");
-                        const remoteData = snapshot.data();
+            if (this.syncStarted) return;
 
-                        // Merge immediately
-                        const info = this.getDailyInfo();
-                        info.games = remoteData.games || [];
-                        info.gameRequests = remoteData.gameRequests || [];
-                        this._save();
-                        console.log("✅ Initial Data Merged. Games count:", info.games.length);
-                    }
-                } catch (e) {
-                    console.error("⚠️ Initial fetch failed, relying on listeners:", e);
+            console.log('🚀 Starting Firebase Realtime Sync...');
+            this.syncStarted = true;
+
+            try {
+                // Ensure FB functions are available
+                const { doc, getDoc, collection, onSnapshot } = window.FB;
+                if (!doc || !getDoc || !collection || !onSnapshot) {
+                    console.error("❌ Firebase helpers (FB) incomplete", window.FB);
+                    return;
+                }
+
+                // 1. FORCE INITIAL FETCH
+                const dailyRef = doc(window.dbFirestore, "config", "daily");
+                const snapshot = await getDoc(dailyRef);
+                if (snapshot.exists()) {
+                    console.log("📥 INITIAL FETCH: Daily config loaded.");
+                    const remoteData = snapshot.data();
+                    const info = this.getDailyInfo();
+                    info.games = remoteData.games || [];
+                    info.gameRequests = remoteData.gameRequests || [];
+                    this._save();
                 }
 
                 // 2. Start Listeners
                 this.initRealtimeSync();
+
+            } catch (e) {
+                console.error("⚠️ Firebase Sync Error:", e);
             }
         };
 
-        if (window.dbFirestore) startSync();
+        // Try immediately
+        if (window.dbFirestore) {
+            startSync();
+        }
+
+        // Also listen for the custom event from index.html
         window.addEventListener('firebase-ready', startSync);
+
+        // Backup: Try again in 1s and 3s just in case
+        setTimeout(startSync, 1000);
+        setTimeout(startSync, 3000);
     }
 
     initRealtimeSync() {
+        if (!window.FB || !window.dbFirestore) return;
+
         const { onSnapshot, collection, query, where, doc } = window.FB;
         const db = window.dbFirestore;
 
@@ -1103,7 +1121,7 @@ class Store {
     isTableOccupied(table, branchId) {
         return this.data.visits.some(v =>
             v.branchId === branchId &&
-            v.table === table &&
+            String(v.table) === String(table) &&
             v.status === 'active'
         );
     }
