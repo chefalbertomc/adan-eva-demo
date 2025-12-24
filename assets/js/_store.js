@@ -824,6 +824,26 @@ class Store {
         // Backup: Try again in 1s and 3s just in case
         setTimeout(startSync, 1000);
         setTimeout(startSync, 3000);
+
+        this.listeners = [];
+    }
+
+    addListener(callback) {
+        this.listeners.push(callback);
+        // Returns unsubscribe function
+        return () => {
+            this.listeners = this.listeners.filter(cb => cb !== callback);
+        };
+    }
+
+    notifyListeners() {
+        this.listeners.forEach(cb => {
+            try {
+                cb();
+            } catch (e) {
+                console.error("Listener error:", e);
+            }
+        });
     }
 
     initRealtimeSync() {
@@ -1096,7 +1116,12 @@ class Store {
     }
 
     _save() {
-        localStorage.setItem(STORE_KEY, JSON.stringify(this.data));
+        try {
+            localStorage.setItem(STORE_KEY, JSON.stringify(this.data));
+            this.notifyListeners();
+        } catch (e) {
+            console.error('Error saving data:', e);
+        }
     }
 
     login(username, password) {
