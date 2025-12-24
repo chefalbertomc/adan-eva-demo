@@ -1605,6 +1605,17 @@ function renderWaiterDashboard() {
     return;
   }
 
+  // Subscribe to updates for real-time reactivity
+  if (!window.waiterSubscription) {
+    window.waiterSubscription = window.db.addListener(() => {
+      if (STATE.view === 'waiter-dashboard') {
+        const currentScroll = window.scrollY; // Preserve scroll
+        renderWaiterDashboard();
+        window.scrollTo(0, currentScroll);
+      }
+    });
+  }
+
   const visits = window.db ? window.db.getActiveVisits(STATE.user.id) : []; // Guard against db issues
   const dailyInfo = window.db ? window.db.getDailyInfo() : {};
 
