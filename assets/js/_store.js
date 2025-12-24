@@ -1146,7 +1146,7 @@ class Store {
     isTableOccupied(table, branchId) {
         return this.data.visits.some(v =>
             v.branchId === branchId &&
-            String(v.table) === String(table) &&
+            String(v.table).trim() === String(table).trim() &&
             v.status === 'active'
         );
     }
