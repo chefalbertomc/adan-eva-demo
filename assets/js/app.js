@@ -1597,60 +1597,61 @@ function manageVisit(visitId) {
 // ------ WAITER ------
 
 function renderWaiterDashboard() {
-  appContainer.innerHTML = '';
-  // SAFETY CHECK
-  if (!STATE.user || !STATE.user.id) {
-    console.warn("Waiter dashboard accessed without user.");
-    renderLogin();
-    return;
-  }
+  try {
+    appContainer.innerHTML = '';
+    // SAFETY CHECK
+    if (!STATE.user || !STATE.user.id) {
+      console.warn("Waiter dashboard accessed without user.");
+      renderLogin();
+      return;
+    }
 
-  // Subscribe to updates for real-time reactivity
-  if (!window.waiterSubscription) {
-    window.waiterSubscription = window.db.addListener(() => {
-      if (STATE.view === 'waiter-dashboard') {
-        const currentScroll = window.scrollY; // Preserve scroll
-        renderWaiterDashboard();
-        window.scrollTo(0, currentScroll);
-      }
-    });
-  }
+    // Subscribe to updates for real-time reactivity
+    if (!window.waiterSubscription) {
+      window.waiterSubscription = window.db.addListener(() => {
+        if (STATE.view === 'waiter-dashboard') {
+          const currentScroll = window.scrollY; // Preserve scroll
+          renderWaiterDashboard();
+          window.scrollTo(0, currentScroll);
+        }
+      });
+    }
 
-  const visits = window.db ? window.db.getActiveVisits(STATE.user.id) : []; // Guard against db issues
-  const dailyInfo = window.db ? window.db.getDailyInfo() : {};
+    const visits = window.db ? window.db.getActiveVisits(STATE.user.id) : []; // Guard against db issues
+    const dailyInfo = window.db ? window.db.getDailyInfo() : {};
 
-  const div = document.createElement('div');
-  div.className = 'p-4 max-w-4xl mx-auto pb-20';
+    const div = document.createElement('div');
+    div.className = 'p-4 max-w-4xl mx-auto pb-20';
 
-  let mesasHtml = visits.length === 0
-    ? `<div class="text-center py-12">
+    let mesasHtml = visits.length === 0
+      ? `<div class="text-center py-12">
         <div class="text-6xl mb-4">🍽️</div>
         <p class="text-xl text-secondary">No tienes mesas activas</p>
         <p class="text-sm text-gray-400 mt-2">Espera a que Hostess te asigne mesas</p>
        </div>`
-    : visits.map(v => {
-      const classification = window.db.getCustomerClassification(v.customerId);
-      const badge = window.ClientClassifier ? window.ClientClassifier.getBadgeHTML(classification) : '';
+      : visits.map(v => {
+        const classification = window.db.getCustomerClassification(v.customerId);
+        const badge = window.ClientClassifier ? window.ClientClassifier.getBadgeHTML(classification) : '';
 
-      // Time Calculation
-      const startTime = new Date(v.date);
-      const now = new Date();
-      const diffMs = now - startTime;
-      const diffMins = Math.floor(diffMs / 60000);
-      const hours = Math.floor(diffMins / 60);
-      const mins = diffMins % 60;
-      const timeElapsed = hours > 0 ? `${hours}h ${mins}m` : `${mins} min`;
-      const timeColor = diffMins > 120 ? '#EF4444' : diffMins > 60 ? '#F59E0B' : '#22C55E';
+        // Time Calculation
+        const startTime = new Date(v.date);
+        const now = new Date();
+        const diffMs = now - startTime;
+        const diffMins = Math.floor(diffMs / 60000);
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+        const timeElapsed = hours > 0 ? `${hours}h ${mins}m` : `${mins} min`;
+        const timeColor = diffMins > 120 ? '#EF4444' : diffMins > 60 ? '#F59E0B' : '#22C55E';
 
-      // Determine Sport Icon
-      let sportIcon = '📺';
-      if (v.reason === 'Partido' && v.selectedGame) {
-        const game = window.db.getMatches().find(m => (m.match || (m.homeTeam + ' vs ' + m.awayTeam)) === v.selectedGame);
-        if (game && game.league) sportIcon = window.getSportIcon(game.league);
-      }
+        // Determine Sport Icon
+        let sportIcon = '📺';
+        if (v.reason === 'Partido' && v.selectedGame) {
+          const game = window.db.getMatches().find(m => (m.match || (m.homeTeam + ' vs ' + m.awayTeam)) === v.selectedGame);
+          if (game && game.league) sportIcon = window.getSportIcon(game.league);
+        }
 
-      const reasonDisplay = v.reason === 'Partido'
-        ? `<div class="flex items-start gap-3">
+        const reasonDisplay = v.reason === 'Partido'
+          ? `<div class="flex items-start gap-3">
                  <div class="text-4xl filter drop-shadow-md">${sportIcon}</div>
                  <div class="flex-1">
                     <div class="text-sm text-green-400 font-bold uppercase tracking-widest mb-1">PARTIDO</div>
@@ -1660,9 +1661,9 @@ function renderWaiterDashboard() {
                     ${v.isFavoriteTeamMatch ? '<div class="mt-2 inline-block bg-yellow-500 text-black text-xs font-black px-2 py-1 rounded shadow-lg animate-pulse">🌟 EQUIPO FAVORITO</div>' : ''}
                  </div>
              </div>`
-        : (v.reason === 'Cumpleaños' ? '🎂 CUMPLEAÑOS' : (v.reason === 'Negocios' ? '💼 NEGOCIOS' : (v.reason || '🍽️ COMER')));
+          : (v.reason === 'Cumpleaños' ? '🎂 CUMPLEAÑOS' : (v.reason === 'Negocios' ? '💼 NEGOCIOS' : (v.reason || '🍽️ COMER')));
 
-      return `
+        return `
         <div class="card border-l-8 border-yellow-500 p-5 mb-5 shadow-2xl bg-gray-900/80">
           <!-- HEADER -->
           <div class="flex justify-between items-start mb-4">
@@ -1706,7 +1707,7 @@ function renderWaiterDashboard() {
         </div>
       `}).join('');
 
-  div.innerHTML = `
+    div.innerHTML = `
     <header class="flex justify-between items-center mb-6">
       <div>
         <h2 class="text-accent text-xl md:text-2xl">Mesero | ${STATE.user.name}</h2>
@@ -1724,44 +1725,44 @@ function renderWaiterDashboard() {
       <div class="card bg-blue-900/20 border-2 border-blue-500">
         <h3 class="text-xl font-bold mb-4 text-blue-300">🏈 Partidos de Hoy</h3>
         ${(() => {
-      const games = dailyInfo.games || [];
-      if (games.length === 0) return '<p class="text-gray-400 italic">Sin partidos programados.</p>';
+        const games = dailyInfo.games || [];
+        if (games.length === 0) return '<p class="text-gray-400 italic">Sin partidos programados.</p>';
 
-      // Group by sport
-      const grouped = {};
-      games.forEach(game => {
-        const sport = game.sport || 'Otros';
-        if (!grouped[sport]) grouped[sport] = [];
-        grouped[sport].push(game);
-      });
-
-      // Sort each group by time
-      Object.keys(grouped).forEach(sport => {
-        grouped[sport].sort((a, b) => {
-          const timeA = a.time ? a.time.replace(':', '') : '9999';
-          const timeB = b.time ? b.time.replace(':', '') : '9999';
-          return timeA.localeCompare(timeB);
+        // Group by sport
+        const grouped = {};
+        games.forEach(game => {
+          const sport = game.sport || 'Otros';
+          if (!grouped[sport]) grouped[sport] = [];
+          grouped[sport].push(game);
         });
-      });
 
-      // Render grouped
-      // Icon mapping based on sport names
-      const getSportIcon = (sport) => {
-        const s = sport.toLowerCase();
-        if (s.includes('football') || s.includes('americano')) return '🏈';
-        if (s.includes('basket')) return '🏀';
-        if (s.includes('soccer') || s.includes('futbol') || s.includes('fútbol')) return '⚽';
-        if (s.includes('baseball') || s.includes('beisbol')) return '⚾';
-        if (s.includes('hockey')) return '🏒';
-        if (s.includes('tennis') || s.includes('tenis')) return '🎾';
-        if (s.includes('golf')) return '⛳';
-        if (s.includes('box')) return '🥊';
-        if (s.includes('mma') || s.includes('ufc')) return '🥋';
-        if (s.includes('f1') || s.includes('formula') || s.includes('nascar')) return '🏎️';
-        return '🏆';
-      };
+        // Sort each group by time
+        Object.keys(grouped).forEach(sport => {
+          grouped[sport].sort((a, b) => {
+            const timeA = a.time ? a.time.replace(':', '') : '9999';
+            const timeB = b.time ? b.time.replace(':', '') : '9999';
+            return timeA.localeCompare(timeB);
+          });
+        });
 
-      return Object.keys(grouped).map(sport => `
+        // Render grouped
+        // Icon mapping based on sport names
+        const getSportIcon = (sport) => {
+          const s = sport.toLowerCase();
+          if (s.includes('football') || s.includes('americano')) return '🏈';
+          if (s.includes('basket')) return '🏀';
+          if (s.includes('soccer') || s.includes('futbol') || s.includes('fútbol')) return '⚽';
+          if (s.includes('baseball') || s.includes('beisbol')) return '⚾';
+          if (s.includes('hockey')) return '🏒';
+          if (s.includes('tennis') || s.includes('tenis')) return '🎾';
+          if (s.includes('golf')) return '⛳';
+          if (s.includes('box')) return '🥊';
+          if (s.includes('mma') || s.includes('ufc')) return '🥋';
+          if (s.includes('f1') || s.includes('formula') || s.includes('nascar')) return '🏎️';
+          return '🏆';
+        };
+
+        return Object.keys(grouped).map(sport => `
             <div class="mb-6 last:mb-0">
               <div class="flex items-center gap-2 mb-3 border-b border-blue-500/30 pb-2">
                 <span class="text-2xl">${getSportIcon(sport)}</span>
@@ -1781,7 +1782,7 @@ function renderWaiterDashboard() {
               </div>
             </div>
           `).join('');
-    })()}
+      })()}
       </div>
     </div>
     
@@ -1790,9 +1791,9 @@ function renderWaiterDashboard() {
       <div class="card bg-green-900/20 border-2 border-green-500">
         <h3 class="text-xl font-bold mb-4 text-green-300">🎁 Promociones del Día</h3>
         ${(() => {
-      const activePromos = window.db.getActivePromos();
-      if (activePromos.length === 0) return '<p class="text-gray-400 italic">Sin promociones activas.</p>';
-      return `
+        const activePromos = window.db.getActivePromos();
+        if (activePromos.length === 0) return '<p class="text-gray-400 italic">Sin promociones activas.</p>';
+        return `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               ${activePromos.map(promo => `
                 <div class="bg-black/50 p-4 rounded-lg border border-green-400">
@@ -1802,7 +1803,7 @@ function renderWaiterDashboard() {
               `).join('')}
             </div>
           `;
-    })()}
+      })()}
       </div>
     </div>
     
@@ -1811,9 +1812,9 @@ function renderWaiterDashboard() {
       <div class="card bg-purple-900/20 border-2 border-purple-500">
         <h3 class="text-xl font-bold mb-4 text-purple-300">🎯 Dinámica del Día</h3>
         ${(() => {
-      const dynamic = window.db.getActiveDynamic();
-      if (!dynamic) return '<p class="text-gray-400 italic">Sin dinámicas activas hoy.</p>';
-      return `
+        const dynamic = window.db.getActiveDynamic();
+        if (!dynamic) return '<p class="text-gray-400 italic">Sin dinámicas activas hoy.</p>';
+        return `
             <div class="bg-black/50 p-4 rounded-lg border border-purple-400 mb-6">
               <div class="text-2xl font-black text-yellow-400 mb-2">${dynamic.title}</div>
               <div class="text-lg text-gray-300">${dynamic.description}</div>
@@ -1823,13 +1824,13 @@ function renderWaiterDashboard() {
             ${(dynamic.scores || []).length === 0 ? '<p class="text-gray-400 italic text-sm">Aún no hay puntuaciones.</p>' : `
               <div class="space-y-2">
                 ${dynamic.scores.map((entry, idx) => {
-        const medals = ['🥇', '🥈', '🥉'];
-        const medal = medals[idx] || (idx + 1) + '.';
-        const bgColors = ['bg-yellow-600/30', 'bg-gray-500/30', 'bg-orange-600/30'];
-        const bgColor = bgColors[idx] || 'bg-gray-800/30';
-        const isMe = entry.odoo_id === STATE.user.odoo_id || entry.odoo_id === STATE.user.id;
+          const medals = ['🥇', '🥈', '🥉'];
+          const medal = medals[idx] || (idx + 1) + '.';
+          const bgColors = ['bg-yellow-600/30', 'bg-gray-500/30', 'bg-orange-600/30'];
+          const bgColor = bgColors[idx] || 'bg-gray-800/30';
+          const isMe = entry.odoo_id === STATE.user.odoo_id || entry.odoo_id === STATE.user.id;
 
-        return `
+          return `
                     <div class="${bgColor} p-3 rounded-lg border ${idx === 0 ? 'border-yellow-400' : 'border-gray-600'} ${isMe ? 'ring-2 ring-green-500' : ''} flex justify-between items-center">
                       <div class="flex items-center gap-3">
                         <span class="text-2xl">${medal}</span>
@@ -1840,11 +1841,11 @@ function renderWaiterDashboard() {
                       <div class="text-3xl font-black text-yellow-400">${entry.score}</div>
                     </div>
                   `;
-      }).join('')}
+        }).join('')}
               </div>
             `}
           `;
-    })()}
+      })()}
       </div>
     </div>
     
@@ -1854,20 +1855,20 @@ function renderWaiterDashboard() {
         <h3 class="text-xl font-bold mb-4 text-red-300">📦 Productos (86 / 85 / Push)</h3>
         
         ${(() => {
-      const prods = dailyInfo.products || { outOfStock86: [], lowStock85: [], push: [] };
-      const barraProds = {
-        p86: (prods.outOfStock86 || []).filter(p => p.category === 'barra'),
-        p85: (prods.lowStock85 || []).filter(p => p.category === 'barra'),
-        push: (prods.push || []).filter(p => p.category === 'barra')
-      };
+        const prods = dailyInfo.products || { outOfStock86: [], lowStock85: [], push: [] };
+        const barraProds = {
+          p86: (prods.outOfStock86 || []).filter(p => p.category === 'barra'),
+          p85: (prods.lowStock85 || []).filter(p => p.category === 'barra'),
+          push: (prods.push || []).filter(p => p.category === 'barra')
+        };
 
-      const hasAny = barraProds.p86.length > 0 || barraProds.p85.length > 0 || barraProds.push.length > 0;
+        const hasAny = barraProds.p86.length > 0 || barraProds.p85.length > 0 || barraProds.push.length > 0;
 
-      if (!hasAny) {
-        return '<p class="text-green-400 font-bold text-center py-6">¡Todo disponible hoy! 🎉</p>';
-      }
+        if (!hasAny) {
+          return '<p class="text-green-400 font-bold text-center py-6">¡Todo disponible hoy! 🎉</p>';
+        }
 
-      return `
+        return `
             <div class="space-y-4">
               ${barraProds.p86.length > 0 ? `
                 <div>
@@ -1912,7 +1913,7 @@ function renderWaiterDashboard() {
               ` : ''}
             </div>
           `;
-    })()}
+      })()}
       </div>
     </div>
 
@@ -1955,9 +1956,18 @@ function renderWaiterDashboard() {
     </div>
   `;
 
-  // Add class for bottom nav padding
-  div.className = 'p-4 max-w-4xl mx-auto has-bottom-nav';
-  appContainer.appendChild(div);
+    // Add class for bottom nav padding
+    div.className = 'p-4 max-w-4xl mx-auto has-bottom-nav';
+    appContainer.appendChild(div);
+  } catch (error) {
+    console.error("🔥 Error rendering Waiter Dashboard:", error);
+    appContainer.innerHTML = `<div class="p-10 text-center text-red-500">
+        <h1 class="text-4xl">⚠️ Error</h1>
+        <p>${error.message}</p>
+        <p class="text-sm mt-4">${error.stack}</p>
+        <button onclick="window.location.reload()" class="mt-8 bg-yellow-500 text-black px-6 py-3 rounded font-bold">RECARGAR</button>
+    </div>`;
+  }
 }
 
 function switchWaiterTab(tabName) {
