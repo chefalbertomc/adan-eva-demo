@@ -1762,7 +1762,7 @@ function renderWaiterDashboard() {
                   <div class="bg-black/50 p-3 rounded-lg border border-blue-400/50 flex justify-between items-center">
                     <div>
                       <div class="text-xs text-blue-300 font-bold">${game.league || ''}</div>
-                      <div class="text-lg font-bold text-white">${game.teams}</div>
+                      <div class="text-lg font-bold text-white">${game.match || (game.homeTeam + ' vs ' + game.awayTeam)}</div>
                     </div>
                     <div class="text-2xl font-black text-yellow-400">${game.time}</div>
                   </div>
