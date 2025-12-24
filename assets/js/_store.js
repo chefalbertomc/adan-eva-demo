@@ -1,5 +1,5 @@
 
-const STORE_KEY = 'ADANYEVA_DATA_V1';
+const STORE_KEY = 'ADANYEVA_DATA_V3';
 
 // --- GLOBAL MENU DATA ---
 // Moved outside so GENERATE_DATA can access it for realistic history
@@ -394,7 +394,7 @@ const GENERATE_DATA = () => {
     // Helper: Get waiters for specific branch
     const getWaiterIdsForBranch = (branchId) => {
         if (branchId === 'juriquilla') {
-            return ['wj1', 'wj2', 'wj3', 'wj4', 'wj5', 'wj6', 'wj7', 'wj8', 'wj9', 'wj10', 'wj11', 'wj12', 'wj13'];
+            return ['wj1', 'wj2', 'wj3', 'wj4', 'wj5', 'wj6', 'wj7', 'wj8', 'wj9', 'wj10', 'wj11', 'wj12', 'wj13', 'wj14'];
         } else if (branchId === 'alamos') {
             return ['wa1', 'wa2', 'wa3', 'wa4', 'wa5', 'wa6', 'wa7', 'wa8', 'wa9', 'wa10', 'wa11'];
         } else if (branchId === 'paseo') {
@@ -646,8 +646,8 @@ const INITIAL_DATA = {
 
         // JURIQUILLA - Meseros (13): 8 servers, 3 barra, 2 caja
         { id: 'wj1', username: '1060', password: '1977', role: 'waiter', name: 'Alejandro Ortiz Martínez', position: 'SERVER', branchId: 'juriquilla' },
-        { id: 'wj2', username: 'mario.esperanza', password: '123', role: 'waiter', name: 'Mario Esperanza González', position: 'SERVER', branchId: 'juriquilla' },
-        { id: 'wj3', username: 'santiago.pacheco', password: '123', role: 'waiter', name: 'Santiago Pacheco Ferreiro', position: 'SERVER', branchId: 'juriquilla' },
+        { id: 'wj2', username: '1604', password: 'oneway91', role: 'waiter', name: 'Mario Esperanza González', position: 'SERVER', branchId: 'juriquilla' },
+        { id: 'wj3', username: '1033', password: '63313', role: 'waiter', name: 'Santiago Pacheco Ferreiro', position: 'SERVER', branchId: 'juriquilla' },
         { id: 'wj4', username: 'jessica.ortiz', password: '123', role: 'waiter', name: 'Jessica Ortiz Hernández', position: 'SERVER', branchId: 'juriquilla' },
         { id: 'wj5', username: '10586', password: '4578', role: 'waiter', name: 'Anahí Briones Rodriguez', position: 'SERVER', branchId: 'juriquilla' },
         { id: 'wj6', username: '10570', password: '1302', role: 'waiter', name: 'Jekob Guerrero Barron', position: 'SERVER', branchId: 'juriquilla' },
@@ -658,6 +658,7 @@ const INITIAL_DATA = {
         { id: 'wj11', username: 'mario.lobera', password: '123', role: 'waiter', name: 'Mario Lobera Huerta', position: 'BARRA', branchId: 'juriquilla' },
         { id: 'wj12', username: 'jaime.vazquez', password: '123', role: 'waiter', name: 'Jaime Vazquez Maldonado', position: 'CAJA', branchId: 'juriquilla' },
         { id: 'wj13', username: 'brenda.cruz', password: '123', role: 'waiter', name: 'Brenda Cruz Rocio', position: 'CAJA', branchId: 'juriquilla' },
+        { id: 'wj14', username: '10780', password: '12345', role: 'waiter', name: 'Samantha Mesera', position: 'SERVER', branchId: 'juriquilla' },
 
         // ALAMOS - Meseros (11): 9 servers, 2 barra
         { id: 'wa1', username: 'veronica.camacho', password: '123', role: 'waiter', name: 'Verónica Camacho de Santiago', position: 'SERVER', branchId: 'alamos' },
@@ -852,6 +853,15 @@ class Store {
 
                 // Use setTimeout to allow logic to settle before rendering logic checks the DOM
                 setTimeout(() => {
+                    // PROTECTION: Don't refresh if user is typing!
+                    const activeTag = document.activeElement ? document.activeElement.tagName : '';
+                    const isTyping = (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT');
+
+                    if (isTyping) {
+                        console.log('⚠️ Skipping Auto-Refresh because user is typing/selecting');
+                        return;
+                    }
+
                     // Force UI Refresh if on dashboard
                     if (typeof window.renderHostessDashboard === 'function' && document.getElementById('content-tables')) {
                         console.log('🔄 Refreshing Hostess UI (Auto)');
@@ -2038,49 +2048,119 @@ class Store {
         }
     }
 
+    // Request a game to be added (Hostess -> Manager)
+    requestGame(gameName) {
+        if (!gameName) return;
+
+        // Check duplication
+        const info = this.getDailyInfo();
+        const existingReq = (info.gameRequests || []).find(r => r.name === gameName);
+        if (existingReq) return; // Already requested
+
+        const newReq = {
+            id: 'req_' + Date.now(),
+            name: gameName,
+            createdAt: new Date().toISOString()
+        };
+
+        if (!info.gameRequests) info.gameRequests = [];
+        info.gameRequests.push(newReq);
+        this._save();
+
+        // Sync to Firebase
+        if (window.dbFirestore && window.FB) {
+            const { doc, updateDoc, arrayUnion } = window.FB;
+            updateDoc(doc(window.dbFirestore, 'config', 'daily'), {
+                gameRequests: arrayUnion(newReq)
+            }).then(() => {
+                console.log('📨 Game Request sent to Manager:', gameName);
+                if (typeof alert === 'function') alert(`✅ Solicitud enviada al Gerente: "${gameName}"`);
+            }).catch(e => console.error('🔥 Error sending game request:', e));
+        }
+    }
+
     addGame(arg1, league, teams, time) {
         // Support both signatures:
         // 1. addGame({ league, homeTeam, awayTeam, time }) -> Used by Manager App
         // 2. addGame(sport, league, teams, time) -> Legacy / Internal
         let gameData = {};
 
+        // Extraction variables for Learning
+        let homeToLearn = '';
+        let awayToLearn = '';
+
         if (typeof arg1 === 'object') {
             gameData = {
-                sport: 'General', // Default if object passed
+                sport: 'General',
                 league: arg1.league,
                 homeTeam: arg1.homeTeam,
                 awayTeam: arg1.awayTeam,
                 teams: arg1.homeTeam + ' vs ' + arg1.awayTeam,
-                match: arg1.homeTeam + ' vs ' + arg1.awayTeam, // BACKWARD COMPATIBILITY
+                match: arg1.homeTeam + ' vs ' + arg1.awayTeam,
                 time: arg1.time
             };
+            homeToLearn = arg1.homeTeam;
+            awayToLearn = arg1.awayTeam;
         } else {
             gameData = {
                 sport: arg1,
                 league: league,
                 teams: teams,
-                match: teams, // BACKWARD COMPATIBILITY
-                time: time
+                match: teams,
+                time: time,
+                // Attempt to extract for learning if possible
+                homeTeam: (teams || '').split(' vs ')[0] || 'Local',
+                awayTeam: (teams || '').split(' vs ')[1] || 'Visitante'
             };
+            homeToLearn = gameData.homeTeam;
+            awayToLearn = gameData.awayTeam;
         }
 
-        const info = this.getDailyInfo();
-        info.games.push({
-            id: 'g' + Date.now(),
-            ...gameData,
-            date: new Date().toISOString().split('T')[0]
-        });
-        this._save();
-
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, setDoc } = window.FB;
-            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
-                .catch(e => console.error('🔥 Sync add game error', e));
+        // LEARNING PHASE
+        if (window.KNOWN_TEAMS) {
+            this.learnTeams(homeToLearn);
+            this.learnTeams(awayToLearn);
         }
+
+        const newGame = {
+            id: 'game_' + Date.now(),
+            league: gameData.league || 'General',
+            homeTeam: gameData.homeTeam || 'Local',
+            awayTeam: gameData.awayTeam || 'Visitante',
+            match: gameData.match || 'Partido',
+            time: gameData.time || '00:00',
+            sport: gameData.league // Simplified mapping
+        };
+
+        if (!this.data.dailyInfo.games) this.data.dailyInfo.games = [];
+        this.data.dailyInfo.games.push(newGame);
+        this.updateDailyGames(this.data.dailyInfo.games);
     }
 
-    deleteGame(index) {
+    learnTeams(teamName) {
+        if (!teamName || teamName === 'Local' || teamName === 'Visitante' || !window.KNOWN_TEAMS) return;
+
+        // Normalize check
+        const normalized = teamName.trim();
+
+        if (!window.KNOWN_TEAMS.includes(normalized)) {
+            console.log(`🧠 Learning new team: ${normalized}`);
+            window.KNOWN_TEAMS.push(normalized);
+            window.KNOWN_TEAMS.sort();
+
+            // Update UI
+            if (typeof window.updateTeamDatalist === 'function') window.updateTeamDatalist();
+
+            // Sync to Cloud
+            if (window.dbFirestore && window.FB) {
+                const { doc, setDoc, arrayUnion } = window.FB;
+                const configRef = doc(window.dbFirestore, 'config', 'teams');
+                setDoc(configRef, {
+                    list: arrayUnion(normalized)
+                }, { merge: true }).catch(e => console.error('🔥 Error learning team:', e));
+            }
+        }
+    } deleteGame(index) {
         const info = this.getDailyInfo();
         info.games.splice(index, 1);
         this._save();

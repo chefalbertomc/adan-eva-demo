@@ -84,34 +84,24 @@
   <!-- FIREBASE CONFIGURATION (CLOUD DATABASE) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, setDoc, getDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, setDoc, getDoc, query, where, getDocs, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAHSZYI1UQ7p_O3dl1-xU8c9zxFdjH9HFk",
-      authDomain: "adaneva-app.firebaseapp.com",
-      projectId: "adaneva-app",
-      storageBucket: "adaneva-app.firebasestorage.app",
-      messagingSenderId: "529719884304",
-      appId: "1:529719884304:web:94a49cb1c02a8b69af2895"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // ... (config) ...
 
     // Expose to global scope for _store.js
     window.dbFirestore = db;
-    window.FB = { collection, onSnapshot, addDoc, updateDoc, doc, setDoc, getDoc, query, where, getDocs, deleteDoc };
+    window.FB = { collection, onSnapshot, addDoc, updateDoc, doc, setDoc, getDoc, query, where, getDocs, deleteDoc, arrayUnion };
 
     console.log("🔥 Firebase Conectado y Listo");
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
 
   <!-- Scripts -->
-  <script src="assets/js/_store.js?v=15.0"></script>
-  <script src="assets/js/client-classifier.js?v=3.0"></script>
-  <script src="assets/js/hostess_helpers.js?v=15.0"></script>
-  <script src="assets/js/app.js?v=15.0"></script>
+  <!-- Scripts -->
+  <script src="assets/js/_store.js?v=15.4"></script>
+  <script src="assets/js/client-classifier.js?v=3.4"></script>
+  <script src="assets/js/hostess_helpers.js?v=15.4"></script>
+  <script src="assets/js/app.js?v=15.4"></script>
 
   <script>
     // Hide splash after app loads - REDUCED DELAY for old tablets

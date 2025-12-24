@@ -8,18 +8,31 @@ let STATE = {
 const appContainer = document.getElementById('app');
 
 // Database of Standard Team Names for Autocomplete
+// Database of Standard Team Names for Autocomplete (Full Names for better search)
 window.KNOWN_TEAMS = [
   // LIGA MX
-  "América", "Chivas", "Cruz Azul", "Pumas", "Tigres", "Monterrey", "Toluca", "Santos", "Pachuca", "León", "Atlas", "Querétaro", "Puebla", "San Luis", "Mazatlán", "Necaxa", "Xolos", "Juárez",
+  "Club América", "Chivas Guadalajara", "Cruz Azul", "Pumas UNAM", "Tigres UANL", "Rayados Monterrey", "Toluca", "Santos Laguna", "Pachuca", "León", "Atlas", "Querétaro", "Puebla", "San Luis", "Mazatlán FC", "Necaxa", "Xolos Tijuana", "Juárez Bravos",
   // NFL
-  "Chiefs", "49ers", "Cowboys", "Steelers", "Patriots", "Eagles", "Ravens", "Bills", "Dolphins", "Jets", "Bengals", "Browns", "Texans", "Colts", "Jaguars", "Titans", "Broncos", "Raiders", "Chargers", "Giants", "Commanders", "Packers", "Lions", "Vikings", "Bears", "Buccaneers", "Saints", "Falcons", "Panthers", "Rams", "Seahawks", "Cardinals",
+  "Kansas City Chiefs", "San Francisco 49ers", "Dallas Cowboys", "Pittsburgh Steelers", "New England Patriots", "Philadelphia Eagles", "Baltimore Ravens", "Buffalo Bills", "Miami Dolphins", "New York Jets", "Cincinnati Bengals", "Cleveland Browns", "Houston Texans", "Indianapolis Colts", "Jacksonville Jaguars", "Tennessee Titans", "Denver Broncos", "Las Vegas Raiders", "Los Angeles Chargers", "New York Giants", "Washington Commanders", "Green Bay Packers", "Detroit Lions", "Minnesota Vikings", "Chicago Bears", "Tampa Bay Buccaneers", "New Orleans Saints", "Atlanta Falcons", "Carolina Panthers", "Los Angeles Rams", "Seattle Seahawks", "Arizona Cardinals",
   // NBA
-  "Lakers", "Warriors", "Celtics", "Bulls", "Heat", "Knicks", "Nets", "76ers", "Raptors", "Bucks", "Pistons", "Pacers", "Cavaliers", "Magic", "Hornets", "Hawks", "Wizards", "Nuggets", "Timberwolves", "Thunder", "Trail Blazers", "Jazz", "Suns", "Clippers", "Kings", "Mavericks", "Rockets", "Spurs", "Grizzlies", "Pelicans",
+  "Los Angeles Lakers", "Golden State Warriors", "Boston Celtics", "Chicago Bulls", "Miami Heat", "New York Knicks", "Brooklyn Nets", "Philadelphia 76ers", "Toronto Raptors", "Milwaukee Bucks", "Detroit Pistons", "Indiana Pacers", "Cleveland Cavaliers", "Orlando Magic", "Charlotte Hornets", "Atlanta Hawks", "Washington Wizards", "Denver Nuggets", "Minnesota Timberwolves", "Oklahoma City Thunder", "Portland Trail Blazers", "Utah Jazz", "Phoenix Suns", "Los Angeles Clippers", "Sacramento Kings", "Dallas Mavericks", "Houston Rockets", "San Antonio Spurs", "Memphis Grizzlies", "New Orleans Pelicans",
   // MLB
-  "Yankees", "Dodgers", "Red Sox", "Cubs", "Cardinals", "Giants", "Braves", "Astros", "Mets", "Phillies", "Rangers", "Blue Jays", "Mariners", "Orioles", "Rays", "Twins", "Tigers", "White Sox", "Guardians", "Royals", "Angels", "Athletics", "Padres", "Diamondbacks", "Rockies", "Marlins", "Nationals", "Reds", "Pirates", "Brewers",
+  "New York Yankees", "Los Angeles Dodgers", "Boston Red Sox", "Chicago Cubs", "St. Louis Cardinals", "San Francisco Giants", "Atlanta Braves", "Houston Astros", "New York Mets", "Philadelphia Phillies", "Texas Rangers", "Toronto Blue Jays", "Seattle Mariners", "Baltimore Orioles", "Tampa Bay Rays", "Minnesota Twins", "Detroit Tigers", "Chicago White Sox", "Cleveland Guardians", "Kansas City Royals", "Los Angeles Angels", "Oakland Athletics", "San Diego Padres", "Arizona Diamondbacks", "Colorado Rockies", "Miami Marlins", "Washington Nationals", "Cincinnati Reds", "Pittsburgh Pirates", "Milwaukee Brewers",
   // EUROPEAN SOCCER
-  "Real Madrid", "Barcelona", "Atlético Madrid", "Man City", "Liverpool", "Arsenal", "Man United", "Chelsea", "Tottenham", "Bayern Munich", "Dortmund", "PSG", "Juventus", "Inter Milan", "AC Milan", "Napoli", "Roma"
+  "Real Madrid", "FC Barcelona", "Atlético Madrid", "Manchester City", "Liverpool FC", "Arsenal", "Manchester United", "Chelsea", "Tottenham Hotspur", "Bayern Munich", "Borussia Dortmund", "PSG", "Juventus", "Inter Milan", "AC Milan", "Napoli", "AS Roma"
 ].sort();
+
+// Helper to refresh datalist from _store or initialization
+window.updateTeamDatalist = function () {
+  const dataList = document.getElementById('team-suggestions');
+  if (!dataList) return;
+
+  // Merge potential duplicates and sort
+  const uniqueTeams = [...new Set(window.KNOWN_TEAMS)].sort();
+
+  dataList.innerHTML = uniqueTeams.map(t => `<option value="${t}">`).join('');
+  console.log('🔄 Team datalist updated. Count:', uniqueTeams.length);
+};
 
 // Router / Navigation
 function navigateTo(view, params = {}) {
@@ -470,7 +483,6 @@ function renderHostessDashboard() {
                                            list="team-suggestions"
                                            placeholder="Local" 
                                            value="${(v.selectedGame && v.selectedGame.includes(' vs ')) ? v.selectedGame.split(' vs ')[0].trim() : ''}"
-                                           onchange="window.saveCustomGameSplit('${v.id}')" 
                                            class="w-full bg-gray-800 text-white border border-yellow-500 rounded-lg px-3 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-bold uppercase">
                                   </div>
                                   <span class="text-yellow-600 font-bold text-xs">VS</span>
@@ -480,11 +492,13 @@ function renderHostessDashboard() {
                                            list="team-suggestions"
                                            placeholder="Visita" 
                                            value="${(v.selectedGame && v.selectedGame.includes(' vs ')) ? v.selectedGame.split(' vs ')[1].trim() : ''}"
-                                           onchange="window.saveCustomGameSplit('${v.id}')" 
                                            class="w-full bg-gray-800 text-white border border-yellow-500 rounded-lg px-3 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-bold uppercase">
                                   </div>
+                                  <button onclick="window.saveCustomGameSplit('${v.id}')" class="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-bold shadow-lg transition-transform active:scale-95 flex items-center justify-center text-xs whitespace-nowrap">
+                                    🏈 CONFIRMAR
+                                  </button>
                               </div>
-                              <div class="text-[10px] text-gray-500 mt-1 text-center italic">* Escribe para ver sugerencias</div>
+                              <div class="text-[10px] text-gray-500 mt-1 text-center italic">* Escribe ambos equipos y presiona guardar</div>
                          </div>
                          
                          <!-- Checkbox Equipo Favorito (Rediseñado) -->
@@ -1404,9 +1418,29 @@ window.saveCustomGameSplit = function (visitId) {
 
     if (home && away) {
       const combinedName = `${home} vs ${away}`;
+      // 1. Save locally to visit
       window.db.updateVisitDetails(visitId, { selectedGame: combinedName });
+
+      // 2. Check if this is a NEW game (not in official schedule)
+      const officialGames = window.db.getMatches();
+      // Normalize comparison
+      const exists = officialGames.find(g => {
+        const gName = g.match || `${g.homeTeam} vs ${g.awayTeam}`;
+        return gName.toLowerCase() === combinedName.toLowerCase();
+      });
+
+      if (!exists) {
+        // It's a custom game -> Request approval from Manager
+        console.log('Sending request to Manager for:', combinedName);
+        window.db.requestGame(combinedName);
+        alert(`⚠️ Partido Nuevo Detectado: "${combinedName}"\n\n✅ Se ha enviado una SOLICITUD a la pestaña "JUEGOS" del Gerente para agregarlo a la programación oficial.`);
+      } else {
+        // If it exists but was entered manually
+        // alert('✅ Partido asignado Correctamente');
+      }
+
     } else if (home || away) {
-      // If only one is filled, save partial input if necessary, but ideally wait for both
+      alert('Por favor ingresa AMBOS equipos (Local y Visita)');
     }
   }
 };
