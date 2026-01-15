@@ -80,21 +80,14 @@ function navigateTo(view, params = {}) {
       renderSuperAdminDashboard(); // User Management
       break;
     case 'enrich-customer':
-      // TODO: Implement customer enrichment form
-      alert('Función de enriquecimiento de cliente en desarrollo.\n\nPróximamente podrás editar:\n- Dirección\n- Colonia\n- Teléfono\n- Email\n- Preferencias\n- Notas');
-      renderManagerDashboard();
+      renderEnrichCustomer(params);
       break;
     case 'view-customer':
-      // renderViewCustomer(params.customerId);
-      // TODO: Implement this function
-      alert('Función en desarrollo. Volviendo al dashboard.');
-      renderManagerDashboard();
+      renderViewCustomer(params.customerId);
       break;
     case 'customer-detail':
-      // renderCustomerDetail(params.customerId);
-      // TODO: Implement this function  
-      alert('Función en desarrollo. Volviendo al dashboard.');
-      renderManagerDashboard();
+      // Alias for view-customer
+      renderViewCustomer(params.customerId);
       break;
     default:
       renderLogin();
@@ -150,6 +143,14 @@ function renderLogin() {
          <p id="bww-text-fallback" style="display:none; color: #FFD200; font-family: 'Oswald', sans-serif;">(Guarda el logo como assets/img/bww-logo.png)</p>
       </div>
 
+      <!-- VERSION TAG -->
+      <div style="margin-top: 20px; color: #666; font-size: 10px; font-family: monospace;">
+        v17.0 (Actualizado)
+        <br>
+        <button onclick="window.location.reload(true)" style="margin-top: 10px; background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
+           🔄 FORZAR ACTUALIZACIÓN
+        </button>
+      </div>
 
     </div>
   `;
@@ -895,6 +896,14 @@ function doCheckIn() {
     }
     if (!waiterId) {
       showCheckinStatus('⚠️ Selecciona un MESERO', 'warning');
+      return;
+    }
+
+    // CHECK IF TABLE IS OCCUPIED (New Safety Check)
+    if (window.db.isTableOccupied(table, STATE.branch.id)) {
+      showCheckinStatus(`⛔ La Mesa ${table} ya está ocupada.`, 'error');
+      // Reset button state just in case
+      /* (Not strictly needed here as we return early, but good practice if button logic was above) */
       return;
     }
 
@@ -5143,6 +5152,213 @@ function renderReviewsQR() {
 // Alias for Waiter Dashboard compatibility (Case Insensitive Safety)
 window.showQRreviews = renderReviewsQR;
 window.showQRReviews = renderReviewsQR;
+
+// === VIEW: ENRICH CUSTOMER ===
+function renderEnrichCustomer(params) {
+  const { customerId, visitId } = params;
+  const customer = window.db.getCustomerById(customerId);
+
+  if (!customer) {
+    alert('Cliente no encontrado');
+    renderManagerDashboard();
+    return;
+  }
+
+  const div = document.createElement('div');
+  div.className = 'p-4 max-w-2xl mx-auto pb-20';
+
+  div.innerHTML = `
+    <header class="flex justify-between items-center mb-6 sticky top-0 bg-black z-10 py-4 border-b border-gray-800">
+         <h2 class="text-2xl text-purple-400 font-bold flex items-center gap-2">💎 ENRIQUECER PERFIL</h2>
+         <button onclick="renderManagerDashboard()" class="text-gray-400 font-bold hover:text-white">← Volver</button>
+    </header>
+
+    <form onsubmit="handleEnrichSubmit(event, '${customerId}', '${visitId}')" class="space-y-6 bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-2xl">
+         
+         <!-- Personal Info -->
+         <div>
+            <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2">Información Personal</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                   <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Nombre</label>
+                   <input name="firstName" required value="${customer.firstName || ''}" type="text" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
+                </div>
+                <div>
+                   <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Apellido</label>
+                   <input name="lastName" value="${customer.lastName || ''}" type="text" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
+                </div>
+            </div>
+         </div>
+
+         <!-- Contact Info -->
+         <div>
+            <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2">Contacto & Demografía</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                   <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Teléfono</label>
+                   <input name="phone" value="${customer.phone || ''}" type="tel" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
+                </div>
+                <div>
+                   <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Email</label>
+                   <input name="email" value="${customer.email || ''}" type="email" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
+                </div>
+                <div>
+                   <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Cumpleaños</label>
+                   <input name="birthday" value="${customer.birthday || ''}" type="date" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
+                </div>
+                <div>
+                   <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Ciudad</label>
+                   <input name="city" value="${customer.city || ''}" type="text" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
+                </div>
+            </div>
+         </div>
+
+         <!-- Preferences -->
+         <div>
+            <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2">Preferencias</h3>
+            <div>
+               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Equipo Favorito</label>
+               <input name="team" value="${customer.team || ''}" list="team-suggestions" type="text" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none" placeholder="Ej: Dallas Cowboys">
+            </div>
+            <div class="mt-4">
+               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Notas / Comentarios</label>
+               <textarea name="notes" rows="3" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">${customer.notes || ''}</textarea>
+            </div>
+         </div>
+
+         <button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-black py-4 rounded-lg mt-8 text-lg shadow-lg transform active:scale-95 transition-all">
+             💾 GUARDAR CAMBIOS
+         </button>
+    </form>
+  `;
+
+  appContainer.innerHTML = '';
+  appContainer.appendChild(div);
+
+  // Ensure datalist exists
+  if (window.updateTeamDatalist) window.updateTeamDatalist();
+}
+
+window.handleEnrichSubmit = function (e, customerId, visitId) {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const updates = {
+    firstName: formData.get('firstName'),
+    lastName: formData.get('lastName'),
+    phone: formData.get('phone'),
+    email: formData.get('email'),
+    birthday: formData.get('birthday'),
+    city: formData.get('city'),
+    team: formData.get('team'),
+    notes: formData.get('notes')
+  };
+
+  const success = window.db.updateCustomer(customerId, updates);
+
+  if (success) {
+    if (visitId && visitId !== 'undefined') {
+      window.db.markProspectAsReviewed(visitId);
+    }
+    showToast('✅ Cliente actualizado correctamente', 'success');
+    renderManagerDashboard(); // Go back to dashboard
+  } else {
+    alert('Error al actualizar cliente');
+  }
+};
+
+// === VIEW: CUSTOMER PROFILE ===
+function renderViewCustomer(customerId) {
+  const customer = window.db.getCustomerById(customerId);
+  if (!customer) {
+    alert('Cliente no encontrado');
+    renderManagerDashboard();
+    return;
+  }
+
+  const classification = window.db.getCustomerClassification(customerId);
+  const badgeHTML = window.ClientClassifier ? window.ClientClassifier.getBadgeHTML(classification) : classification.toUpperCase();
+  const desc = window.ClientClassifier ? window.ClientClassifier.getDescription(classification) : '';
+  const visits = window.db.data.visits.filter(v => v.customerId === customerId).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const div = document.createElement('div');
+  div.className = 'p-4 max-w-2xl mx-auto pb-20';
+
+  div.innerHTML = `
+    <header class="flex justify-between items-center mb-6 sticky top-0 bg-black z-10 py-4 border-b border-gray-800">
+         <h2 class="text-2xl text-white font-bold">PERFIL</h2>
+         <button onclick="renderManagerDashboard()" class="text-gray-400 font-bold hover:text-white">← Volver</button>
+    </header>
+
+    <!-- Header Card -->
+    <div class="bg-gray-900 rounded-xl p-6 border border-gray-700 mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-black text-white mb-2">${customer.firstName} ${customer.lastName}</h1>
+            <div class="flex items-center gap-3">
+                ${badgeHTML}
+                <span class="text-gray-400 text-sm">${customer.city || 'Ciudad desconocida'}</span>
+            </div>
+        </div>
+        <button onclick="navigateTo('enrich-customer', { customerId: '${customerId}' })" class="bg-gray-800 hover:bg-gray-700 p-3 rounded-full border border-gray-600 transition">
+            ✏️
+        </button>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-xs uppercase font-bold">Visitas Totales</div>
+            <div class="text-2xl font-black text-white">${visits.length}</div>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-xs uppercase font-bold">Equipo</div>
+            <div class="text-xl font-bold text-yellow-500">${customer.team || 'N/A'}</div>
+        </div>
+    </div>
+    
+    <!-- Info Section -->
+    <div class="bg-gray-900 rounded-xl p-6 border border-gray-700 mb-6 space-y-3">
+        <h3 class="text-gray-500 font-bold text-sm uppercase mb-2">Datos de Contacto</h3>
+        <div class="flex justify-between border-b border-gray-800 pb-2">
+            <span class="text-gray-400">Teléfono</span>
+            <span class="text-white font-mono">${customer.phone || '-'}</span>
+        </div>
+        <div class="flex justify-between border-b border-gray-800 pb-2">
+            <span class="text-gray-400">Email</span>
+            <span class="text-white text-sm">${customer.email || '-'}</span>
+        </div>
+        <div class="flex justify-between pt-2">
+             <span class="text-gray-400">Cumpleaños</span>
+             <span class="text-white">${customer.birthday || '-'}</span>
+        </div>
+    </div>
+
+    <!-- Recent History -->
+    <div>
+        <h3 class="text-white font-bold mb-4">Historial de Visitas</h3>
+        <div class="space-y-3">
+            ${visits.slice(0, 5).map(v => {
+    const date = new Date(v.date).toLocaleDateString();
+    return `
+                    <div class="bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700">
+                        <div>
+                            <div class="text-white font-bold">${date}</div>
+                            <div class="text-xs text-gray-400">Mesa ${v.table} • consumo $${v.totalAmount || 0}</div>
+                        </div>
+                        <div class="bg-gray-700 px-2 py-1 rounded text-xs text-gray-300">
+                            ${v.status === 'active' ? '🟢 Activo' : '🔴 Cerrado'}
+                        </div>
+                    </div>
+                `;
+  }).join('')}
+            ${visits.length === 0 ? '<p class="text-gray-500 text-center italic">Sin historial reciente</p>' : ''}
+        </div>
+    </div>
+  `;
+
+  appContainer.innerHTML = '';
+  appContainer.appendChild(div);
+}
+
 
 // --- INITIALIZATION ---
 function initApp() {

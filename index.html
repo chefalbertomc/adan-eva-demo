@@ -11,6 +11,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ADAN&EVA">
 
+  <!-- PREVENT CACHING (Force Updates) -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
   <!-- Icons & PWA -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="assets/img/app-icon.jpg">
@@ -108,11 +113,44 @@
   </script>
 
   <!-- Scripts -->
-  <!-- Scripts -->
-  <script src="assets/js/_store.js?v=15.4"></script>
-  <script src="assets/js/client-classifier.js?v=3.4"></script>
-  <script src="assets/js/hostess_helpers.js?v=15.4"></script>
-  <script src="assets/js/app.js?v=15.4"></script>
+  <!-- DYNAMIC SCRIPT LOADER (CACHE BUSTER) -->
+  <script>
+    // 1. Unregister any zombie service workers immediately
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+          console.log('🧹 Service Worker Unregistered');
+        }
+      });
+    }
+
+    // 2. Load scripts with timestamp to force new version
+    const scripts = [
+      'assets/js/_store.js',
+      'assets/js/client-classifier.js',
+      'assets/js/hostess_helpers.js',
+      'assets/js/app.js'
+    ];
+
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src + '?t=' + Date.now(); // FORCE NEW VERSION EVERY TIME
+        s.onload = resolve;
+        s.onerror = reject;
+        document.body.appendChild(s);
+      });
+    }
+
+    // Sequential load to respect dependencies
+    (async function () {
+      for (const src of scripts) {
+        await loadScript(src);
+      }
+      console.log('✅ All scripts loaded fresh');
+    })();
+  </script>
 
   <script>
     // Hide splash after app loads - REDUCED DELAY for old tablets

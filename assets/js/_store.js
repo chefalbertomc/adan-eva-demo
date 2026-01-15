@@ -281,299 +281,61 @@ const MENU_DATA = {
 
 
 // --- MOCK DATA GENERATOR (2025) - ENHANCED ---
+// --- MOCK DATA GENERATOR (DETERMINISTIC) ---
 const GENERATE_DATA = () => {
-    const branches = ['juriquilla', 'paseo', 'alamos'];
-    const firstNames = ['Juan', 'Maria', 'Pedro', 'Luis', 'Ana', 'Sofia', 'Carlos', 'Miguel', 'Lucia', 'Elena', 'Diego', 'Valentina', 'Camila', 'Mateo', 'Lucas', 'Nicolas', 'Samuel', 'Alejandro', 'Daniel', 'Fernanda', 'Roberto', 'Patricia', 'Carmen', 'Ricardo', 'Isabella', 'Santiago', 'Emilia', 'Sebastian', 'Gabriela', 'Andres'];
-    const lastNames = ['Gomez', 'Perez', 'Lopez', 'Rodriguez', 'Martinez', 'Garcia', 'Hernandez', 'Gonzalez', 'Ramirez', 'Sanchez', 'Torres', 'Flores', 'Rivera', 'Diaz', 'Reyes', 'Morales', 'Jimenez', 'Castillo', 'Mendoza', 'Vargas'];
+    // FIXED NAMES FOR CONSISTENCY ACROSS DEVICES
+    const fixedProfiles = [
+        { id: 'C001', fn: 'Juan', ln: 'Perez', ln2: 'Gomez', city: 'Querétaro' },
+        { id: 'C002', fn: 'Maria', ln: 'Lopez', ln2: 'Hernandez', city: 'Juriquilla' },
+        { id: 'C003', fn: 'Pedro', ln: 'Ramirez', ln2: 'Diaz', city: 'El Refugio' },
+        { id: 'C004', fn: 'Luis', ln: 'Martinez', ln2: 'Sanchez', city: 'Querétaro' },
+        { id: 'C005', fn: 'Ana', ln: 'Garcia', ln2: 'Torres', city: 'Jurica' },
+        { id: 'C006', fn: 'Sofia', ln: 'Rodriguez', ln2: 'Flores', city: 'Querétaro' },
+        { id: 'C007', fn: 'Carlos', ln: 'Gonzalez', ln2: 'Rivera', city: 'Juriquilla' },
+        { id: 'C008', fn: 'Miguel', ln: 'Hernandez', ln2: 'Reyes', city: 'El Refugio' },
+        { id: 'C009', fn: 'Lucia', ln: 'Diaz', ln2: 'Morales', city: 'Querétaro' },
+        { id: 'C010', fn: 'Elena', ln: 'Vargas', ln2: 'Jimenez', city: 'Jurica' },
+        { id: 'C011', fn: 'Diego', ln: 'Castillo', ln2: 'Mendoza', city: 'Querétaro' },
+        { id: 'C012', fn: 'Valentina', ln: 'Mendoza', ln2: 'Vargas', city: 'Juriquilla' },
+        { id: 'C013', fn: 'Camila', ln: 'Reyes', ln2: 'Castillo', city: 'El Refugio' },
+        { id: 'C014', fn: 'Mateo', ln: 'Morales', ln2: 'Jimenez', city: 'Querétaro' },
+        { id: 'C015', fn: 'Lucas', ln: 'Jimenez', ln2: 'Morales', city: 'Jurica' },
+        { id: 'C016', fn: 'Nicolas', ln: 'Flores', ln2: 'Reyes', city: 'Querétaro' },
+        { id: 'C017', fn: 'Samuel', ln: 'Torres', ln2: 'Diaz', city: 'Juriquilla' },
+        { id: 'C018', fn: 'Alejandro', ln: 'Ramirez', ln2: 'Lopez', city: 'El Refugio' },
+        { id: 'C019', fn: 'Daniel', ln: 'Sanchez', ln2: 'Perez', city: 'Querétaro' },
+        { id: 'C020', fn: 'Fernanda', ln: 'Gomez', ln2: 'Garcia', city: 'Jurica' }
+    ];
 
-    // Expanded sports teams
-    const nflTeams = ['Dallas Cowboys', 'San Francisco 49ers', 'Kansas City Chiefs', 'Philadelphia Eagles', 'Buffalo Bills', 'Green Bay Packers', 'Pittsburgh Steelers', 'New England Patriots'];
-    const nbaTeams = ['Los Angeles Lakers', 'Golden State Warriors', 'Chicago Bulls', 'Boston Celtics', 'Miami Heat', 'San Antonio Spurs'];
-    const mlbTeams = ['New York Yankees', 'Los Angeles Dodgers', 'Boston Red Sox', 'Houston Astros'];
-    const soccerTeams = ['Real Madrid', 'Barcelona', 'Manchester United', 'Bayern Munich', 'PSG', 'Juventus', 'Liverpool', 'AC Milan'];
-    const allTeams = [...nflTeams, ...nbaTeams, ...mlbTeams, ...soccerTeams];
+    const customers = fixedProfiles.map((p, i) => {
+        let bdayMonth = (i % 12) + 1;
+        let bdayDay = (i % 28) + 1;
 
-    // Diverse cities and countries
-    const cities = ['Querétaro', 'Ciudad de México', 'Guadalajara', 'Monterrey', 'San Miguel de Allende', 'León', 'Puebla', 'Cancún', 'Tijuana'];
-    const countries = ['México', 'Estados Unidos', 'España', 'Colombia', 'Argentina', 'Chile'];
-
-    // Food and drinks (REMOVED - Using MENU_DATA)
-
-    // 1. Generate 20 Customers with varied profiles (Reduced for performance)
-    const customers = [];
-    for (let i = 1; i <= 20; i++) {
-        const id = 'C' + i.toString().padStart(3, '0');
-        const fn = firstNames[Math.floor(Math.random() * firstNames.length)];
-        const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
-        const ln2 = lastNames[Math.floor(Math.random() * lastNames.length)];
-
-        // Birthdays - varied months
-        let bdayMonth = Math.floor(Math.random() * 12) + 1;
-        let bdayDay = Math.floor(Math.random() * 28) + 1;
-
-        // Force some birthdays for this month (December)
-        if (i <= 3) { bdayMonth = 12; bdayDay = Math.floor(Math.random() * 28) + 1; }
-
-        // Select 1-3 random teams from different sports
-        const numTeams = Math.floor(Math.random() * 3) + 1;
-        const customerTeams = [];
-        for (let j = 0; j < numTeams; j++) {
-            const team = allTeams[Math.floor(Math.random() * allTeams.length)];
-            if (!customerTeams.includes(team)) {
-                customerTeams.push(team);
-            }
-        }
-
-        customers.push({
-            id,
-            firstName: fn,
-            lastName: ln,
-            lastName2: ln2,
+        return {
+            id: p.id,
+            firstName: p.fn,
+            lastName: p.ln,
+            lastName2: p.ln2,
             birthday: `1990-${bdayMonth.toString().padStart(2, '0')}-${bdayDay.toString().padStart(2, '0')}`,
-            email: `${fn.toLowerCase()}.${ln.toLowerCase()}${i}@gmail.com`,
-            phone: '442' + (Math.floor(Math.random() * 9000000) + 1000000),
-            city: cities[Math.floor(Math.random() * cities.length)],
-            country: countries[Math.floor(Math.random() * countries.length)],
-            colony: i % 5 === 0 ? 'Centro Histórico' : i % 4 === 0 ? 'El Refugio' : i % 3 === 0 ? 'Jurica' : 'Juriquilla',
-            visits: 0, // will count later
-            teams: customerTeams,
-            team: customerTeams[0] || 'Dallas Cowboys', // Primary team
-            // Select random top preferences from real menu
-            topFood: MENU_DATA.alimentos.sort(() => 0.5 - Math.random()).slice(0, 3).map(f => f.name),
-            topDrinks: MENU_DATA.bebidas.sort(() => 0.5 - Math.random()).slice(0, 3).map(d => d.name),
-            notes: 'Cliente generado automáticamente.',
-            couchCard: i % 7 === 0 // Some customers have Couch Card
-        });
-    }
+            email: `${p.fn.toLowerCase()}.${p.ln.toLowerCase()}${i + 1}@gmail.com`,
+            phone: '442' + (1000000 + i).toString(),
+            city: p.city,
+            country: 'México',
+            colony: p.city === 'Querétaro' ? 'Centro' : p.city,
+            visits: 0,
+            teams: ['Dallas Cowboys', 'Real Madrid'],
+            team: 'Dallas Cowboys',
+            topFood: ['Boneless BBQ', 'Hamburguesa Clásica'],
+            topDrinks: ['Cerveza Ultra', 'Limonada Mineral'],
+            notes: 'Cliente base generado.',
+            couchCard: i % 5 === 0
+        };
+    });
 
-    // 2. Generate Visits with STRATEGIC distribution for good test data
+    // NO HISTORICAL VISITS FOR NOW TO AVOID CONFUSION, OR MINIMAL STATIC ONES
     const visits = [];
-    const now = new Date();
-    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Helper: Generate random game for visit
-    const generateGame = () => {
-        const rand = Math.random();
-        let sport, league, teams;
-
-        if (rand < 0.40) { // 40% NFL
-            sport = 'Fútbol Americano';
-            league = 'NFL';
-            const team1 = nflTeams[Math.floor(Math.random() * nflTeams.length)];
-            let team2 = nflTeams[Math.floor(Math.random() * nflTeams.length)];
-            while (team2 === team1) team2 = nflTeams[Math.floor(Math.random() * nflTeams.length)];
-            teams = `${team1} vs ${team2}`;
-        } else if (rand < 0.65) { // 25% Soccer
-            sport = 'Fútbol Soccer';
-            league = 'Champions League';
-            const team1 = soccerTeams[Math.floor(Math.random() * soccerTeams.length)];
-            let team2 = soccerTeams[Math.floor(Math.random() * soccerTeams.length)];
-            while (team2 === team1) team2 = soccerTeams[Math.floor(Math.random() * soccerTeams.length)];
-            teams = `${team1} vs ${team2}`;
-        } else if (rand < 0.85) { // 20% NBA
-            sport = 'Basquetbol';
-            league = 'NBA';
-            const team1 = nbaTeams[Math.floor(Math.random() * nbaTeams.length)];
-            let team2 = nbaTeams[Math.floor(Math.random() * nbaTeams.length)];
-            while (team2 === team1) team2 = nbaTeams[Math.floor(Math.random() * nbaTeams.length)];
-            teams = `${team1} vs ${team2}`;
-        } else { // 15% MLB
-            sport = 'Beisbol';
-            league = 'MLB';
-            const team1 = mlbTeams[Math.floor(Math.random() * mlbTeams.length)];
-            let team2 = mlbTeams[Math.floor(Math.random() * mlbTeams.length)];
-            while (team2 === team1) team2 = mlbTeams[Math.floor(Math.random() * mlbTeams.length)];
-            teams = `${team1} vs ${team2}`;
-        }
-
-        return { sport, league, teams };
-    };
-
-    // Helper: Get waiters for specific branch
-    const getWaiterIdsForBranch = (branchId) => {
-        if (branchId === 'juriquilla') {
-            return ['wj1', 'wj2', 'wj3', 'wj4', 'wj5', 'wj6', 'wj7', 'wj8', 'wj9', 'wj10', 'wj11', 'wj12', 'wj13', 'wj14'];
-        } else if (branchId === 'alamos') {
-            return ['wa1', 'wa2', 'wa3', 'wa4', 'wa5', 'wa6', 'wa7', 'wa8', 'wa9', 'wa10', 'wa11'];
-        } else if (branchId === 'paseo') {
-            return ['wp1', 'wp2', 'wp3', 'wp4', 'wp5'];
-        }
-        return ['wj1']; // fallback
-    };
-
-    // Strategy: Create different customer archetypes
-    // --- GENERATE VISITS FOR DIFFERENT SEGMENTS (Adjusted for 20 Customers) ---
-
-    // 1. VIP / LOYAL Customers (Index 0-3: 4 customers)
-    for (let i = 0; i < 4; i++) {
-        const cust = customers[i];
-        if (!cust) continue;
-        const numVisits = 10 + Math.floor(Math.random() * 5);
-        for (let v = 0; v < numVisits; v++) {
-            const dayOffset = Math.floor(Math.random() * 30);
-            const visitDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
-            const branchId = branches[Math.floor(Math.random() * branches.length)];
-            const amount = 1000 + Math.floor(Math.random() * 2000);
-            const branchWaiters = getWaiterIdsForBranch(branchId);
-            const waiterId = branchWaiters[Math.floor(Math.random() * branchWaiters.length)];
-            const game = generateGame();
-
-            cust.visits++;
-            visits.push({
-                id: 'V' + Date.now() + '_' + Math.floor(Math.random() * 100000),
-                branchId,
-                customerId: cust.id,
-                date: visitDate.toISOString(),
-                pax: Math.floor(Math.random() * 6) + 1,
-                table: Math.floor(Math.random() * 50) + 1,
-                waiterId,
-                status: 'closed',
-                totalAmount: amount,
-                isProspect: false,
-                gameWatched: game
-            });
-        }
-    }
-
-    // 2. BLAZIN Customers (Index 4-7: 4 customers)
-    for (let i = 4; i < 8; i++) {
-        const cust = customers[i];
-        if (!cust) continue;
-        const numVisits = 5 + Math.floor(Math.random() * 4);
-        for (let v = 0; v < numVisits; v++) {
-            const dayOffset = v < 3 ? Math.floor(Math.random() * 7) : Math.floor(Math.random() * 30);
-            const visitDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
-            const branchId = branches[Math.floor(Math.random() * branches.length)];
-            const amount = 800 + Math.floor(Math.random() * 1500);
-            const branchWaiters = getWaiterIdsForBranch(branchId);
-            const waiterId = branchWaiters[Math.floor(Math.random() * branchWaiters.length)];
-            const game = generateGame();
-
-            cust.visits++;
-            visits.push({
-                id: 'V' + Date.now() + '_' + Math.floor(Math.random() * 100000),
-                branchId,
-                customerId: cust.id,
-                date: visitDate.toISOString(),
-                pax: Math.floor(Math.random() * 4) + 1,
-                table: Math.floor(Math.random() * 50) + 1,
-                waiterId,
-                status: 'closed',
-                totalAmount: amount,
-                isProspect: false,
-                gameWatched: game
-            });
-        }
-    }
-
-    // 3. REGULAR Customers (Index 8-13: 6 customers)
-    for (let i = 8; i < 14; i++) {
-        const cust = customers[i];
-        if (!cust) continue;
-        const numVisits = 4 + Math.floor(Math.random() * 4);
-        for (let v = 0; v < numVisits; v++) {
-            const dayOffset = 7 + Math.floor(Math.random() * 60);
-            const visitDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
-            const branchId = branches[Math.floor(Math.random() * branches.length)];
-            const amount = 500 + Math.floor(Math.random() * 1200);
-            const branchWaiters = getWaiterIdsForBranch(branchId);
-            const waiterId = branchWaiters[Math.floor(Math.random() * branchWaiters.length)];
-            const game = generateGame();
-
-            cust.visits++;
-            visits.push({
-                id: 'V' + Date.now() + '_' + Math.floor(Math.random() * 100000),
-                branchId,
-                customerId: cust.id,
-                date: visitDate.toISOString(),
-                pax: Math.floor(Math.random() * 5) + 1,
-                table: Math.floor(Math.random() * 50) + 1,
-                waiterId,
-                status: 'closed',
-                totalAmount: amount,
-                isProspect: false,
-                gameWatched: game
-            });
-        }
-    }
-
-    // 4. NEW Customers (Index 14-16: 3 customers)
-    for (let i = 14; i < 17; i++) {
-        const cust = customers[i];
-        if (!cust) continue;
-        const numVisits = 1 + Math.floor(Math.random() * 2);
-        for (let v = 0; v < numVisits; v++) {
-            const dayOffset = Math.floor(Math.random() * 14);
-            const visitDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
-            const branchId = branches[Math.floor(Math.random() * branches.length)];
-            const amount = 400 + Math.floor(Math.random() * 1000);
-            const branchWaiters = getWaiterIdsForBranch(branchId);
-            const waiterId = branchWaiters[Math.floor(Math.random() * branchWaiters.length)];
-            const game = generateGame();
-
-            cust.visits++;
-            visits.push({
-                id: 'V' + Date.now() + '_' + Math.floor(Math.random() * 100000),
-                branchId,
-                customerId: cust.id,
-                date: visitDate.toISOString(),
-                pax: Math.floor(Math.random() * 3) + 1,
-                table: Math.floor(Math.random() * 50) + 1,
-                waiterId,
-                status: 'closed',
-                totalAmount: amount,
-                isProspect: false,
-                gameWatched: game
-            });
-        }
-    }
-
-    // 5. AT RISK Customers (Index 17-19: 3 customers)
-    for (let i = 17; i < 20; i++) {
-        const cust = customers[i];
-        if (!cust) continue;
-        const numVisits = 5 + Math.floor(Math.random() * 5);
-        for (let v = 0; v < numVisits; v++) {
-            const dayOffset = 35 + Math.floor(Math.random() * 60);
-            const visitDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
-            const branchId = branches[Math.floor(Math.random() * branches.length)];
-            const amount = 600 + Math.floor(Math.random() * 1000);
-            const branchWaiters = getWaiterIdsForBranch(branchId);
-            const waiterId = branchWaiters[Math.floor(Math.random() * branchWaiters.length)];
-            const game = generateGame();
-
-            cust.visits++;
-            visits.push({
-                id: 'V' + Date.now() + '_' + Math.floor(Math.random() * 100000),
-                branchId,
-                customerId: cust.id,
-                date: visitDate.toISOString(),
-                pax: Math.floor(Math.random() * 4) + 1,
-                table: Math.floor(Math.random() * 50) + 1,
-                waiterId,
-                status: 'closed',
-                totalAmount: amount,
-                isProspect: false,
-                gameWatched: game
-            });
-        }
-    }
-
-
-    // NO ACTIVE VISITS - Real operations start today
-    console.log('✅ Se generaron 20 clientes con distribución estratégica de visitas:');
-    console.log('   - 4 Clientes VIP/Leales (visitas frecuentes, gasto alto)');
-    console.log('   - 4 Clientes Blazin (visitas semanales)');
-    console.log('   - 6 Clientes Regulares (actividad moderada)');
-    console.log('   - 3 Clientes Nuevos (1-3 visitas recientes)');
-    console.log('   - 3 Clientes en Riesgo (inactivos >30 días)');
-    console.log(`   - Total de visitas históricas: ${visits.length}`);
-    console.log('   ⚠️  SIN VISITAS ACTIVAS - Iniciando fresco para operación real');
-
-    // SIN VISITAS ACTIVAS INICIALES
-
+    console.log('✅ Generated 20 STATIC customers for consistent testing.');
     return { customers, visits };
 };
 
@@ -846,6 +608,41 @@ class Store {
         });
     }
 
+    // --- DATA VERSION ---
+    // Increment this to force a reset of localStorage on all devices
+    static DATA_VERSION = 5;
+
+    _load() {
+        const stored = localStorage.getItem(STORE_KEY);
+        if (stored) {
+            try {
+                const parsedData = JSON.parse(stored);
+                // Check version
+                if (!parsedData.version || parsedData.version < Store.DATA_VERSION) {
+                    console.log('⚠️ Data version mismatch or outdated. FORCING RESET to new deterministic data.');
+                    localStorage.removeItem(STORE_KEY);
+                    return this._initData();
+                }
+                return parsedData;
+            } catch (e) {
+                console.error("Data Load Error, resetting", e);
+                return this._initData();
+            }
+        }
+        return this._initData();
+    }
+
+    _initData() {
+        // Clone INITIAL_DATA to ensure we have fresh objects
+        const data = JSON.parse(JSON.stringify(INITIAL_DATA));
+        data.version = Store.DATA_VERSION; // Set current version
+        // Ensure customers are from MOCK if empty (legacy support)
+        if (!data.customers || data.customers.length === 0) {
+            data.customers = MOCK.customers;
+            data.visits = MOCK.visits;
+        }
+        return data;
+    }
     initRealtimeSync() {
         if (!window.FB || !window.dbFirestore) return;
 
@@ -1144,11 +941,23 @@ class Store {
     }
 
     isTableOccupied(table, branchId) {
-        return this.data.visits.some(v =>
-            v.branchId === branchId &&
-            String(v.table).trim() === String(table).trim() &&
-            v.status === 'active'
-        );
+        const isOcc = this.data.visits.some(v => {
+            if (v.branchId !== branchId) return false;
+            if (v.status !== 'active') return false;
+
+            // 1. Exact String Match (Trimmed)
+            if (String(v.table).trim() === String(table).trim()) return true;
+
+            // 2. Numeric Match (Handle "1" vs "01")
+            const vNum = parseInt(v.table);
+            const tNum = parseInt(table);
+            if (!isNaN(vNum) && !isNaN(tNum) && vNum === tNum) return true;
+
+            return false;
+        });
+
+        console.log(`🛡️ Checking Table Occupancy: Input '${table}' @ Branch '${branchId}' -> Result: ${isOcc}`);
+        return isOcc;
     }
 
     // Get available table numbers for a branch based on user position
@@ -1183,8 +992,12 @@ class Store {
         return user;
     }
 
+    getCustomerById(id) {
+        return this.data.customers.find(c => c.id === id);
+    }
+
     createCustomer(data) {
-        const id = 'C' + (this.data.customers.length + 1).toString().padStart(3, '0');
+        const id = 'C' + Date.now();
         const customer = { id, ...data, visits: 0, topDrinks: [], topFood: [] };
         this.data.customers.push(customer);
         this._save();
@@ -1197,6 +1010,23 @@ class Store {
         }
 
         return customer;
+    }
+
+    updateCustomer(customerId, updates) {
+        const idx = this.data.customers.findIndex(c => c.id === customerId);
+        if (idx !== -1) {
+            this.data.customers[idx] = { ...this.data.customers[idx], ...updates };
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'customers', customerId), updates)
+                    .catch(e => console.error('🔥 Sync update customer error', e));
+            }
+            return true;
+        }
+        return false;
     }
 
     createVisit(visitData) {

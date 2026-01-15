@@ -1,7 +1,7 @@
 {
   "name": "ADAN&EVA Operations",
   "short_name": "ADAN&EVA",
-  "start_url": "./index.html",
+  "start_url": "./index.html?v=18.0",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
