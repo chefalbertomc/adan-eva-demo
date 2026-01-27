@@ -1592,6 +1592,10 @@ window.addGameFromManager = function () {
   const home = document.getElementById('new-home').value.trim();
   const away = document.getElementById('new-away').value.trim();
 
+  // DEBUG: Log what we're getting
+  console.log('📅 Date from form:', date);
+  console.log('⏰ Time from form:', time);
+
   // Individual sports (no home/away concept)
   const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
   const isIndividual = individualSports.includes(league);
@@ -1611,12 +1615,14 @@ window.addGameFromManager = function () {
     return;
   }
 
-  // Build game object
+  // Build game object - EXPLICITLY include date
   const gameData = {
     league,
-    date, // Include the date
+    date: date, // CRITICAL: Explicitly pass date from form
     time
   };
+
+  console.log('💾 Saving game with date:', gameData.date);
 
   if (isIndividual) {
     // For individual sports, use "match" field instead of homeTeam/awayTeam

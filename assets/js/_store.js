@@ -2030,6 +2030,9 @@ class Store {
         // Advanced Signature: addGame({ date, time, sport, league, homeTeam, awayTeam, match, tvs, audio })
         let gameData = arg1;
 
+        console.log('🎯 addGame received gameData:', gameData);
+        console.log('📅 gameData.date:', gameData.date);
+
         // Validation / Defaults
         const newGame = {
             id: 'G' + Date.now(),
@@ -2049,6 +2052,8 @@ class Store {
             },
             isAdHoc: gameData.isAdHoc || false
         };
+
+        console.log('💾 Final newGame.date:', newGame.date);
 
         // LEARNING PHASE
         if (window.KNOWN_TEAMS) {
