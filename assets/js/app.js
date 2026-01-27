@@ -5957,25 +5957,18 @@ window.removeIngestItem = function (type, id) {
   if (typeof renderManagerDashboard === 'function') renderManagerDashboard('games');
 };
 
+// Simplified wrapper to just call Ingestor
 window.runSportsIngest = async function () {
-  const btn = document.getElementById('btn-sync-sports');
-  if (btn) {
-    btn.innerHTML = '⏳ SINCRONIZANDO...';
-    btn.disabled = true;
-  }
-
   if (!window.ingestor) window.ingestor = new window.SportIngestor();
 
   try {
     const count = await window.ingestor.runIngest();
-    if (window.showToast) window.showToast(`✅ Sincronización completa. ${count} partidos encontrados.`, 'success');
+    console.log("RunSportsIngest Result:", count);
+    if (window.showToast) window.showToast(`✅ ${count} partidos sincronizados.`, 'success');
+    return count; // Return value for UI feedback
   } catch (e) {
-    console.error(e);
-    if (window.showToast) window.showToast(`❌ Error al sincronizar. Revisa consola.`, 'error');
-  } finally {
-    if (btn) {
-      btn.innerHTML = '🔄 SINCRONIZAR';
-      btn.disabled = false;
-    }
+    console.error("Ingest Error:", e);
+    if (window.showToast) window.showToast(`❌ Error al sincronizar.`, 'error');
+    throw e;
   }
 };
