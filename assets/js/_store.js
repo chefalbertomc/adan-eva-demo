@@ -783,17 +783,17 @@ class Store {
         });
 
         // 2. SYNC GAME REQUESTS (Global Daily Info)
-        // We will treat 'dailyInfo' as a single document 'config/daily'
-        // 2. SYNC GAME REQUESTS & GAMES (Global Daily Info)
-        const dailyRef = doc(db, "config", "daily");
+        // CRITICAL FIX: Use 'allGames' collection to support all dates
+        // 'daily' was incorrectly forcing all game dates to TODAY
+        const dailyRef = doc(db, "config", "allGames");
         onSnapshot(dailyRef, (docSnap) => {
-            console.log("☁️ FIREBASE SNAPSHOT: config/daily", docSnap.exists() ? "EXISTS" : "DOES NOT EXIST", docSnap.metadata.fromCache ? "(CACHE)" : "(SERVER)");
+            console.log("☁️ FIREBASE SNAPSHOT: config/allGames", docSnap.exists() ? "EXISTS" : "DOES NOT EXIST", docSnap.metadata.fromCache ? "(CACHE)" : "(SERVER)");
 
             if (docSnap.exists()) {
                 const remoteDaily = docSnap.data();
                 console.log("📦 REMOTE DATA:", JSON.stringify(remoteDaily));
 
-                // 2A. REQUESTS
+                // 2A. REQUESTS (keep using dailyInfo for requests)
                 const localReqs = JSON.stringify(this.getDailyInfo().gameRequests || []);
                 const remoteReqs = JSON.stringify(remoteDaily.gameRequests || []);
 
@@ -843,10 +843,10 @@ class Store {
                 // DISPATCH GLOBAL UPDATE EVENT
                 window.dispatchEvent(new CustomEvent('db-daily-update', { detail: { type: 'games' } }));
             } else {
-                console.warn("⚠️ config/daily document does not exist in Firestore! Manager needs to create it.");
+                console.warn("⚠️ config/allGames document does not exist in Firestore! Manager needs to create it.");
             }
         }, (error) => {
-            console.error("🔥 Error listening to config/daily:", error);
+            console.error("🔥 Error listening to config/allGames:", error);
         });
 
         // 3. SYNC CUSTOMERS
@@ -1990,16 +1990,18 @@ class Store {
 
         this._save();
 
-        // SYNC FIREBASE
+        // SYNC FIREBASE - CRITICAL FIX: Use 'allGames' collection instead of 'daily'
+        // 'daily' collection was forcing all dates to TODAY (2026-01-27)
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
             const dataToSync = { games: info.games };
 
-            console.log('🔥 SYNCING to Firebase:', JSON.stringify(dataToSync.games.slice(-3), null, 2));
+            console.log('🔥 SYNCING to Firebase (allGames collection):', JSON.stringify(dataToSync.games.slice(-3), null, 2));
 
-            setDoc(doc(window.dbFirestore, 'config', 'daily'), dataToSync, { merge: true })
+            // Use 'allGames' collection which supports any date
+            setDoc(doc(window.dbFirestore, 'config', 'allGames'), dataToSync, { merge: true })
                 .then(() => {
-                    console.log('🔥 Firebase sync SUCCESS');
+                    console.log('🔥 Firebase sync SUCCESS to allGames');
                 })
                 .catch(e => console.error('🔥 Sync update games error', e));
         }
