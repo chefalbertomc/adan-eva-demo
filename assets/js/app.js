@@ -4995,23 +4995,24 @@ function renderManagerGamesTab(container) {
         <!-- 1. SOLICITUDES HOSTESS -->
         ${(window.db.getDailyInfo().gameRequests || []).length > 0 ? '<div id="manager-requests-container"></div>' : ''}
 
-        <!-- 2. PARTIDOS DE HOY (LIVE CONTROL) -->
-        <div class="card bg-gray-900 border-2 border-blue-600 shadow-2xl relative">
-            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+        <!-- 2. PROGRAMAR EVENTOS (INDEPENDIENTE) -->
+        <div class="card bg-gradient-to-br from-purple-900/40 to-blue-900/40 border-2 border-purple-500/50 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
                 <div>
                     <h2 class="text-xl font-black text-white flex items-center gap-2">
-                        <span class="text-red-500 animate-pulse">●</span> EN VIVO / HOY <span class="text-[10px] text-gray-500 ml-2">(${today})</span>
+                        ➕ PROGRAMAR EVENTOS
                     </h2>
+                    <p class="text-xs text-purple-300">Agrega partidos para cualquier fecha (hoy, mañana, futuro)</p>
                 </div>
                 <button onclick="const form = document.getElementById('inline-add-game-form'); form.classList.toggle('hidden'); if(!form.classList.contains('hidden')) form.scrollIntoView({behavior: 'smooth', block: 'center'});" 
-                        class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold shadow-lg flex items-center gap-2 transition text-sm">
-                    <span>+</span> PROGRAMAR
+                        class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transition">
+                    <span>+</span> NUEVO EVENTO
                 </button>
             </div>
 
             <!-- INLINE ADD GAME FORM (Desplegable) -->
-            <div id="inline-add-game-form" class="hidden bg-gray-800/80 p-4 rounded-xl border border-blue-500/30 mb-6 shadow-inner animate-fade-in-down">
-                <h3 class="text-sm font-bold text-blue-300 uppercase mb-3 border-b border-blue-500/20 pb-1">Programación Manual</h3>
+            <div id="inline-add-game-form" class="hidden bg-gray-800/80 p-4 rounded-xl border border-purple-500/30 mb-6 shadow-inner animate-fade-in-down">
+                <h3 class="text-sm font-bold text-purple-300 uppercase mb-3 border-b border-purple-500/20 pb-1">Programación Manual</h3>
                 
                 <!-- FECHA PRIMERO - MUY VISIBLE -->
                 <div class="bg-blue-900/30 border-2 border-blue-500 rounded-lg p-3 mb-4">
@@ -5053,7 +5054,20 @@ function renderManagerGamesTab(container) {
 
                 <div class="flex justify-end gap-2">
                     <button onclick="document.getElementById('inline-add-game-form').classList.add('hidden')" class="px-3 py-2 text-gray-400 hover:text-white text-xs font-bold">CANCELAR</button>
-                    <button onclick="window.submitNewGame()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded font-bold text-sm shadow-lg">GUARDAR</button>
+                    <button onclick="window.addGameFromManager()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition">
+                        💾 GUARDAR
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. PARTIDOS DE HOY (LIVE CONTROL) -->
+        <div class="card bg-gray-900 border-2 border-blue-600 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                <div>
+                    <h2 class="text-xl font-black text-white flex items-center gap-2">
+                        <span class="text-red-500 animate-pulse">●</span> EN VIVO / HOY <span class="text-[10px] text-gray-500 ml-2">(${today})</span>
+                    </h2>
                 </div>
             </div>
 
