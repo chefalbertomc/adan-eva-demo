@@ -4752,6 +4752,10 @@ window.TEAM_LOGOS = {
   "Juárez Bravos": "https://a.espncdn.com/i/teamlogos/soccer/500/17926.png",
   "Juarez": "https://a.espncdn.com/i/teamlogos/soccer/500/17926.png",
 
+  // LOCALES QUERÉTARO (LMB/LFA)
+  "Conspiradores": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Conspiradores_de_Quer%C3%A9taro_logo.svg/1200px-Conspiradores_de_Quer%C3%A9taro_logo.svg.png",
+  "Gallos Negros": "https://upload.wikimedia.org/wikipedia/commons/e/e6/LFA_Gallos_Negros_Logo_2022.png",
+
   // ESPAÑA
   "Real Madrid": "https://a.espncdn.com/i/teamlogos/soccer/500/86.png",
   "FC Barcelona": "https://a.espncdn.com/i/teamlogos/soccer/500/83.png",
@@ -4919,7 +4923,48 @@ function renderManagerGamesTab(container) {
 
             <!-- INLINE ADD GAME FORM (Desplegable) -->
             <div id="inline-add-game-form" class="hidden bg-gray-800/80 p-4 rounded-xl border border-blue-500/30 mb-6 shadow-inner animate-fade-in-down">
-                <h3 class="text-sm font-bold text-blue-300 uppercase mb-3 border-b border-blue-500/20 pb-1">Nuevo Partido</h3>
+                <h3 class="text-sm font-bold text-blue-300 uppercase mb-3 border-b border-blue-500/20 pb-1">⚡ Accesos Rápidos (Favoritos)</h3>
+                
+                <div class="grid grid-cols-4 md:grid-cols-6 gap-2 mb-4">
+                    <button onclick="window.fillGameForm('LIGA MX', 'Querétaro')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-blue-500 rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">🐔</span> <span class="text-[9px] font-bold text-gray-300">Gallos</span>
+                    </button>
+                    <button onclick="window.fillGameForm('LIGA MX', 'Club América')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-yellow-500 rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">🦅</span> <span class="text-[9px] font-bold text-gray-300">América</span>
+                    </button>
+                    <button onclick="window.fillGameForm('LIGA MX', 'Chivas Guadalajara')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-red-500 rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">🐐</span> <span class="text-[9px] font-bold text-gray-300">Chivas</span>
+                    </button>
+                    <button onclick="window.fillGameForm('LIGA MX', 'Pumas UNAM')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-yellow-200 rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">🐱</span> <span class="text-[9px] font-bold text-gray-300">Pumas</span>
+                    </button>
+                    <button onclick="window.fillGameForm('LIGA ESPAÑOLA', 'Real Madrid')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-white rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">👑</span> <span class="text-[9px] font-bold text-gray-300">Madrid</span>
+                    </button>
+                    <button onclick="window.fillGameForm('LIGA ESPAÑOLA', 'FC Barcelona')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-blue-700 rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">🔵</span> <span class="text-[9px] font-bold text-gray-300">Barça</span>
+                    </button>
+                    <button onclick="window.fillGameForm('LMB', 'Conspiradores')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-purple-500 rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">⚾</span> <span class="text-[9px] font-bold text-gray-300">Conspira</span>
+                    </button>
+                    <button onclick="window.fillGameForm('LFA', 'Gallos Negros')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-gray-500 rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">🏈</span> <span class="text-[9px] font-bold text-gray-300">G.Negros</span>
+                    </button>
+                    <button onclick="window.fillGameForm('F1', 'GP F1')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-red-600 rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">🏎️</span> <span class="text-[9px] font-bold text-gray-300">F1</span>
+                    </button>
+                    <button onclick="window.fillGameForm('UFC', 'UFC Fight Night')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-red-600 rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">🥊</span> <span class="text-[9px] font-bold text-gray-300">UFC</span>
+                    </button>
+                    <button onclick="window.fillGameForm('BOX', 'Pelea Estelar')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-red-600 rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">🥊</span> <span class="text-[9px] font-bold text-gray-300">Box</span>
+                    </button>
+                    <button onclick="window.fillGameForm('LIGA INGLESA', 'Manchester City')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-blue-400 rounded p-2 flex flex-col items-center gap-1 transition">
+                        <span class="text-xl">🏙️</span> <span class="text-[9px] font-bold text-gray-300">ManCity</span>
+                    </button>
+                </div>
+
+                <h3 class="text-sm font-bold text-blue-300 uppercase mb-3 border-b border-blue-500/20 pb-1">Programación Manual</h3>
                 
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
@@ -5083,6 +5128,20 @@ function renderGameControlCard(game) {
     </div>
     `;
 }
+
+// Helper to pre-fill form
+window.fillGameForm = function (league, homeTeam) {
+  document.getElementById('new-league').value = league;
+  document.getElementById('new-home').value = homeTeam;
+  document.getElementById('new-away').value = '';
+  document.getElementById('new-away').focus();
+
+  // Auto set sport icon if needed or special cases
+  if (league === 'F1' || league === 'UFC' || league === 'BOX') {
+    document.getElementById('new-home').value = homeTeam;
+    document.getElementById('new-away').value = 'Evento';
+  }
+};
 
 window.submitNewGame = function () {
   const date = document.getElementById('new-date').value || new Date().toISOString().split('T')[0];
