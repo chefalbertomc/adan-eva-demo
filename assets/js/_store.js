@@ -588,6 +588,9 @@ class Store {
         setTimeout(startSync, 3000);
 
         this.listeners = [];
+        
+        // Iniciar Sync Local (Eventos entre pestañas)
+        this._initLocalSync();
     }
 
     addListener(callback) {
@@ -606,6 +609,46 @@ class Store {
                 console.error("Listener error:", e);
             }
         });
+    }
+
+    // --- CROSS-TAB SYNC (Exclusivo para Prototipo Local) ---
+    _initLocalSync() {
+        window.addEventListener('storage', (e) => {
+            if (e.key === STORE_KEY) {
+                console.log('🔄 Cambio detectado en otra pestaña. Sincronizando...');
+                this.data = JSON.parse(e.newValue); // Recargar datos frescos
+                this._triggerUIRefresh(); // Actualizar interfaz
+            }
+        });
+    }
+
+    _triggerUIRefresh() {
+        // PROTECTION: Don't refresh if user is typing!
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        const isTyping = (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT');
+
+        if (isTyping) {
+            console.log('⚠️ Skipping Auto-Refresh because user is typing/selecting');
+            return;
+        }
+
+        // Force UI Refresh based on current view
+        if (typeof window.renderHostessDashboard === 'function' && document.getElementById('content-tables')) {
+            console.log('🔄 Refreshing Hostess UI (Auto)');
+            window.renderHostessDashboard();
+        }
+        if (typeof window.renderManagerDashboard === 'function' && document.getElementById('manager-content')) {
+            console.log('🔄 Refreshing Manager UI (Auto)');
+            const currentTab = window.CURRENT_MANAGER_TAB || 'tables';
+            window.renderManagerDashboard(currentTab);
+        }
+        if (typeof window.renderWaiterDashboard === 'function' && document.getElementById('waitercontent-mesas')) {
+            console.log('🔄 Refreshing Waiter UI (Auto)');
+            window.renderWaiterDashboard();
+        }
+        
+        // Notificar listeners genéricos si los hay
+        this.notifyListeners();
     }
 
     // --- DATA VERSION ---
