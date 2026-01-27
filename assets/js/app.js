@@ -4839,11 +4839,20 @@ window.getTeamLogo = function (teamName) {
 
 function renderManagerGamesTab(container) {
   const games = window.db.getMatches();
-  const today = new Date().toISOString().split('T')[0];
+  // CRITICAL: Use Local Date to match Ingestor
+  const today = new Date().toLocaleDateString('en-CA');
+
+  console.log(`Render Games Tab. Today (Local): ${today}. Total Games in DB: ${games.length}`);
 
   // Filter games
   const todaysGames = games.filter(g => g.date === today);
   const futureGames = games.filter(g => g.date > today);
+
+  // DEBUG: If no games found, show alert in console
+  if (games.length > 0 && todaysGames.length === 0) {
+    console.warn("⚠️ Games exist but none match today's date:", today);
+    console.log("Sample Game Date:", games[0].date);
+  }
 
   const div = document.createElement('div');
   div.innerHTML = `
