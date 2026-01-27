@@ -5013,17 +5013,28 @@ function renderManagerGamesTab(container) {
             <div id="inline-add-game-form" class="hidden bg-gray-800/80 p-4 rounded-xl border border-blue-500/30 mb-6 shadow-inner animate-fade-in-down">
                 <h3 class="text-sm font-bold text-blue-300 uppercase mb-3 border-b border-blue-500/20 pb-1">Programación Manual</h3>
                 
+                <!-- FECHA PRIMERO - MUY VISIBLE -->
+                <div class="bg-blue-900/30 border-2 border-blue-500 rounded-lg p-3 mb-4">
+                    <label class="text-xs uppercase font-black text-blue-300 block mb-2">📅 FECHA DEL EVENTO</label>
+                    <input type="date" id="new-date" class="w-full bg-black text-white rounded-lg p-3 text-base font-bold border-2 border-blue-400 focus:border-blue-300" value="${today}">
+                </div>
+
+                <!-- Resto de campos -->
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
                         <label class="text-[10px] uppercase font-bold text-gray-400">Liga / Deporte</label>
-                        <select id="new-league" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600 focus:border-blue-500">
+                        <select id="new-league" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600">
                             <option value="LIGA MX">🇲🇽 LIGA MX</option>
                             <option value="LIGA INGLESA">🇬🇧 PREMIER</option>
                             <option value="LIGA ESPAÑOLA">🇪🇸 LA LIGA</option>
+                            <option value="CHAMPIONS">⭐ CHAMPIONS</option>
                             <option value="NFL">🏈 NFL</option>
                             <option value="NBA">🏀 NBA</option>
                             <option value="MLB">⚾ MLB</option>
-                            <option value="Other">Otro...</option>
+                            <option value="UFC">🥊 UFC</option>
+                            <option value="F1">🏎️ F1</option>
+                            <option value="Tenis">🎾 TENIS</option>
+                            <option value="Boxeo">🥊 BOXEO</option>
                         </select>
                     </div>
                     <div>
@@ -5031,13 +5042,6 @@ function renderManagerGamesTab(container) {
                          <input type="time" id="new-time" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600" value="19:00">
                     </div>
                 </div>
-                <div class="grid grid-cols-1 gap-3 mb-3">
-                    <div>
-                         <label class="text-[10px] uppercase font-bold text-gray-400">Fecha</label>
-                         <input type="date" id="new-date" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600" value="${today}">
-                    </div>
-                </div>
-                
                 <div class="grid grid-cols-2 gap-3 mb-4">
                     <div>
                         <input list="team-suggestions" id="new-home" placeholder="Equipo Local" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600 focus:border-blue-500">
