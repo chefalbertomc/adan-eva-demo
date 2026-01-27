@@ -5097,7 +5097,7 @@ function renderManagerGamesTab(container) {
                         <div class="flex justify-between items-center bg-black/20 p-3 rounded border border-white/5">
                             <div class="flex items-center gap-3">
                                 <div class="bg-gray-700 w-12 h-12 rounded flex items-center justify-center text-xl font-bold text-gray-400">
-                                    ${new Date(g.date).getDate()}
+                                    ${g.date.split('-')[2]}
                                 </div>
                                 <div class="flex items-center gap-2">
                                     ${window.getTeamLogo(g.homeTeam) ? `<img src="${window.getTeamLogo(g.homeTeam)}" class="w-6 h-6 object-contain" style="max-width: 24px; max-height: 24px;">` : ''}
