@@ -4852,7 +4852,10 @@ function renderManagerGamesTab(container) {
   if (games.length > 0 && todaysGames.length === 0) {
     console.warn("⚠️ Games exist but none match today's date:", today);
     console.log("Sample Game Date:", games[0].date);
+    console.log("All Game Dates:", games.map(g => `${g.league}: ${g.date}`));
   }
+
+  console.log(`📊 Today's Games: ${todaysGames.length}, Future: ${futureGames.length}`);
 
   const div = document.createElement('div');
   div.innerHTML = `
@@ -5067,11 +5070,11 @@ function renderManagerGamesTab(container) {
                                     ${new Date(g.date).getDate()}
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    ${window.getTeamLogo(g.homeTeam) ? `<img src="${window.getTeamLogo(g.homeTeam)}" class="w-6 h-6 object-contain">` : ''}
+                                    ${window.getTeamLogo(g.homeTeam) ? `<img src="${window.getTeamLogo(g.homeTeam)}" class="w-6 h-6 object-contain" style="max-width: 24px; max-height: 24px;">` : ''}
                                     <div class="font-bold text-white text-sm">
                                         ${g.homeTeam ? `${g.homeTeam} vs ${g.awayTeam}` : g.match}
                                     </div>
-                                    ${window.getTeamLogo(g.awayTeam) ? `<img src="${window.getTeamLogo(g.awayTeam)}" class="w-6 h-6 object-contain">` : ''}
+                                    ${window.getTeamLogo(g.awayTeam) ? `<img src="${window.getTeamLogo(g.awayTeam)}" class="w-6 h-6 object-contain" style="max-width: 24px; max-height: 24px;">` : ''}
                                 </div>
                             </div>
                             <button onclick="window.db.removeGame('${g.id}'); renderManagerDashboard('games');" class="text-gray-600 hover:text-red-400 px-2">🗑️</button>
