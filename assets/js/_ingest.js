@@ -101,12 +101,25 @@ window.SportIngestor = class {
                         return;
                     }
 
+                    // SAFETY CHECK: Ensure competitors exist (F1 sometimes lacks this structure or is different)
+                    if (!competition.competitors || !Array.isArray(competition.competitors)) {
+                        console.warn(`⚠️ Skipping event due to missing competitors: ${e.shortName || e.id}`);
+                        return;
+                    }
+
                     const home = competition.competitors.find(c => c.homeAway === 'home');
                     const away = competition.competitors.find(c => c.homeAway === 'away');
 
-                    // Fallbacks for sports like F1/Boxing where "home/away" concept differs
-                    const homeName = home?.team?.displayName || e.name || 'Evento';
-                    const awayName = away?.team?.displayName || '';
+                    // Specific Handling for F1/MMA/Boxing where homeAway might not act as expected or be generic
+                    let homeName = home?.team?.displayName || competition.competitors[0]?.athlete?.displayName || e.name || 'Evento';
+                    let awayName = away?.team?.displayName || competition.competitors[1]?.athlete?.displayName || '';
+
+                    // Logic to handle F1 Grand Prix names better
+                    if (league.type === 'racing') {
+                        homeName = e.shortName || e.name; // e.g. "Mexico City GP"
+                        awayName = 'F1 Race';
+                    }
+
                     const homeLogo = home?.team?.logo || '';
                     const awayLogo = away?.team?.logo || '';
 
