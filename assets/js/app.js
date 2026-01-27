@@ -4658,10 +4658,18 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
 
   if (activeTab === 'tables') renderManagerTablesTab(content);
   else if (activeTab === 'games') renderManagerGamesTab(content);
+  else if (activeTab === 'reservations') renderManagerReservationsTab(content); // NEW TAB
   else if (activeTab === 'reports') renderManagerReportsTab(content);
 
-  // ALWAYS RENDER RESERVATIONS AT BOTTOM
-  renderManagerReservations(div.querySelector('#reservations-list'));
+  // ALWAYS RENDER RESERVATIONS AT BOTTOM (Only if NOT in reservations tab to avoid dupes)
+  if (activeTab !== 'reservations') {
+    // Small widget at bottom
+    renderManagerReservations(div.querySelector('#reservations-list'));
+  } else {
+    // Hide the bottom widget container if we represent the full page
+    const bottomWidget = div.querySelector('#manager-reservations');
+    if (bottomWidget) bottomWidget.style.display = 'none';
+  }
 };
 
 // NEW: Render Reservations
@@ -6327,3 +6335,68 @@ window.submitReservation = function () {
   window.db.addReservation(data);
   document.getElementById('reservation-modal').classList.add('hidden');
 };
+
+// ==========================================
+// MANAGER RESERVATIONS TAB (FULL CRUD)
+// ==========================================
+function renderManagerReservationsTab(container) {
+  container.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-black text-white italic tracking-tighter">ADMINISTRAR RESERVACIONES</h2>
+          <button onclick="window.showReservationModal()" class="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-black shadow-lg flex items-center gap-2 transform active:scale-95 transition">
+            🎟️ CREAR RESERVACIÓN
+          </button>
+        </div>
+        
+        <div id="manager-reservations-list" class="space-y-4">
+            <!-- List injected via renderManagerReservations() logic but customized for full page -->
+        </div>
+    `;
+
+  // Re-use the list renderer but point to our new container
+  const listContainer = container.querySelector('#manager-reservations-list');
+
+  const reservations = (window.db.getReservations ? window.db.getReservations() : []) || [];
+
+  if (reservations.length === 0) {
+    listContainer.innerHTML = `
+            <div class="text-center py-12 opacity-50">
+                <div class="text-6xl mb-4">📭</div>
+                <p class="text-xl text-gray-400">No hay reservaciones activas</p>
+            </div>
+        `;
+    return;
+  }
+
+  listContainer.innerHTML = reservations.map(r => `
+        <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${r.vip === 'diamond' ? 'border-blue-400 bg-blue-900/10' : r.vip === 'blazin' ? 'border-orange-500 bg-orange-900/10' : 'border-gray-600'} flex justify-between items-center animate-fade-in text-white shadow-lg relative group">
+            
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-1">
+                    <span class="font-black text-xl uppercase tracking-tight">${r.customerName}</span>
+                    ${r.vip === 'diamond' ? '<span class="bg-blue-900 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500">DIAMOND</span>' : r.vip === 'blazin' ? '<span class="bg-orange-900 text-orange-300 text-[10px] font-bold px-2 py-0.5 rounded border border-orange-500">BLAZIN</span>' : ''}
+                </div>
+                
+                <div class="flex items-center gap-4 text-sm text-gray-400 mb-2">
+                    <div class="flex items-center gap-1"><span class="text-white">📅</span> ${r.time} hrs</div>
+                    <div class="flex items-center gap-1"><span class="text-white">👥</span> ${r.pax} pax</div>
+                </div>
+
+                <div class="bg-black/30 p-2 rounded border border-gray-700/50 inline-block">
+                     <div class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-0.5">MOTIVO / PARTIDO</div>
+                     <div class="text-white font-bold text-sm">
+                        ${r.game ? `📺 ${r.game}` : `✨ ${r.reason}`}
+                     </div>
+                </div>
+            </div>
+
+            <!-- ACTIONS -->
+            <div class="flex flex-col gap-2">
+                <button onclick="if(confirm('¿Borrar reservación de ${r.customerName}?')) { window.db.removeReservation('${r.id}'); renderManagerDashboard('reservations'); }" 
+                    class="bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white px-3 py-2 rounded transition border border-red-900/50">
+                    🗑️ Borrar
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
