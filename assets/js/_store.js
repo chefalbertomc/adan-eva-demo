@@ -2445,15 +2445,11 @@ class Store {
 
     removeGame(gameId) {
         const info = this.getDailyInfo();
-        info.games = info.games.filter(g => g.id !== gameId);
-        this._save();
+        const oldGames = info.games || [];
+        const newGames = oldGames.filter(g => g.id !== gameId);
 
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, setDoc } = window.FB;
-            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
-                .catch(e => console.error('🔥 Sync remove game error', e));
-        }
+        // Use centralized updater (handles Firebase sync to allGames)
+        this.updateDailyGames(newGames);
     }
 
     clearTodayGames() {
