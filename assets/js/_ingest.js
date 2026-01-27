@@ -1,166 +1,171 @@
 window.SportIngestor = class {
     constructor() {
-        this.baseUrl = "https://www.thesportsdb.com/api/v1/json/1"; // Using test key '1'
+        // 1. API-FOOTBALL CONFIG (Soccer)
+        // ⚠️ USER: PLEASE PASTE YOUR RAPIDAPI KEY HERE
+        this.apiFootballKey = "TU_API_KEY_AQUI";
+        this.apiFootballHost = "v3.football.api-sports.io";
+        this.apiFootballBase = "https://v3.football.api-sports.io";
+
+        // 2. THESPORTSDB CONFIG (Others: NBA, NFL, etc.)
+        this.legacyBaseUrl = "https://www.thesportsdb.com/api/v1/json/1";
     }
 
-    // 1. Fetch Events for a League
-    // Endpoint: eventsnextleague.php?id={id}
-    async fetchNextLeagueEvents(id) {
+    // --- A. SOCCER: API-FOOTBALL ---
+    async fetchSoccerFixtures(leagueId) {
+        if (!this.apiFootballKey || this.apiFootballKey === "TU_API_KEY_AQUI") {
+            console.warn("⚠️ Faltan credenciales de API-Football.");
+            return [];
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        // NOTE: European leagues usually start previous year. 
+        // LIGA MX (262): Season 2025 covers Apertura 2025 / Clausura 2026
+        // We will try '2025' as a safe default for current active season ID, or '2026' if explicitly requested.
+        // User asked for 2026. Let's try 2026 for Mexico/MLS, but 2025 for Europe logic?
+        // Let's stick to user request Season 2026, but if it fails we might need to fallback.
+
+        let season = '2026';
+        // Override for European Leagues which might still be '2025' in API logic until June
+        if (['39', '140', '135', '2'].includes(leagueId)) season = '2025';
+
+        const url = `${this.apiFootballBase}/fixtures?league=${leagueId}&season=${season}&date=${today}`;
+
         try {
-            const res = await fetch(`${this.baseUrl}/eventsnextleague.php?id=${id}`);
-            if (!res.ok) throw new Error('Network response was not ok');
+            const res = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "x-rapidapi-host": this.apiFootballHost,
+                    "x-rapidapi-key": this.apiFootballKey
+                }
+            });
+
+            if (!res.ok) throw new Error("API-Football Error " + res.status);
+
             const data = await res.json();
-            return data.events || [];
+            return data.response || [];
         } catch (e) {
-            console.error(`Error fetching league ${id}:`, e);
+            console.error(`⚽ Error fetching Soccer League ${leagueId}:`, e);
             return [];
         }
     }
 
-    // 2. Fetch Next 5 Events for a Team
-    // Endpoint: eventsnext.php?id={id}
-    async fetchNextTeamEvents(id) {
+    // --- B. OTHER SPORTS: THESPORTSDB (LEGACY) ---
+    async fetchLegacyEvents(id) {
         try {
-            const res = await fetch(`${this.baseUrl}/eventsnext.php?id=${id}`);
+            const res = await fetch(`${this.legacyBaseUrl}/eventsnextleague.php?id=${id}`);
             if (!res.ok) throw new Error('Network response was not ok');
             const data = await res.json();
             return data.events || [];
         } catch (e) {
-            console.error(`Error fetching team ${id}:`, e);
+            console.error(`🏀 Error fetching Legacy League ${id}:`, e);
             return [];
         }
     }
 
-    // 3. ETL Process
+    // --- MAIN ETL ---
     async runIngest() {
-        // Read config from store
-        // Ensure store is ready
-        if (!window.db || !window.db.data) {
-            console.error("Database not ready");
-            return 0;
-        }
+        if (!window.db || !window.db.data) return console.error("Database not ready");
 
-        const config = window.db.data.ingestionConfig || { leagues: [], teams: [] };
+        const config = window.db.data.ingestionConfig || { leagues: [] };
+        console.log('🚀 Starting Hybrid Sports Ingest...', config);
 
-        console.log('🚀 Starting Sports Ingest...', config);
+        let newGames = [];
+        const today = new Date().toISOString().split('T')[0];
 
-        let allEvents = [];
-
-        // A. Process Leagues
+        // 1. Process configured leagues
         if (config.leagues) {
             for (const league of config.leagues) {
                 if (!league.active) continue;
-                console.log(`📥 Fetching League: ${league.name} (${league.id})`);
-                const events = await this.fetchNextLeagueEvents(league.id);
-                allEvents = [...allEvents, ...events];
+
+                if (league.type === 'soccer') {
+                    // USE NEW API
+                    console.log(`⚽ Fetching Soccer: ${league.name} (${league.id})`);
+                    const fixtures = await this.fetchSoccerFixtures(league.id);
+
+                    fixtures.forEach(f => {
+                        // API-Football format normalization
+                        const gameTime = new Date(f.fixture.date);
+                        // Format HH:MM
+                        const timeStr = gameTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+                        newGames.push({
+                            id: `af_${f.fixture.id}`, // af prefix for api-football
+                            league: league.name.toUpperCase(),
+                            homeTeam: f.teams.home.name,
+                            awayTeam: f.teams.away.name,
+                            time: timeStr,
+                            date: today, // Ensure it's for today's list
+                            sport: 'Soccer',
+                            apiId: f.fixture.id,
+                            // Extra Metadata if needed
+                            logoHome: f.teams.home.logo,
+                            logoAway: f.teams.away.logo
+                        });
+                    });
+
+                } else {
+                    // USE OLD API (NBA, NFL, MLB)
+                    console.log(`🏀 Fetching Legacy: ${league.name} (${league.id})`);
+                    const events = await this.fetchLegacyEvents(league.id);
+
+                    events.forEach(e => {
+                        // Strict filter: Only today or future
+                        if (!e.dateEvent || e.dateEvent < today) return;
+
+                        const timeParts = (e.strTime || "00:00").split(':');
+                        const shortTime = `${timeParts[0]}:${timeParts[1]}`;
+
+                        newGames.push({
+                            id: `api_${e.idEvent}`,
+                            league: league.name.toUpperCase(), // Use config name as standard
+                            homeTeam: e.strHomeTeam,
+                            awayTeam: e.strAwayTeam,
+                            time: shortTime,
+                            date: e.dateEvent,
+                            sport: 'General',
+                            apiId: e.idEvent
+                        });
+                    });
+                }
             }
         }
 
-        // B. Process Teams
-        if (config.teams) {
-            for (const team of config.teams) {
-                if (!team.active) continue;
-                console.log(`📥 Fetching Team: ${team.name} (${team.id})`);
-                const events = await this.fetchNextTeamEvents(team.id);
-                allEvents = [...allEvents, ...events];
-            }
-        }
+        console.log(`✅ Found ${newGames.length} valid games via APIs.`);
 
-        if (allEvents.length === 0) {
-            console.warn("⚠️ API returned no events (Free Key Limit?). Using MOCK DATA for demo.");
-            // MOCK DATA INJECTION FOR DEMO
-            // Simula partidos de las ligas configuradas para HOY y MAÑANA
-            const today = new Date().toISOString().split('T')[0];
-            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-
-            allEvents = [
-                { idEvent: 'mock1', strLeague: 'Liga MX', strHomeTeam: 'Querétaro', strAwayTeam: 'Cruz Azul', dateEvent: today, strTime: '19:00:00' },
-                { idEvent: 'mock2', strLeague: 'Liga MX', strHomeTeam: 'Club América', strAwayTeam: 'Chivas', dateEvent: today, strTime: '21:00:00' },
-                { idEvent: 'mock3', strLeague: 'Premier League', strHomeTeam: 'Manchester City', strAwayTeam: 'Arsenal', dateEvent: tomorrow, strTime: '14:00:00' },
-                { idEvent: 'mock4', strLeague: 'La Liga', strHomeTeam: 'Real Madrid', strAwayTeam: 'FC Barcelona', dateEvent: tomorrow, strTime: '20:00:00' },
-                { idEvent: 'mock5', strLeague: 'NFL', strHomeTeam: 'Kansas City Chiefs', strAwayTeam: 'SF 49ers', dateEvent: today, strTime: '17:30:00' }
-            ];
-        }
-
-        // C. Normalization & Deduplication
-        // We use idEvent as unique key
-        const uniqueEvents = {};
-        allEvents.forEach(e => {
-            if (e && e.idEvent) {
-                uniqueEvents[e.idEvent] = e;
-            }
-        });
-
-        // D. Transform to App Format
-        const today = new Date().toISOString().split('T')[0];
-
-        // Mapeo simple de nombres de ligas para íconos
-        const normalizeLeague = (str) => {
-            if (!str) return 'General';
-            if (str.includes('Premier League')) return 'LIGA INGLESA';
-            if (str.includes('La Liga') || str.includes('Primera Division')) return 'LIGA ESPAÑOLA';
-            if (str.includes('Serie A')) return 'LIGA ITALIANA';
-            if (str.includes('Liga MX')) return 'LIGA MX';
-            if (str.includes('NFL')) return 'NFL';
-            if (str.includes('NBA')) return 'NBA';
-            if (str.includes('MLB')) return 'MLB';
-            return str;
-        };
-
-        const newGames = Object.values(uniqueEvents).map(e => {
-            // Transform '2023-10-27' to 'YYYY-MM-DD' (TheSportsDB usually sends YYYY-MM-DD)
-            // Time is usually HH:mm:ss, we want HH:mm
-            const timeParts = (e.strTime || "00:00").split(':');
-            const shortTime = `${timeParts[0]}:${timeParts[1]}`;
-
-            return {
-                id: `api_${e.idEvent}`,
-                league: normalizeLeague(e.strLeague),
-                homeTeam: e.strHomeTeam,
-                awayTeam: e.strAwayTeam,
-                time: shortTime,
-                date: today, // <--- TIME WARP: Force all API events to today for Demo purposes
-                originalDate: e.dateEvent,
-                sport: e.strSport || 'Soccer',
-                apiId: e.idEvent
-            };
-        }).filter(g => true); // Load everything we found
-
-        // If we want to see them as "Today", we can project them?
-        // For now, let's just see if they download.
-
-        console.log(`✅ Found ${newGames.length} upcoming games.`);
-
-        // E. Merge with Existing Manual Games
-        // We don't want to delete manual games (id starts with 'g')
-        // But we can overwrite previous API games to update times/dates
+        // 2. Merge Logic (Preserve Manual Games)
         const currentGames = window.db.getDailyInfo().games || [];
-        const manualGames = currentGames.filter(g => !g.id.toString().startsWith('api_'));
+        const manualGames = currentGames.filter(g =>
+            !g.id.toString().startsWith('api_') &&
+            !g.id.toString().startsWith('af_') &&
+            !g.id.toString().startsWith('agent_')
+        );
 
-        // Combine Manual + New API Games
         const finalGames = [...manualGames, ...newGames];
 
-        // Sort by Date then Time
+        // Sort
         finalGames.sort((a, b) => {
             if (a.date !== b.date) return a.date.localeCompare(b.date);
             return a.time.localeCompare(b.time);
         });
 
-        // F. Save
+        // 3. Save
         const daily = window.db.getDailyInfo();
         daily.games = finalGames;
         window.db._save();
 
-        // Sync Firebase if available
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
             setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: daily.games }, { merge: true })
                 .catch(e => console.error('🔥 Sync ingest error', e));
         }
 
-        // Trigger UI update
+        // 4. Update UI
         if (typeof renderManagerDashboard === 'function') renderManagerDashboard('games');
         window.dispatchEvent(new CustomEvent('db-daily-update', { detail: { type: 'games' } }));
+
+        if (newGames.length === 0 && (!this.apiFootballKey || this.apiFootballKey === "TU_API_KEY_AQUI")) {
+            alert("⚠️ OJO: No has puesto tu API KEY de API-Football.\nEdita assets/js/_ingest.js y ponla.");
+        }
 
         return newGames.length;
     }

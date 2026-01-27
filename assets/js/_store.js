@@ -452,13 +452,17 @@ const INITIAL_DATA = {
     // AUTO-INGESTION CONFIGURATION
     ingestionConfig: {
         leagues: [
-            { id: '4328', name: 'Premier League', active: true },
-            { id: '4335', name: 'La Liga', active: true },
-            { id: '4332', name: 'Serie A', active: true },
-            { id: '4345', name: 'Liga MX', active: true },
-            { id: '4391', name: 'NFL', active: true },
-            { id: '4387', name: 'NBA', active: true },
-            { id: '4424', name: 'MLB', active: true }
+            // API-FOOTBALL IDs (Soccer)
+            { id: '39', name: 'Premier League', type: 'soccer', active: true },      // Antes 4328
+            { id: '140', name: 'La Liga', type: 'soccer', active: true },            // Antes 4335
+            { id: '135', name: 'Serie A', type: 'soccer', active: true },            // Antes 4332 (135 es It)
+            { id: '262', name: 'Liga MX', type: 'soccer', active: true },            // Antes 4345
+            { id: '2', name: 'Champions League', type: 'soccer', active: true },     // Nuevo
+
+            // THESPORTSDB IDs (Legacy/Other Sports)
+            { id: '4391', name: 'NFL', type: 'nfl', active: true },
+            { id: '4387', name: 'NBA', type: 'nba', active: true },
+            { id: '4424', name: 'MLB', type: 'mlb', active: true }
         ],
         teams: []
     },
