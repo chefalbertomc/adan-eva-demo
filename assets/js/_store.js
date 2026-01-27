@@ -2008,6 +2008,7 @@ class Store {
     }
 
     // Request a game to be added (Hostess -> Manager)
+    // Request a game to be added (Hostess -> Manager)
     requestGame(gameName) {
         if (!gameName) return;
 
@@ -2026,15 +2027,17 @@ class Store {
         info.gameRequests.push(newReq);
         this._save();
 
-        // Sync to Firebase
+        // Sync to Firebase (Use allGames)
         if (window.dbFirestore && window.FB) {
-            const { doc, updateDoc, arrayUnion } = window.FB;
-            updateDoc(doc(window.dbFirestore, 'config', 'daily'), {
-                gameRequests: arrayUnion(newReq)
-            }).then(() => {
-                console.log('📨 Game Request sent to Manager:', gameName);
-                if (typeof alert === 'function') alert(`✅ Solicitud enviada al Gerente: "${gameName}"`);
-            }).catch(e => console.error('🔥 Error sending game request:', e));
+            const { doc, setDoc } = window.FB;
+            const docRef = doc(window.dbFirestore, 'config', 'allGames');
+
+            // Use setDoc with merge instead of arrayUnion to be safer with non-existent docs
+            setDoc(docRef, { gameRequests: info.gameRequests }, { merge: true })
+                .then(() => {
+                    console.log('📨 Game Request sent to Manager:', gameName);
+                    if (typeof alert === 'function') alert(`✅ Solicitud enviada al Gerente: "${gameName}"`);
+                }).catch(e => console.error('🔥 Error sending game request:', e));
         }
     }
 
