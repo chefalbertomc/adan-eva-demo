@@ -67,62 +67,67 @@ window.SportIngestor = class {
         if (!window.db || !window.db.data) return console.error("Database not ready");
 
         const config = window.db.data.ingestionConfig || { leagues: [] };
-        console.log('🚀 Starting ESPN Ingest (Full Coverage)...', config);
+        console.log('🚀 ESPN Ingest BYPASSED (CORS Blocked) - Using Fallback Only');
 
         let newGames = [];
-        // CRITICAL FIX: Use LOCAL DATE string, not UTC
-        // The user is in CST (-6), so UTC might be tomorrow.
+        // CRITICAL: Use same date format as UI expects
         const todayLocal = new Date().toLocaleDateString('en-CA');
-        console.log(`📅 Local Ingest Date: ${todayLocal}`);
+        console.log(`📅 Local Date: ${todayLocal}`);
 
+        // SKIP ESPN API ENTIRELY - CORS is blocking all requests
+        // Go straight to fallback
+        console.log("⚠️ Skipping ESPN API calls (CORS blocked). Using hardcoded games.");
+
+        /*
+        // ORIGINAL LOOP - COMMENTED OUT DUE TO CORS
         if (config.leagues) {
             for (const league of config.leagues) {
                 if (!league.active) continue;
-
+        
                 const events = await this.fetchEspnLeague(league);
                 console.log(`🔎 ESPN ${league.name}: Found ${events.length} raw events.`);
-
+        
                 events.forEach(e => {
                     // Start permissive: Accept 'pre' (scheduled), 'in' (live), 'post' (finished recently)
                     const status = e.status?.type?.state;
-
+        
                     // ESPN Data Structure
                     const competition = e.competitions?.[0];
                     if (!competition) return;
-
+        
                     const gameDate = new Date(e.date); // "2026-01-27T19:00:00Z" (UTC)
                     // Convert to Local Date String for storage
                     const dateStr = gameDate.toLocaleDateString('en-CA'); // YYYY-MM-DD local
                     const timeStr = gameDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-
+        
                     // 1. DATE FILTER: Allow Today AND Future (for upcoming games in list)
                     if (dateStr < todayLocal) {
                         // console.log(`⏩ Skipping old game: ${e.shortName} (${dateStr})`);
                         return;
                     }
-
+        
                     // SAFETY CHECK: Ensure competitors exist (F1 sometimes lacks this structure or is different)
                     if (!competition.competitors || !Array.isArray(competition.competitors)) {
                         console.warn(`⚠️ Skipping event due to missing competitors: ${e.shortName || e.id}`);
                         return;
                     }
-
+        
                     const home = competition.competitors.find(c => c.homeAway === 'home');
                     const away = competition.competitors.find(c => c.homeAway === 'away');
-
+        
                     // Specific Handling for F1/MMA/Boxing where homeAway might not act as expected or be generic
                     let homeName = home?.team?.displayName || competition.competitors[0]?.athlete?.displayName || e.name || 'Evento';
                     let awayName = away?.team?.displayName || competition.competitors[1]?.athlete?.displayName || '';
-
+        
                     // Logic to handle F1 Grand Prix names better
                     if (league.type === 'racing') {
                         homeName = e.shortName || e.name; // e.g. "Mexico City GP"
                         awayName = 'F1 Race';
                     }
-
+        
                     const homeLogo = home?.team?.logo || '';
                     const awayLogo = away?.team?.logo || '';
-
+        
                     newGames.push({
                         id: `espn_${e.id}`,
                         league: league.name.toUpperCase(),
@@ -140,14 +145,11 @@ window.SportIngestor = class {
                 });
             }
         }
+        */ // END COMMENTED ESPN API LOOP
 
-        console.log(`✅ ESPN Found ${newGames.length} active/scheduled games.`);
-
-        // 🛑 FALLBACK FORCE: If 0 games found from API, use Backup List to prevent "Error" UI
-        if (newGames.length === 0) {
-            console.warn("⚠️ API yielded 0 games. Using Fallback List.");
-            newGames = this.getFallbackGames();
-        }
+        // FORCE FALLBACK ALWAYS (ESPN blocked)
+        console.log("🛡️ Using Fallback NBA Games (7 games)");
+        newGames = this.getFallbackGames();
 
         // Merge Logic
         const currentGames = window.db.getDailyInfo().games || [];
