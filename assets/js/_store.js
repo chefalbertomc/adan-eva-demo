@@ -2069,6 +2069,61 @@ class Store {
         }
     }
 
+    // --- RESERVATIONS SYSTEM ---
+
+    getReservations() {
+        const info = this.getDailyInfo();
+        return info.reservations || [];
+    }
+
+    addReservation(data) {
+        // data: { customerName, pax, date, time, reason, game, vip (blazin/diamond/null), notes }
+        const info = this.getDailyInfo();
+        if (!info.reservations) info.reservations = [];
+
+        const newRes = {
+            id: 'res_' + Date.now(),
+            createdAt: new Date().toISOString(),
+            status: 'active', // active, seated, cancelled
+            ...data
+        };
+
+        info.reservations.push(newRes);
+        this._save();
+
+        // Sync to config/reservations (or allGames for simplicity if preferred, but separate is better)
+        // Let's stick to 'allGames' for now as the daily sync hub, or create 'config/reservations'
+        // Using 'allGames' so we don't multiply listener sources for Manager
+        this.updateDailyGames(info.games); // Trigger sync
+
+        // Also direct sync specifically for reservations if we want speed
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            const docRef = doc(window.dbFirestore, 'config', 'allGames');
+            setDoc(docRef, { reservations: info.reservations }, { merge: true })
+                .then(() => {
+                    console.log('🎟️ Reservation synced:', newRes.customerName);
+                    if (typeof showToast === 'function') showToast('Reservación Guardada', 'success');
+                });
+        }
+        return newRes;
+    }
+
+    removeReservation(resId) {
+        const info = this.getDailyInfo();
+        if (!info.reservations) return;
+
+        info.reservations = info.reservations.filter(r => r.id !== resId);
+        this._save();
+
+        // Sync
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            const docRef = doc(window.dbFirestore, 'config', 'allGames');
+            setDoc(docRef, { reservations: info.reservations }, { merge: true });
+        }
+    }
+
     addGame(arg1) {
         // Advanced Signature: addGame({ date, time, sport, league, homeTeam, awayTeam, match, tvs, audio })
         let gameData = arg1;
