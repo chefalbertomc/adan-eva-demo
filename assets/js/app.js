@@ -807,9 +807,10 @@ function renderHostessDashboard() {
       <div class="card">
         <div class="flex justify-between items-center mb-6">
           <h3 class="text-xl">Reservaciones de Hoy</h3>
-          <button onclick="window.showReservationModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2">
-            🎟️ Nueva Reservación
-          </button>
+          <!-- MOVED TO MANAGER: <button onclick="window.showReservationModal()" ...> -->
+          <div class="text-sm bg-blue-900/30 px-3 py-1 rounded text-blue-300">
+             📌 Solo Lectura
+          </div>
         </div>
         
         ${reservations.length === 0 ? `
@@ -4631,6 +4632,13 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
             <span class="bottom-nav-label">Partidos</span>
             ${(window.db.getDailyInfo().gameRequests || []).length > 0 ? '<span class="bottom-nav-badge">' + (window.db.getDailyInfo().gameRequests || []).length + '</span>' : ''}
         </button>
+        
+        <!-- NEW: Reservations Tab -->
+        <button onclick="renderManagerDashboard('reservations')" id="managertab-reservations" class="bottom-nav-item ${activeTab === 'reservations' ? 'active' : ''}" style="position: relative;">
+            <span class="bottom-nav-icon">🎟️</span>
+            <span class="bottom-nav-label">Reservas</span>
+        </button>
+
         <button onclick="renderManagerDashboard('reports')" id="managertab-reports" class="bottom-nav-item ${activeTab === 'reports' ? 'active' : ''}" style="position: relative;">
             <span class="bottom-nav-icon">📊</span>
             <span class="bottom-nav-label">Reportes</span>
