@@ -4968,6 +4968,9 @@ function renderManagerGamesTab(container) {
 
   console.log(`📊 Today's Games: ${todaysGames.length}, Future: ${futureGames.length}`);
 
+  // CRITICAL FIX: Clear duplicate content before rendering
+  container.innerHTML = '';
+
   const div = document.createElement('div');
   div.innerHTML = `
     <!-- MAIN CONTAINER -->
