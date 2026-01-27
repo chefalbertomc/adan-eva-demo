@@ -621,34 +621,73 @@ function renderHostessDashboard() {
                         <button type="button" onclick="this.closest('form').classList.add('hidden')" class="text-gray-500 hover:text-white">✕</button>
                     </div>
                     
-                    <!-- Team Suggestions DataList -->
+                    <!-- Team Suggestions DataList (Exact names from TEAM_LOGOS) -->
                     <datalist id="team-suggestions">
+                        <!-- Liga MX -->
+                        <option value="Club América">
+                        <option value="Chivas Guadalajara">
+                        <option value="Cruz Azul">
+                        <option value="Pumas UNAM">
+                        <option value="Tigres UANL">
+                        <option value="Rayados Monterrey">
+                        <option value="Toluca">
+                        <option value="Santos Laguna">
+                        <option value="Pachuca">
+                        <option value="León">
+                        <option value="Atlas">
+                        <option value="Querétaro">
+                        <option value="Puebla">
+                        <option value="Atlético San Luis">
+                        <option value="Necaxa">
+                        <option value="Mazatlán FC">
+                        <option value="Xolos Tijuana">
+                        <option value="Juárez Bravos">
+                        <!-- España -->
+                        <option value="Real Madrid">
+                        <option value="FC Barcelona">
+                        <option value="Atlético Madrid">
+                        <!-- Inglaterra -->
+                        <option value="Manchester City">
+                        <option value="Liverpool">
+                        <option value="Arsenal">
+                        <option value="Manchester United">
+                        <!-- NFL -->
+                        <option value="Kansas City Chiefs">
+                        <option value="San Francisco 49ers">
+                        <option value="Dallas Cowboys">
+                        <!-- NBA -->
                         <option value="Los Angeles Lakers">
                         <option value="Golden State Warriors">
                         <option value="Boston Celtics">
+                        <option value="Chicago Bulls">
                         <option value="Miami Heat">
-                        <option value="Dallas Mavericks">
-                        <option value="Phoenix Suns">
-                        <option value="New York Knicks">
-                        <option value="Brooklyn Nets">
-                        <option value="América">
-                        <option value="Chivas">
-                        <option value="Cruz Azul">
-                        <option value="Tigres">
-                        <option value="Monterrey">
-                        <option value="Pumas">
-                        <option value="Real Madrid">
-                        <option value="Barcelona">
-                        <option value="Manchester United">
-                        <option value="Liverpool">
-                        <option value="Arsenal">
-                        <option value="Chelsea">
+                        <!-- MLB -->
+                        <option value="New York Yankees">
+                        <option value="Los Angeles Dodgers">
+                        <option value="Boston Red Sox">
                     </datalist>
                     
                     <div class="grid grid-cols-2 gap-2">
                         <input type="text" id="quick-game-home" list="team-suggestions" placeholder="🏠 Equipo Local" class="bg-gray-900 text-white border border-gray-600 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none" required>
                         <input type="text" id="quick-game-away" list="team-suggestions" placeholder="✈️ Equipo Visitante" class="bg-gray-900 text-white border border-gray-600 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none" required>
                     </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="quick-game-league" class="bg-gray-900 text-white border border-gray-600 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none" required>
+                            <option value="">🏆 Liga / Deporte</option>
+                            <option value="Liga MX">🇲🇽 Liga MX</option>
+                            <option value="La Liga">🇪🇸 La Liga</option>
+                            <option value="Premier League">🏴 Premier League</option>
+                            <option value="NBA">🏀 NBA</option>
+                            <option value="NFL">🏈 NFL</option>
+                            <option value="MLB">⚾ MLB</option>
+                            <option value="UFC">🥊 UFC</option>
+                            <option value="F1">🏎️ F1</option>
+                            <option value="Tenis">🎾 Tenis</option>
+                            <option value="Boxeo">🥊 Boxeo</option>
+                        </select>
+                        <input type="date" id="quick-game-date" class="bg-gray-900 text-white border border-gray-600 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none" required>
+                    </div>
+                    <input type="time" id="quick-game-time" class="bg-gray-900 text-white border border-gray-600 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none w-full" required>>
                    </form>
                     
                     <div class="grid grid-cols-2 gap-4 mb-6">
@@ -1545,28 +1584,55 @@ window.saveCustomGameSplit = function (visitId) {
 // Helper for Manager Add Game Form
 window.addGameFromManager = function () {
   const league = document.getElementById('new-league').value;
+  const date = document.getElementById('new-date').value; // Now reads the actual date field
   const time = document.getElementById('new-time').value;
   const home = document.getElementById('new-home').value.trim();
   const away = document.getElementById('new-away').value.trim();
 
-  if (!home || !away || !time) {
-    alert('Por favor completa todos los campos (Local, Visitante, Hora)');
+  // Individual sports (no home/away concept)
+  const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
+  const isIndividual = individualSports.includes(league);
+
+  if (!league || !time || !date) {
+    alert('Por favor completa Liga, Fecha y Hora');
     return;
   }
 
-  // Auto-formatting (optional)
-  window.db.addGame({
+  if (!isIndividual && (!home || !away)) {
+    alert('Por favor completa Equipo Local y Visitante');
+    return;
+  }
+
+  if (isIndividual && !home) {
+    alert('Por favor escribe el nombre del evento (ej: "Hamilton vs Verstappen", "Canelo vs GGG")');
+    return;
+  }
+
+  // Build game object
+  const gameData = {
     league,
-    homeTeam: home,
-    awayTeam: away,
+    date, // Include the date
     time
-  });
+  };
+
+  if (isIndividual) {
+    // For individual sports, use "match" field instead of homeTeam/awayTeam
+    gameData.match = home; // E.g. "Hamilton vs Verstappen"
+    gameData.sport = league;
+  } else {
+    gameData.homeTeam = home;
+    gameData.awayTeam = away;
+  }
+
+  window.db.addGame(gameData);
 
   // Clear and refresh
-  document.getElementById('new-home').value = '';
-  document.getElementById('new-away').value = '';
+  if (document.getElementById('new-home')) document.getElementById('new-home').value = '';
+  if (document.getElementById('new-away')) document.getElementById('new-away').value = '';
   // Optional: Hide form
-  document.getElementById('add-game-form').classList.add('hidden');
+  if (document.getElementById('add-game-form')) {
+    document.getElementById('add-game-form').classList.add('hidden');
+  }
 
   renderManagerDashboard('games');
 };
@@ -4995,8 +5061,12 @@ function renderManagerGamesTab(container) {
                     <div>
                          <label class="text-[10px] uppercase font-bold text-gray-400">Hora</label>
                          <input type="time" id="new-time" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600" value="19:00">
-                         <!-- Hidden Date default to today -->
-                         <input type="hidden" id="new-date" value="${today}">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 gap-3 mb-3">
+                    <div>
+                         <label class="text-[10px] uppercase font-bold text-gray-400">Fecha</label>
+                         <input type="date" id="new-date" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600" value="${today}">
                     </div>
                 </div>
                 
