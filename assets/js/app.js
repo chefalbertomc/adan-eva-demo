@@ -184,7 +184,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v17.8 (Stable Logos & Sync)
+        v17.9 (Logo Logic Final)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -1786,8 +1786,9 @@ function renderWaiterDashboard() {
       <div class="card bg-blue-900/20 border-2 border-blue-500">
         <h3 class="text-xl font-bold mb-4 text-blue-300">🏈 Partidos de Hoy</h3>
         ${(() => {
-        const games = dailyInfo.games || [];
-        if (games.length === 0) return '<p class="text-gray-400 italic">Sin partidos programados.</p>';
+        const today = new Date().toISOString().split('T')[0];
+        const games = (dailyInfo.games || []).filter(g => g.date === today); // Strict filter: only today
+        if (games.length === 0) return '<p class="text-gray-400 italic">Sin partidos programados para hoy.</p>';
 
         // Group by sport
         const grouped = {};
@@ -4805,14 +4806,28 @@ window.getTeamLogo = function (teamName) {
   const foundKey = Object.keys(window.TEAM_LOGOS).find(k => k.toLowerCase() === lower);
   if (foundKey) return window.TEAM_LOGOS[foundKey];
 
-  // 2. Partial Match Strategy (Be careful with 'San Luis' matching 'St. Louis')
-  // We prefer full matches. If not found, try inclusion but carefully.
+  // 2. Partial Match Strategy (Manual Overrides for common aliases)
   if (lower.includes('america') && lower.includes('club')) return window.TEAM_LOGOS["Club América"];
   if (lower === 'america') return window.TEAM_LOGOS["Club América"];
-  if (lower.includes('guadalajara')) return window.TEAM_LOGOS["Chivas Guadalajara"];
-  if (lower.includes('cruz azul')) return window.TEAM_LOGOS["Cruz Azul"];
+  if (lower.includes('guadalajara') || lower === 'chivas') return window.TEAM_LOGOS["Chivas Guadalajara"];
+  if (lower.includes('cruz azul') || lower === 'cruzazul') return window.TEAM_LOGOS["Cruz Azul"];
+  if (lower.includes('pumas') || lower === 'unam') return window.TEAM_LOGOS["Pumas UNAM"];
+  if (lower.includes('tigres')) return window.TEAM_LOGOS["Tigres UANL"];
+  if (lower.includes('monterrey') || lower === 'rayados') return window.TEAM_LOGOS["Rayados Monterrey"];
+  if (lower.includes('santos')) return window.TEAM_LOGOS["Santos Laguna"];
+  if (lower.includes('leon')) return window.TEAM_LOGOS["León"];
+  if (lower.includes('pachuca')) return window.TEAM_LOGOS["Pachuca"];
+  if (lower.includes('toluca')) return window.TEAM_LOGOS["Toluca"];
+  if (lower.includes('atlas')) return window.TEAM_LOGOS["Atlas"];
+  if (lower.includes('queretaro') || lower.includes('gallos')) return window.TEAM_LOGOS["Querétaro"];
+  if (lower.includes('necaxa')) return window.TEAM_LOGOS["Necaxa"];
+  if (lower.includes('mazatlan')) return window.TEAM_LOGOS["Mazatlán FC"];
+  if (lower.includes('tijuana') || lower.includes('xolos')) return window.TEAM_LOGOS["Xolos Tijuana"];
+  if (lower.includes('juarez') || lower.includes('bravos')) return window.TEAM_LOGOS["Juárez Bravos"];
+  if (lower.includes('san luis')) return window.TEAM_LOGOS["Atlético San Luis"];
+  if (lower.includes('puebla')) return window.TEAM_LOGOS["Puebla"];
 
-  return null; // Return null if no logo to show default icon
+  return null;
 };
 
 
