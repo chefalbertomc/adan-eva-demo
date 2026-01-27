@@ -12,14 +12,27 @@ const appContainer = document.getElementById('app');
 window.KNOWN_TEAMS = [
   // LIGA MX
   "Club América", "Chivas Guadalajara", "Cruz Azul", "Pumas UNAM", "Tigres UANL", "Rayados Monterrey", "Toluca", "Santos Laguna", "Pachuca", "León", "Atlas", "Querétaro", "Puebla", "San Luis", "Mazatlán FC", "Necaxa", "Xolos Tijuana", "Juárez Bravos",
+
+  // LIGA INGLESA (PREMIER LEAGUE)
+  "Manchester City", "Arsenal", "Liverpool", "Aston Villa", "Tottenham Hotspur", "Manchester United", "Newcastle United", "West Ham United", "Chelsea", "Bournemouth", "Wolverhampton", "Brighton", "Fulham", "Crystal Palace", "Brentford", "Nottingham Forest", "Everton", "Luton Town", "Burnley", "Sheffield United", "Leicester City", "Leeds United", "Southampton",
+
+  // LIGA ESPAÑOLA (LA LIGA)
+  "Real Madrid", "Girona", "FC Barcelona", "Atlético Madrid", "Athletic Bilbao", "Real Sociedad", "Real Betis", "Valencia", "Las Palmas", "Getafe", "Osasuna", "Alavés", "Villarreal", "Rayo Vallecano", "Sevilla", "Mallorca", "Celta de Vigo", "Cádiz", "Granada", "Almería",
+
+  // LIGA ITALIANA (SERIE A)
+  "Inter Milan", "Juventus", "AC Milan", "Atalanta", "Bologna", "AS Roma", "Fiorentina", "Lazio", "Napoli", "Torino", "Monza", "Genoa", "Lecce", "Empoli", "Frosinone", "Udinese", "Sassuolo", "Verona", "Cagliari", "Salernitana",
+
+  // NHL (HOCKEY)
+  "Boston Bruins", "Colorado Avalanche", "Dallas Stars", "Florida Panthers", "New York Rangers", "Vancouver Canucks", "Winnipeg Jets", "Carolina Hurricanes", "Edmonton Oilers", "Vegas Golden Knights", "Los Angeles Kings", "Nashville Predators", "Philadelphia Flyers", "Tampa Bay Lightning", "Toronto Maple Leafs", "Detroit Red Wings", "New York Islanders", "Pittsburgh Penguins", "St. Louis Blues", "Washington Capitals", "Arizona Coyotes", "Buffalo Sabres", "Calgary Flames", "Chicago Blackhawks", "Columbus Blue Jackets", "Minnesota Wild", "Montréal Canadiens", "New Jersey Devils", "Ottawa Senators", "San Jose Sharks", "Seattle Kraken", "Anaheim Ducks",
+
   // NFL
   "Kansas City Chiefs", "San Francisco 49ers", "Dallas Cowboys", "Pittsburgh Steelers", "New England Patriots", "Philadelphia Eagles", "Baltimore Ravens", "Buffalo Bills", "Miami Dolphins", "New York Jets", "Cincinnati Bengals", "Cleveland Browns", "Houston Texans", "Indianapolis Colts", "Jacksonville Jaguars", "Tennessee Titans", "Denver Broncos", "Las Vegas Raiders", "Los Angeles Chargers", "New York Giants", "Washington Commanders", "Green Bay Packers", "Detroit Lions", "Minnesota Vikings", "Chicago Bears", "Tampa Bay Buccaneers", "New Orleans Saints", "Atlanta Falcons", "Carolina Panthers", "Los Angeles Rams", "Seattle Seahawks", "Arizona Cardinals",
+
   // NBA
   "Los Angeles Lakers", "Golden State Warriors", "Boston Celtics", "Chicago Bulls", "Miami Heat", "New York Knicks", "Brooklyn Nets", "Philadelphia 76ers", "Toronto Raptors", "Milwaukee Bucks", "Detroit Pistons", "Indiana Pacers", "Cleveland Cavaliers", "Orlando Magic", "Charlotte Hornets", "Atlanta Hawks", "Washington Wizards", "Denver Nuggets", "Minnesota Timberwolves", "Oklahoma City Thunder", "Portland Trail Blazers", "Utah Jazz", "Phoenix Suns", "Los Angeles Clippers", "Sacramento Kings", "Dallas Mavericks", "Houston Rockets", "San Antonio Spurs", "Memphis Grizzlies", "New Orleans Pelicans",
+
   // MLB
-  "New York Yankees", "Los Angeles Dodgers", "Boston Red Sox", "Chicago Cubs", "St. Louis Cardinals", "San Francisco Giants", "Atlanta Braves", "Houston Astros", "New York Mets", "Philadelphia Phillies", "Texas Rangers", "Toronto Blue Jays", "Seattle Mariners", "Baltimore Orioles", "Tampa Bay Rays", "Minnesota Twins", "Detroit Tigers", "Chicago White Sox", "Cleveland Guardians", "Kansas City Royals", "Los Angeles Angels", "Oakland Athletics", "San Diego Padres", "Arizona Diamondbacks", "Colorado Rockies", "Miami Marlins", "Washington Nationals", "Cincinnati Reds", "Pittsburgh Pirates", "Milwaukee Brewers",
-  // EUROPEAN SOCCER
-  "Real Madrid", "FC Barcelona", "Atlético Madrid", "Manchester City", "Liverpool FC", "Arsenal", "Manchester United", "Chelsea", "Tottenham Hotspur", "Bayern Munich", "Borussia Dortmund", "PSG", "Juventus", "Inter Milan", "AC Milan", "Napoli", "AS Roma"
+  "New York Yankees", "Los Angeles Dodgers", "Boston Red Sox", "Chicago Cubs", "St. Louis Cardinals", "San Francisco Giants", "Atlanta Braves", "Houston Astros", "New York Mets", "Philadelphia Phillies", "Texas Rangers", "Toronto Blue Jays", "Seattle Mariners", "Baltimore Orioles", "Tampa Bay Rays", "Minnesota Twins", "Detroit Tigers", "Chicago White Sox", "Cleveland Guardians", "Kansas City Royals", "Los Angeles Angels", "Oakland Athletics", "San Diego Padres", "Arizona Diamondbacks", "Colorado Rockies", "Miami Marlins", "Washington Nationals", "Cincinnati Reds", "Pittsburgh Pirates", "Milwaukee Brewers"
 ].sort();
 
 // Helper to refresh datalist from _store or initialization
