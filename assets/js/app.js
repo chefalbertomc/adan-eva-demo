@@ -184,7 +184,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v17.7 (Fix Sync & Logos)
+        v17.8 (Stable Logos & Sync)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -1418,7 +1418,15 @@ window.getSportIcon = function (league) {
 };
 
 window.generateGameOptions = function (selected) {
-  const matches = window.db.getMatches() || [];
+  // Get all matches but FILTER for active ones (Today or Future)
+  // We want to avoid listing deleted games IF update cycle is correct.
+  // We also don't want old historical games cluttering the list.
+  const allMatches = window.db.getMatches() || [];
+  const today = new Date().toISOString().split('T')[0];
+
+  // Show games from today onwards OR the currently selected one (even if past/deleted)
+  const matches = allMatches.filter(m => m.date >= today || (selected && (m.match === selected || `${m.homeTeam} vs ${m.awayTeam}` === selected)));
+
   let html = matches.map(m => {
     // FIX undefined name: use teams
     const matchName = `${m.homeTeam} vs ${m.awayTeam}`;
@@ -4610,9 +4618,26 @@ function renderManagerTablesTab(container) {
 
         reasonDisplay = `
           <div class="mt-3 bg-white/5 p-3 rounded-lg border border-white/10">
-            <div class="flex items-start gap-2">
-              <div class="text-2xl filter drop-shadow-md">${sportIcon}</div>
-              <div class="flex-1">
+              <div class="flex items-start gap-2">
+                <div class="flex items-center gap-1">
+                     ${(() => {
+            if (!v.selectedGame) return `<div class="text-2xl">${sportIcon}</div>`;
+            const game = window.db.getMatches().find(m => (m.match || (m.homeTeam + ' vs ' + m.awayTeam)) === v.selectedGame);
+            if (game) {
+              const l1 = window.getTeamLogo(game.homeTeam);
+              const l2 = window.getTeamLogo(game.awayTeam);
+              if (l1 || l2) {
+                return `
+                                    <img src="${l1 || ''}" class="w-6 h-6 object-contain ${!l1 ? 'hidden' : ''}" style="max-width: 24px;">
+                                    <span class="text-[10px] text-gray-500">vs</span>
+                                    <img src="${l2 || ''}" class="w-6 h-6 object-contain ${!l2 ? 'hidden' : ''}" style="max-width: 24px;">
+                                 `;
+              }
+            }
+            return `<div class="text-2xl filter drop-shadow-md">${sportIcon}</div>`;
+          })()}
+                </div>
+                <div class="flex-1">
                 <div class="text-[10px] text-green-400 font-bold uppercase tracking-widest">PARTIDO</div>
                 <div class="text-sm font-black text-white leading-tight mt-0.5">
                   ${v.selectedGame || 'Seleccionar Partido...'}
@@ -4930,9 +4955,9 @@ function renderGameControlCard(game) {
   if (logoHome || logoAway) {
     visualsHTML = `
             <div class="flex items-center gap-3">
-               ${logoHome ? `<img src="${logoHome}" class="w-12 h-12 object-contain filter drop-shadow">` : `<span class="text-2xl">${sportIcon}</span>`}
+               ${logoHome ? `<img src="${logoHome}" class="w-10 h-10 object-contain mx-auto" style="max-width: 40px; max-height: 40px;">` : `<span class="text-2xl">${sportIcon}</span>`}
                <span class="text-sm font-bold text-gray-500">vs</span>
-               ${logoAway ? `<img src="${logoAway}" class="w-12 h-12 object-contain filter drop-shadow">` : `<span class="text-2xl">${sportIcon}</span>`}
+               ${logoAway ? `<img src="${logoAway}" class="w-10 h-10 object-contain mx-auto" style="max-width: 40px; max-height: 40px;">` : `<span class="text-2xl">${sportIcon}</span>`}
             </div>
         `;
   } else {
