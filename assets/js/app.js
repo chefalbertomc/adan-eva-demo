@@ -6143,3 +6143,44 @@ window.runSportsIngest = async function () {
     throw e;
   }
 };
+
+// RENDER HOSTESS REQUESTS (With Dismiss Logic)
+function renderManagerGameRequests(container) {
+    const requests = window.db.getDailyInfo().gameRequests || [];
+    if (requests.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 mb-4 animate-fade-in">
+            <h4 class="text-blue-300 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                🔔 Solicitudes Recientes (${requests.length})
+            </h4>
+            <div class="space-y-2">
+                ${requests.map(req => `
+                    <div class="flex justify-between items-center bg-black/40 p-2 rounded border border-blue-500/20">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">📺</span>
+                            <div>
+                                <div class="text-white font-bold text-sm leading-none">${req.gameName || req.name}</div>
+                                <div class="text-[10px] text-gray-500">${new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="window.db.removeGameRequest('${req.id}'); renderManagerDashboard('games');" 
+                                    class="text-gray-500 hover:text-white hover:bg-white/10 p-1.5 rounded transition" title="Descartar">
+                                ✕
+                            </button>
+                            ${!(window.db.getMatches().find(m => m.match === (req.gameName || req.name))) ?
+            `<button onclick="document.getElementById('new-home').value = '${req.gameName || req.name}'; document.getElementById('new-league').value='UFC'; document.getElementById('new-league').focus();" 
+                                         class="text-blue-400 hover:text-blue-300 text-xs border border-blue-500/50 px-2 py-1 rounded">
+                                    + Agregar
+                                </button>` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
