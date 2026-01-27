@@ -1985,12 +1985,22 @@ class Store {
     updateDailyGames(games) {
         const info = this.getDailyInfo();
         info.games = games;
+
+        console.log('🔥 BEFORE Firebase sync - games array:', JSON.stringify(games.slice(-3), null, 2));
+
         this._save();
 
         // SYNC FIREBASE
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
-            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
+            const dataToSync = { games: info.games };
+
+            console.log('🔥 SYNCING to Firebase:', JSON.stringify(dataToSync.games.slice(-3), null, 2));
+
+            setDoc(doc(window.dbFirestore, 'config', 'daily'), dataToSync, { merge: true })
+                .then(() => {
+                    console.log('🔥 Firebase sync SUCCESS');
+                })
                 .catch(e => console.error('🔥 Sync update games error', e));
         }
     }
