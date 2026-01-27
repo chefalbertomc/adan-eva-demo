@@ -37,7 +37,6 @@ window.addEventListener('db-daily-update', (event) => {
 window.KNOWN_TEAMS = [
   // LIGA MX (COMPLETA)
   "Club América", "Chivas Guadalajara", "Cruz Azul", "Pumas UNAM", "Tigres UANL", "Rayados Monterrey", "Toluca", "Santos Laguna", "Pachuca", "León", "Atlas", "Querétaro", "Puebla", "Atlético San Luis", "Mazatlán FC", "Necaxa", "Xolos Tijuana", "Juárez Bravos",
-  "America", "Chivas", "Monterrey", "San Luis", "Tijuana", "Juarez", // Aliases comunes
 
   // LIGA INGLESA (PREMIER LEAGUE)
   "Manchester City", "Arsenal", "Liverpool", "Aston Villa", "Tottenham Hotspur", "Manchester United", "Newcastle United", "West Ham United", "Chelsea", "Bournemouth", "Wolverhampton", "Brighton", "Fulham", "Crystal Palace", "Brentford", "Nottingham Forest", "Everton", "Luton Town", "Burnley", "Sheffield United", "Leicester City", "Leeds United", "Southampton",
@@ -5087,9 +5086,6 @@ function renderManagerGamesTab(container) {
 
             <!-- Datalist Injection -->
             <datalist id="team-suggestions">
-                <!-- Common Aliases and Full List -->
-                <option value="America">Club América</option>
-                <option value="Chivas">Chivas Guadalajara</option>
                 ${window.KNOWN_TEAMS.map(t => `<option value="${t}">`).join('')}
             </datalist>
 
