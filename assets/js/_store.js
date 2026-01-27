@@ -2033,10 +2033,22 @@ class Store {
         console.log('🎯 addGame received gameData:', gameData);
         console.log('📅 gameData.date:', gameData.date);
 
+        // CRITICAL FIX: Don't use toLocaleDateString - it causes timezone bugs
+        // If gameData.date exists, use it directly (it's already in YYYY-MM-DD from <input type="date">)
+        let finalDate = gameData.date;
+        if (!finalDate) {
+            // Only if no date provided, create today's date manually
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            finalDate = `${year}-${month}-${day}`;
+        }
+
         // Validation / Defaults
         const newGame = {
             id: 'G' + Date.now(),
-            date: gameData.date || new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD, use provided date first
+            date: finalDate, // Use the corrected date
             time: gameData.time || '19:00',
             sport: gameData.sport || 'General',
             league: gameData.league || 'General',
