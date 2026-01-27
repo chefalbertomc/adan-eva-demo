@@ -2027,20 +2027,20 @@ class Store {
     }
 
     addGame(arg1) {
-        // Advanced Signature: addGame({ date, time, sport, league, homeTeam, awayTeam, tvs, audio })
+        // Advanced Signature: addGame({ date, time, sport, league, homeTeam, awayTeam, match, tvs, audio })
         let gameData = arg1;
 
         // Validation / Defaults
         const newGame = {
             id: 'G' + Date.now(),
-            date: gameData.date || new Date().toISOString().split('T')[0], // YYYY-MM-DD
+            date: gameData.date || new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD, use provided date first
             time: gameData.time || '19:00',
             sport: gameData.sport || 'General',
             league: gameData.league || 'General',
             homeTeam: gameData.homeTeam || 'Local',
             awayTeam: gameData.awayTeam || 'Visitante',
-            // Computed display string
-            match: `${gameData.homeTeam} vs ${gameData.awayTeam}`,
+            // CRITICAL FIX: Use gameData.match if provided (for individual sports), otherwise build from teams
+            match: gameData.match || `${gameData.homeTeam || 'Local'} vs ${gameData.awayTeam || 'Visitante'}`,
             // New Fields
             tvs: gameData.tvs || '', // String: "1, 2, 3"
             audio: {

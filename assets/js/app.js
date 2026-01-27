@@ -47,6 +47,10 @@ window.KNOWN_TEAMS = [
   // LIGA ITALIANA (SERIE A)
   "Inter Milan", "Juventus", "AC Milan", "Atalanta", "Bologna", "AS Roma", "Fiorentina", "Lazio", "Napoli", "Torino", "Monza", "Genoa", "Lecce", "Empoli", "Frosinone", "Udinese", "Sassuolo", "Verona", "Cagliari", "Salernitana",
 
+  // UEFA CHAMPIONS LEAGUE (Top clubs de Europa)
+  "Bayern Munich", "Paris Saint-Germain", "PSG", "Borussia Dortmund", "RB Leipzig", "Benfica", "Porto", "Sporting CP", "Ajax", "PSV Eindhoven", "Shakhtar Donetsk", "Celtic", "Club Brugge", "Red Star Belgrade", "Dinamo Zagreb", "Salzburg", "Copenhagen", "Galatasaray", "Fenerbahce",
+
+
   // NHL (HOCKEY)
   "Boston Bruins", "Colorado Avalanche", "Dallas Stars", "Florida Panthers", "New York Rangers", "Vancouver Canucks", "Winnipeg Jets", "Carolina Hurricanes", "Edmonton Oilers", "Vegas Golden Knights", "Los Angeles Kings", "Nashville Predators", "Philadelphia Flyers", "Tampa Bay Lightning", "Toronto Maple Leafs", "Detroit Red Wings", "New York Islanders", "Pittsburgh Penguins", "St. Louis Blues", "Washington Capitals", "Arizona Coyotes", "Buffalo Sabres", "Calgary Flames", "Chicago Blackhawks", "Columbus Blue Jackets", "Minnesota Wild", "Montréal Canadiens", "New Jersey Devils", "Ottawa Senators", "San Jose Sharks", "Seattle Kraken", "Anaheim Ducks",
 
@@ -4840,8 +4844,8 @@ window.TEAM_LOGOS = {
   "León": "https://a.espncdn.com/i/teamlogos/soccer/500/238.png",
   "Leon": "https://a.espncdn.com/i/teamlogos/soccer/500/238.png",
   "Atlas": "https://a.espncdn.com/i/teamlogos/soccer/500/224.png",
-  "Querétaro": "https://a.espncdn.com/i/teamlogos/soccer/500/17928.png",
-  "Queretaro": "https://a.espncdn.com/i/teamlogos/soccer/500/17928.png",
+  "Querétaro": "https://a.espncdn.com/i/teamlogos/soccer/500/10951.png",
+  "Queretaro": "https://a.espncdn.com/i/teamlogos/soccer/500/10951.png",
   "Puebla": "https://a.espncdn.com/i/teamlogos/soccer/500/237.png",
   "Atlético San Luis": "https://a.espncdn.com/i/teamlogos/soccer/500/18848.png",
   "San Luis": "https://a.espncdn.com/i/teamlogos/soccer/500/18848.png",
@@ -5112,7 +5116,7 @@ function renderManagerGamesTab(container) {
                                 <div class="flex items-center gap-2">
                                     ${window.getTeamLogo(g.homeTeam) ? `<img src="${window.getTeamLogo(g.homeTeam)}" class="w-6 h-6 object-contain" style="max-width: 24px; max-height: 24px;">` : ''}
                                     <div class="font-bold text-white text-sm">
-                                        ${g.homeTeam ? `${g.homeTeam} vs ${g.awayTeam}` : g.match}
+                                        ${g.match || `${g.homeTeam} vs ${g.awayTeam}`}
                                     </div>
                                     ${window.getTeamLogo(g.awayTeam) ? `<img src="${window.getTeamLogo(g.awayTeam)}" class="w-6 h-6 object-contain" style="max-width: 24px; max-height: 24px;">` : ''}
                                 </div>
