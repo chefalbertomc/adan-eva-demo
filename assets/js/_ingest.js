@@ -177,7 +177,8 @@ window.SportIngestor = class {
 
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
-            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: daily.games }, { merge: true })
+            // CRITICAL FIX: Sync to 'allGames' instead of 'daily'
+            setDoc(doc(window.dbFirestore, 'config', 'allGames'), { games: daily.games }, { merge: true })
                 .catch(e => console.error('🔥 Sync ingest error', e));
         }
 
