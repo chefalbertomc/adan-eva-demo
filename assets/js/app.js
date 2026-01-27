@@ -4955,6 +4955,12 @@ function renderManagerGamesTab(container) {
 
   console.log(`Render Games Tab. Today (Local): ${today}. Total Games in DB: ${games.length}`);
 
+  // Sort games chronologically
+  games.sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return a.time.localeCompare(b.time);
+  });
+
   // Filter games
   const todaysGames = games.filter(g => g.date === today);
   const futureGames = games.filter(g => g.date > today);
@@ -5087,30 +5093,66 @@ function renderManagerGamesTab(container) {
     }
         </div>
 
-        <!-- 3. PRÓXIMOS PARTIDOS -->
+        <!-- 3. PRÓXIMOS EVENTOS (Agrupados por Mes) -->
         <div class="card bg-gray-800/50 border border-gray-700">
             <h3 class="text-lg font-bold text-gray-400 mb-4 uppercase tracking-wider">📅 Próximos Eventos</h3>
             ${futureGames.length === 0
       ? '<p class="text-gray-500 text-sm">No hay partidos a futuro.</p>'
-      : `<div class="space-y-2">
-                    ${futureGames.map(g => `
-                        <div class="flex justify-between items-center bg-black/20 p-3 rounded border border-white/5">
-                            <div class="flex items-center gap-3">
-                                <div class="bg-gray-700 w-12 h-12 rounded flex items-center justify-center text-xl font-bold text-gray-400">
-                                    ${g.date.split('-')[2]}
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    ${window.getTeamLogo(g.homeTeam) ? `<img src="${window.getTeamLogo(g.homeTeam)}" class="w-6 h-6 object-contain" style="max-width: 24px; max-height: 24px;">` : ''}
-                                    <div class="font-bold text-white text-sm">
-                                        ${g.match || `${g.homeTeam} vs ${g.awayTeam}`}
-                                    </div>
-                                    ${window.getTeamLogo(g.awayTeam) ? `<img src="${window.getTeamLogo(g.awayTeam)}" class="w-6 h-6 object-contain" style="max-width: 24px; max-height: 24px;">` : ''}
-                                </div>
-                            </div>
-                            <button onclick="try { window.db.removeGame('${g.id}'); renderManagerDashboard('games'); } catch(e) { alert('Error: ' + e.message); console.error(e); }" class="text-gray-600 hover:text-red-400 px-2">🗑️</button>
-                        </div>
-                    `).join('')}
-                   </div>`
+      : (() => {
+        // GROUP BY MONTH
+        const grouped = {};
+        futureGames.forEach(g => {
+          const dateObj = new Date(g.date + 'T12:00:00'); // Force middle of day to avoid timezone shifts
+          const monthKey = dateObj.toLocaleString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
+          if (!grouped[monthKey]) grouped[monthKey] = [];
+          grouped[monthKey].push(g);
+        });
+
+        return Object.keys(grouped).map(month => `
+              <div class="mb-6 last:mb-0">
+                  <h4 class="text-yellow-500 font-black text-sm uppercase tracking-widest border-b border-gray-700 pb-1 mb-3">
+                      ${month}
+                  </h4>
+                  <div class="space-y-2">
+                      ${grouped[month].map(g => `
+                          <div class="flex justify-between items-center bg-black/40 p-3 rounded-lg border border-gray-700/50 hover:border-gray-500 transition">
+                              
+                              <div class="flex items-center gap-4">
+                                  <!-- FECHA (Día) -->
+                                  <div class="flex flex-col items-center bg-gray-800 p-2 rounded border border-gray-700 min-w-[50px]">
+                                      <span class="text-xs text-red-400 font-bold uppercase">${new Date(g.date + 'T12:00:00').toLocaleString('es-MX', { weekday: 'short' }).replace('.', '')}</span>
+                                      <span class="text-2xl font-black text-white leading-none">${g.date.split('-')[2]}</span>
+                                  </div>
+
+                                  <!-- INFO PARTIDO -->
+                                  <div>
+                                      <div class="flex items-center gap-2 mb-1">
+                                          <span class="text-[10px] font-bold bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded border border-blue-800/50">
+                                              ${g.league}
+                                          </span>
+                                          <span class="text-xs font-bold text-gray-400 flex items-center gap-1">
+                                              ⏰ ${g.time}
+                                          </span>
+                                      </div>
+                                      <div class="text-base font-bold text-white leading-tight">
+                                          ${window.getTeamLogo(g.homeTeam) ? `<img src="${window.getTeamLogo(g.homeTeam)}" class="inline-block w-5 h-5 mr-1 align-sub object-contain">` : ''}
+                                          ${g.match || `${g.homeTeam} vs ${g.awayTeam}`}
+                                          ${window.getTeamLogo(g.awayTeam) ? `<img src="${window.getTeamLogo(g.awayTeam)}" class="inline-block w-5 h-5 ml-1 align-sub object-contain">` : ''}
+                                      </div>
+                                  </div>
+                              </div>
+
+                              <!-- BOTÓN BORRAR -->
+                              <button onclick="try { if(confirm('¿Borrar evento futuro?')) { window.db.removeGame('${g.id}'); renderManagerDashboard('games'); } } catch(e) { alert('Error: ' + e.message); console.error(e); }" 
+                                      class="text-gray-600 hover:text-red-500 hover:bg-red-900/10 p-2 rounded transition">
+                                  🗑️
+                              </button>
+                          </div>
+                      `).join('')}
+                  </div>
+              </div>
+          `).join('');
+      })()
     }
         </div>
 
