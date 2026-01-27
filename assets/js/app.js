@@ -4530,19 +4530,19 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
   const div = document.createElement('div');
   div.className = 'bg-gray-900 min-h-screen pb-24'; // Padding for bottom nav
 
-  // AUTO-REPAIR: Ensure config/daily exists (Fix for Hosts 0 matches)
+  // AUTO-REPAIR: Ensure config/allGames exists (Fix for 0 matches)
   if (window.dbFirestore && window.FB) {
     const { doc, getDoc, setDoc } = window.FB;
-    const dailyRef = doc(window.dbFirestore, 'config', 'daily');
-    getDoc(dailyRef).then(snap => {
+    const gamesRef = doc(window.dbFirestore, 'config', 'allGames');
+    getDoc(gamesRef).then(snap => {
       if (!snap.exists()) {
-        console.log("🛠️ REPAIRING: Creating missing config/daily document...");
+
         const info = window.db.getDailyInfo();
-        setDoc(dailyRef, JSON.parse(JSON.stringify(info)))
-          .then(() => console.log("✅ REPAIR SUCCESS: config/daily created! Matches should sync now."))
+        setDoc(gamesRef, JSON.parse(JSON.stringify(info)))
+          .then(() => console.log("✅ REPAIR SUCCESS: config/allGames created!"))
           .catch(e => console.error("❌ REPAIR FAILED:", e));
       } else {
-        console.log("✅ Config Check: config/daily valid.");
+        console.log("✅ Config Check: config/allGames valid.");
       }
     });
   }
