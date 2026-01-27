@@ -144,8 +144,8 @@ function renderLogin() {
       </div>
 
       <!-- VERSION TAG -->
-      <div style="margin-top: 20px; color: #666; font-size: 10px; font-family: monospace;">
-        v17.2 (Fix UI)
+      <div class="text-[10px] text-gray-600 mt-2">
+        v17.3 (Resync Tools)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
