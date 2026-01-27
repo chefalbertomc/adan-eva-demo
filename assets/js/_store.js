@@ -785,6 +785,11 @@ class Store {
                     }
                 }
 
+                // DISPATCH GLOBAL UPDATE EVENT
+                if (localReqs !== remoteReqs) {
+                    window.dispatchEvent(new CustomEvent('db-daily-update', { detail: { type: 'requests' } }));
+                }
+
                 // 2B. GAMES
                 const localGames = JSON.stringify(this.getDailyInfo().games || []);
                 const remoteGames = JSON.stringify(remoteDaily.games || []);
@@ -811,6 +816,9 @@ class Store {
                 } else {
                     console.log("🎮 Games are identical. No update needed.");
                 }
+
+                // DISPATCH GLOBAL UPDATE EVENT
+                window.dispatchEvent(new CustomEvent('db-daily-update', { detail: { type: 'games' } }));
             } else {
                 console.warn("⚠️ config/daily document does not exist in Firestore! Manager needs to create it.");
             }
@@ -2387,6 +2395,13 @@ class Store {
         const info = this.getDailyInfo();
         info.games = info.games.filter(g => g.id !== gameId);
         this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
+                .catch(e => console.error('🔥 Sync remove game error', e));
+        }
     }
 
     // === GAME REQUESTS ===

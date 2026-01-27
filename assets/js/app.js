@@ -8,10 +8,36 @@ let STATE = {
 const appContainer = document.getElementById('app');
 
 // Database of Standard Team Names for Autocomplete
-// Database of Standard Team Names for Autocomplete (Full Names for better search)
+// AUTO-REFRESH LISTENER
+window.addEventListener('db-daily-update', (event) => {
+  console.log(`⚡ DB UPDATE EVENT RECEIVED: ${event.detail.type}`);
+
+  // 1. REFRESH WAITER "Partidos" IF ACTIVE
+  if (document.getElementById('waitercontent-partidos') && !document.getElementById('waitercontent-partidos').classList.contains('hidden')) {
+    console.log('🔄 Auto-refreshing Waiter Games Tab');
+    if (typeof window.renderWaiterDashboard === 'function') window.renderWaiterDashboard();
+  }
+
+  // 2. REFRESH MANAGER "Games" IF ACTIVE
+  if (window.CURRENT_MANAGER_TAB === 'games' && document.getElementById('managertab-games') && document.getElementById('managertab-games').classList.contains('active')) {
+    console.log('🔄 Auto-refreshing Manager Games Tab');
+    if (typeof renderManagerGamesTab === 'function') {
+      const container = document.getElementById('manager-content');
+      if (container) renderManagerGamesTab(container);
+    }
+  }
+
+  // 3. HOSTESS - SHOW TOAST INSTEAD OF RELOAD (To avoid input loss)
+  if (document.getElementById('content-tables') && !document.getElementById('content-tables').classList.contains('hidden')) {
+    if (window.showToast) window.showToast('📅 Información de Partidos Actualizada', 'success');
+    // We can also try to update the hidden selects if we are clever, but Toast is safer
+  }
+});
+
 window.KNOWN_TEAMS = [
-  // LIGA MX
-  "Club América", "Chivas Guadalajara", "Cruz Azul", "Pumas UNAM", "Tigres UANL", "Rayados Monterrey", "Toluca", "Santos Laguna", "Pachuca", "León", "Atlas", "Querétaro", "Puebla", "San Luis", "Mazatlán FC", "Necaxa", "Xolos Tijuana", "Juárez Bravos",
+  // LIGA MX (COMPLETA)
+  "Club América", "Chivas Guadalajara", "Cruz Azul", "Pumas UNAM", "Tigres UANL", "Rayados Monterrey", "Toluca", "Santos Laguna", "Pachuca", "León", "Atlas", "Querétaro", "Puebla", "Atlético San Luis", "Mazatlán FC", "Necaxa", "Xolos Tijuana", "Juárez Bravos",
+  "America", "Chivas", "Monterrey", "San Luis", "Tijuana", "Juarez", // Aliases comunes
 
   // LIGA INGLESA (PREMIER LEAGUE)
   "Manchester City", "Arsenal", "Liverpool", "Aston Villa", "Tottenham Hotspur", "Manchester United", "Newcastle United", "West Ham United", "Chelsea", "Bournemouth", "Wolverhampton", "Brighton", "Fulham", "Crystal Palace", "Brentford", "Nottingham Forest", "Everton", "Luton Town", "Burnley", "Sheffield United", "Leicester City", "Leeds United", "Southampton",
@@ -158,7 +184,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v17.6 (Logos & UI Fix)
+        v17.7 (Fix Sync & Logos)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -1806,14 +1832,14 @@ function renderWaiterDashboard() {
             const l2 = window.getTeamLogo(game.awayTeam);
             if (l1 || l2) {
               return `
-                                    <div class="flex flex-col items-center">
-                                        ${l1 ? `<img src="${l1}" class="w-8 h-8 object-contain">` : `<span class="text-xs">🏠</span>`}
+                                    <div class="flex flex-col items-center justify-center w-10">
+                                        ${l1 ? `<img src="${l1}" class="w-8 h-8 object-contain mx-auto" style="max-width: 32px; max-height: 32px;">` : `<span class="text-xs">🏠</span>`}
                                     </div>
-                                    <div class="text-[10px] text-gray-400">vs</div>
-                                    <div class="flex flex-col items-center">
-                                        ${l2 ? `<img src="${l2}" class="w-8 h-8 object-contain">` : `<span class="text-xs">✈️</span>`}
+                                    <div class="text-[10px] text-gray-400 px-1">vs</div>
+                                    <div class="flex flex-col items-center justify-center w-10">
+                                        ${l2 ? `<img src="${l2}" class="w-8 h-8 object-contain mx-auto" style="max-width: 32px; max-height: 32px;">` : `<span class="text-xs">✈️</span>`}
                                     </div>
-                                    <div class="ml-2">
+                                    <div class="ml-2 flex-1">
                                         <div class="text-[10px] text-blue-300 font-bold uppercase tracking-wider">${game.league || ''}</div>
                                         <div class="text-lg font-black text-white leading-tight">${game.homeTeam} <span class="text-gray-500 text-xs font-normal">vs</span> ${game.awayTeam}</div>
                                     </div>`;
@@ -4675,53 +4701,93 @@ window.TEAM_LOGOS = {
   "Chivas": "https://a.espncdn.com/i/teamlogos/soccer/500/232.png",
   "Cruz Azul": "https://a.espncdn.com/i/teamlogos/soccer/500/229.png",
   "Pumas UNAM": "https://a.espncdn.com/i/teamlogos/soccer/500/231.png",
+  "Pumas": "https://a.espncdn.com/i/teamlogos/soccer/500/231.png",
   "Tigres UANL": "https://a.espncdn.com/i/teamlogos/soccer/500/226.png",
+  "Tigres": "https://a.espncdn.com/i/teamlogos/soccer/500/226.png",
   "Rayados Monterrey": "https://a.espncdn.com/i/teamlogos/soccer/500/228.png",
+  "Monterrey": "https://a.espncdn.com/i/teamlogos/soccer/500/228.png",
   "Toluca": "https://a.espncdn.com/i/teamlogos/soccer/500/236.png",
+  "Santos Laguna": "https://a.espncdn.com/i/teamlogos/soccer/500/234.png",
+  "Santos": "https://a.espncdn.com/i/teamlogos/soccer/500/234.png",
+  "Pachuca": "https://a.espncdn.com/i/teamlogos/soccer/500/230.png",
+  "León": "https://a.espncdn.com/i/teamlogos/soccer/500/238.png",
+  "Leon": "https://a.espncdn.com/i/teamlogos/soccer/500/238.png",
+  "Atlas": "https://a.espncdn.com/i/teamlogos/soccer/500/224.png",
+  "Querétaro": "https://a.espncdn.com/i/teamlogos/soccer/500/233.png",
+  "Queretaro": "https://a.espncdn.com/i/teamlogos/soccer/500/233.png",
+  "Puebla": "https://a.espncdn.com/i/teamlogos/soccer/500/237.png",
+  "Atlético San Luis": "https://a.espncdn.com/i/teamlogos/soccer/500/18848.png",
+  "San Luis": "https://a.espncdn.com/i/teamlogos/soccer/500/18848.png",
+  "Mazatlán FC": "https://a.espncdn.com/i/teamlogos/soccer/500/20658.png",
+  "Mazatlan": "https://a.espncdn.com/i/teamlogos/soccer/500/20658.png",
+  "Necaxa": "https://a.espncdn.com/i/teamlogos/soccer/500/225.png",
+  "Xolos Tijuana": "https://a.espncdn.com/i/teamlogos/soccer/500/10938.png",
+  "Tijuana": "https://a.espncdn.com/i/teamlogos/soccer/500/10938.png",
+  "Juárez Bravos": "https://a.espncdn.com/i/teamlogos/soccer/500/17926.png",
+  "Juarez": "https://a.espncdn.com/i/teamlogos/soccer/500/17926.png",
 
   // ESPAÑA
   "Real Madrid": "https://a.espncdn.com/i/teamlogos/soccer/500/86.png",
   "FC Barcelona": "https://a.espncdn.com/i/teamlogos/soccer/500/83.png",
+  "Barcelona": "https://a.espncdn.com/i/teamlogos/soccer/500/83.png",
   "Atlético Madrid": "https://a.espncdn.com/i/teamlogos/soccer/500/1068.png",
+  "Atleti": "https://a.espncdn.com/i/teamlogos/soccer/500/1068.png",
 
   // INGLATERRA
   "Manchester City": "https://a.espncdn.com/i/teamlogos/soccer/500/382.png",
+  "Man City": "https://a.espncdn.com/i/teamlogos/soccer/500/382.png",
   "Liverpool": "https://a.espncdn.com/i/teamlogos/soccer/500/364.png",
   "Arsenal": "https://a.espncdn.com/i/teamlogos/soccer/500/359.png",
   "Manchester United": "https://a.espncdn.com/i/teamlogos/soccer/500/360.png",
+  "Man Utd": "https://a.espncdn.com/i/teamlogos/soccer/500/360.png",
 
   // NFL
   "Kansas City Chiefs": "https://a.espncdn.com/i/teamlogos/nfl/500/kc.png",
   "San Francisco 49ers": "https://a.espncdn.com/i/teamlogos/nfl/500/sf.png",
+  "SF 49ers": "https://a.espncdn.com/i/teamlogos/nfl/500/sf.png",
   "Dallas Cowboys": "https://a.espncdn.com/i/teamlogos/nfl/500/dal.png",
+  "Cowboys": "https://a.espncdn.com/i/teamlogos/nfl/500/dal.png",
   "Pittsburgh Steelers": "https://a.espncdn.com/i/teamlogos/nfl/500/pit.png",
+  "Steelers": "https://a.espncdn.com/i/teamlogos/nfl/500/pit.png",
   "New England Patriots": "https://a.espncdn.com/i/teamlogos/nfl/500/ne.png",
+  "Patriots": "https://a.espncdn.com/i/teamlogos/nfl/500/ne.png",
 
   // NBA
   "Los Angeles Lakers": "https://a.espncdn.com/i/teamlogos/nba/500/lal.png",
+  "Lakers": "https://a.espncdn.com/i/teamlogos/nba/500/lal.png",
   "Golden State Warriors": "https://a.espncdn.com/i/teamlogos/nba/500/gs.png",
+  "Warriors": "https://a.espncdn.com/i/teamlogos/nba/500/gs.png",
   "Boston Celtics": "https://a.espncdn.com/i/teamlogos/nba/500/bos.png",
+  "Celtics": "https://a.espncdn.com/i/teamlogos/nba/500/bos.png",
   "Chicago Bulls": "https://a.espncdn.com/i/teamlogos/nba/500/chi.png",
+  "Bulls": "https://a.espncdn.com/i/teamlogos/nba/500/chi.png",
   "Miami Heat": "https://a.espncdn.com/i/teamlogos/nba/500/mia.png",
 
   // MLB
   "New York Yankees": "https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png",
+  "Yankees": "https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png",
   "Los Angeles Dodgers": "https://a.espncdn.com/i/teamlogos/mlb/500/lad.png",
-  "Boston Red Sox": "https://a.espncdn.com/i/teamlogos/mlb/500/bos.png"
+  "Dodgers": "https://a.espncdn.com/i/teamlogos/mlb/500/lad.png",
+  "Boston Red Sox": "https://a.espncdn.com/i/teamlogos/mlb/500/bos.png",
+  "Red Sox": "https://a.espncdn.com/i/teamlogos/mlb/500/bos.png"
 };
 
 window.getTeamLogo = function (teamName) {
   if (!teamName) return null;
-  // Direct match
-  if (window.TEAM_LOGOS[teamName]) return window.TEAM_LOGOS[teamName];
-  // Case insensitive match
-  const found = Object.keys(window.TEAM_LOGOS).find(k => k.toLowerCase() === teamName.toLowerCase());
-  if (found) return window.TEAM_LOGOS[found];
+  const lower = teamName.toLowerCase().trim();
 
-  // Partial Match for some reliable ones (e.g. 'America')
-  if (teamName.toLowerCase().includes('america') && teamName.toLowerCase().includes('club')) return window.TEAM_LOGOS["Club América"];
+  // 1. Direct or Case Insensitive Match
+  const foundKey = Object.keys(window.TEAM_LOGOS).find(k => k.toLowerCase() === lower);
+  if (foundKey) return window.TEAM_LOGOS[foundKey];
 
-  return null; // No logo found
+  // 2. Partial Match Strategy (Be careful with 'San Luis' matching 'St. Louis')
+  // We prefer full matches. If not found, try inclusion but carefully.
+  if (lower.includes('america') && lower.includes('club')) return window.TEAM_LOGOS["Club América"];
+  if (lower === 'america') return window.TEAM_LOGOS["Club América"];
+  if (lower.includes('guadalajara')) return window.TEAM_LOGOS["Chivas Guadalajara"];
+  if (lower.includes('cruz azul')) return window.TEAM_LOGOS["Cruz Azul"];
+
+  return null; // Return null if no logo to show default icon
 };
 
 
