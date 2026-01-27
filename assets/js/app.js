@@ -1496,24 +1496,30 @@ window.getSportIcon = function (league) {
 };
 
 window.generateGameOptions = function (selected) {
-  // Get all matches but FILTER for active ones (Today or Future)
-  // We want to avoid listing deleted games IF update cycle is correct.
-  // We also don't want old historical games cluttering the list.
+  // Get all matches and FILTER strictly for TODAY (User Request)
   const allMatches = window.db.getMatches() || [];
-  const today = new Date().toISOString().split('T')[0];
+  // Use en-CA for YYYY-MM-DD format in local time
+  const today = new Date().toLocaleDateString('en-CA');
 
-  // Show games from today onwards OR the currently selected one (even if past/deleted)
-  const matches = allMatches.filter(m => m.date >= today || (selected && (m.match === selected || `${m.homeTeam} vs ${m.awayTeam}` === selected)));
+  // ONLY Show games for TODAY. Future games should NOT appear.
+  const matches = allMatches.filter(m => m.date === today);
+
+  console.log(`Dropdown Filter: Found ${matches.length} games for today (${today})`);
 
   let html = matches.map(m => {
-    // FIX undefined name: use teams
-    const matchName = `${m.homeTeam} vs ${m.awayTeam}`;
-    const val = m.match || matchName;
-    return `<option value="${val}" ${val === selected ? 'selected' : ''}>${matchName} (${m.time})</option>`;
+    const matchName = m.match || `${m.homeTeam} vs ${m.awayTeam}`;
+    // Fallback if matchName is undefined/null
+    const val = matchName || 'Evento Sin Nombre';
+    return `<option value="${val}" ${val === selected ? 'selected' : ''}>${val} (${m.time})</option>`;
   }).join('');
 
+  // If the currently selected game is NOT in today's list (phantom game), show it with warning
+  if (selected && !matches.find(m => (m.match || `${m.homeTeam} vs ${m.awayTeam}`) === selected)) {
+    html += `<option value="${selected}" selected>${selected} (⚠️ No programado hoy)</option>`;
+  }
+
   // Add Other Option
-  const isCustom = selected && !matches.find(m => (m.match || `${m.homeTeam} vs ${m.awayTeam}`) === selected);
+  const isCustom = selected === 'OTRO';
   html += `<option value="OTRO" ${isCustom ? 'selected' : ''}>⚠️ OTRO / NO EN LISTA</option>`;
 
   return html;

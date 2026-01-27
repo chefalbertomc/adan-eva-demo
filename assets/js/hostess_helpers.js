@@ -1,15 +1,28 @@
 
 // === NEW HOSTESS FUNCTIONS FOR REASON/GAME ===
+// === NEW HOSTESS FUNCTIONS FOR REASON/GAME ===
 window.generateGameOptions = function (selected) {
-    const matches = window.db.getMatches() || [];
-    if (matches.length === 0) return '<option disabled>Sin partidos registrados hoy</option>';
+    const allMatches = window.db.getMatches() || [];
+    // CRITICAL: Strict filter for TODAY only (Local YYYY-MM-DD)
+    const today = new Date().toLocaleDateString('en-CA');
+    const matches = allMatches.filter(m => m.date === today);
 
-    return matches.map(m => {
-        // Handle both structure types (legacy vs new)
+    if (matches.length === 0 && !selected) return '<option disabled>Sin partidos hoy</option>';
+
+    let html = matches.map(m => {
+        // Handle both structure types
         const matchName = m.match || (m.homeTeam && m.awayTeam ? `${m.homeTeam} vs ${m.awayTeam}` : 'Partido Desconocido');
         const isSelected = matchName === selected;
+        // Fix for "Giant Logo" or weird formatting in select? No, select only supports text.
         return `<option value="${matchName}" ${isSelected ? 'selected' : ''}>${matchName} (${m.time})</option>`;
     }).join('');
+
+    // If selected game is NOT in today's list (e.g. was deleted or date changed), show it anyway to avoid data loss visual
+    if (selected && !matches.find(m => (m.match || `${m.homeTeam} vs ${m.awayTeam}`) === selected)) {
+        html += `<option value="${selected}" selected>${selected} (⚠️ No en lista de hoy)</option>`;
+    }
+
+    return html;
 };
 
 window.updateHostessReason = function (visitId, selectEl) {
