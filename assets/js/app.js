@@ -5104,7 +5104,7 @@ function renderManagerGamesTab(container) {
                                     ${window.getTeamLogo(g.awayTeam) ? `<img src="${window.getTeamLogo(g.awayTeam)}" class="w-6 h-6 object-contain" style="max-width: 24px; max-height: 24px;">` : ''}
                                 </div>
                             </div>
-                            <button onclick="window.db.removeGame('${g.id}'); renderManagerDashboard('games');" class="text-gray-600 hover:text-red-400 px-2">🗑️</button>
+                            <button onclick="try { window.db.removeGame('${g.id}'); renderManagerDashboard('games'); } catch(e) { alert('Error: ' + e.message); console.error(e); }" class="text-gray-600 hover:text-red-400 px-2">🗑️</button>
                         </div>
                     `).join('')}
                    </div>`
@@ -5161,7 +5161,7 @@ function renderGameControlCard(game) {
                     </div>
                 </div>
             </div>
-            <button onclick="if(confirm('¿Borrar este partido?')) { window.db.removeGame('${game.id}'); renderManagerDashboard('games'); }" class="text-gray-600 hover:text-red-500 p-2">
+            <button onclick="try { if(confirm('¿Borrar este partido?')) { window.db.removeGame('${game.id}'); renderManagerDashboard('games'); } } catch(e) { alert('Error: ' + e.message); console.error(e); }" class="text-gray-600 hover:text-red-500 p-2">
                 🗑️
             </button>
         </div>
@@ -5356,7 +5356,7 @@ function OLD_renderManagerDashboard() {
                    <div class="font-bold text-white text-lg leading-tight mb-1">${g.homeTeam || '?'} <span class="text-gray-500 text-sm">vs</span> ${g.awayTeam || '?'}</div>
                    <div class="text-xs text-blue-300 font-bold uppercase tracking-wider bg-blue-900/30 inline-block px-2 py-1 rounded">${g.league} • ⏰ ${g.time}</div>
                 </div>
-                <button onclick="if(confirm('¿Borrar partido?')) { window.db.removeGame('${g.id}'); renderManagerDashboard(); }" class="text-red-500 hover:text-red-400 bg-red-900/20 p-2 rounded hover:bg-red-900/40 transition">🗑️</button>
+                <button onclick="try { if(confirm('¿Borrar partido?')) { window.db.removeGame('${g.id}'); renderManagerDashboard(); } } catch(e) { alert('Error: ' + e.message); console.error(e); }" class="text-red-500 hover:text-red-400 bg-red-900/20 p-2 rounded hover:bg-red-900/40 transition">🗑️</button>
             </div>
          `).join('')}
       </div>
