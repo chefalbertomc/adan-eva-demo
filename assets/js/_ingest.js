@@ -119,11 +119,12 @@ window.SportIngestor = class {
                 homeTeam: e.strHomeTeam,
                 awayTeam: e.strAwayTeam,
                 time: shortTime,
-                date: e.dateEvent, // YYYY-MM-DD
+                date: today, // <--- TIME WARP: Force all API events to today for Demo purposes
+                originalDate: e.dateEvent,
                 sport: e.strSport || 'Soccer',
                 apiId: e.idEvent
             };
-        }).filter(g => true); // ALLOW ALL DATES FOR MATCHING (Since API Key '1' returns 2021 data sometimes)
+        }).filter(g => true); // Load everything we found
 
         // If we want to see them as "Today", we can project them?
         // For now, let's just see if they download.
