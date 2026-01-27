@@ -2421,7 +2421,7 @@ class Store {
         return newItem;
     }
 
-    addGame(gameData) {
+    addGame_DUPLICATE_DO_NOT_USE(gameData) {
         const info = this.getDailyInfo();
         const newGame = {
             id: 'g' + Date.now(),
