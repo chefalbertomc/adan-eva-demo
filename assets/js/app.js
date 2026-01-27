@@ -158,7 +158,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v17.5 (Partidos Pro)
+        v17.6 (Logos & UI Fix)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -1800,9 +1800,31 @@ function renderWaiterDashboard() {
                 ${grouped[sport].map(game => `
                   <div class="bg-black/50 p-3 rounded-lg border border-blue-400/50 flex flex-col gap-2">
                     <div class="flex justify-between items-start">
-                        <div>
-                          <div class="text-[10px] text-blue-300 font-bold uppercase tracking-wider">${game.league || ''}</div>
-                          <div class="text-lg font-black text-white leading-tight">${game.homeTeam} <span class="text-gray-500 text-xs font-normal">vs</span> ${game.awayTeam}</div>
+                        <div class="flex items-center gap-2">
+                           ${(() => {
+            const l1 = window.getTeamLogo(game.homeTeam);
+            const l2 = window.getTeamLogo(game.awayTeam);
+            if (l1 || l2) {
+              return `
+                                    <div class="flex flex-col items-center">
+                                        ${l1 ? `<img src="${l1}" class="w-8 h-8 object-contain">` : `<span class="text-xs">🏠</span>`}
+                                    </div>
+                                    <div class="text-[10px] text-gray-400">vs</div>
+                                    <div class="flex flex-col items-center">
+                                        ${l2 ? `<img src="${l2}" class="w-8 h-8 object-contain">` : `<span class="text-xs">✈️</span>`}
+                                    </div>
+                                    <div class="ml-2">
+                                        <div class="text-[10px] text-blue-300 font-bold uppercase tracking-wider">${game.league || ''}</div>
+                                        <div class="text-lg font-black text-white leading-tight">${game.homeTeam} <span class="text-gray-500 text-xs font-normal">vs</span> ${game.awayTeam}</div>
+                                    </div>`;
+            } else {
+              return `
+                                    <div>
+                                      <div class="text-[10px] text-blue-300 font-bold uppercase tracking-wider">${game.league || ''}</div>
+                                      <div class="text-lg font-black text-white leading-tight">${game.homeTeam} <span class="text-gray-500 text-xs font-normal">vs</span> ${game.awayTeam}</div>
+                                    </div>`;
+            }
+          })()}
                         </div>
                         <div class="text-xl font-black text-yellow-400 py-1 px-2 bg-yellow-900/20 rounded">${game.time}</div>
                     </div>
