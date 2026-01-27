@@ -448,6 +448,20 @@ const INITIAL_DATA = {
     waitlist: [],
     reservations: [],
     campaigns: [],
+
+    // AUTO-INGESTION CONFIGURATION
+    ingestionConfig: {
+        leagues: [
+            { id: '4328', name: 'Premier League', active: true },
+            { id: '4335', name: 'La Liga', active: true },
+            { id: '4332', name: 'Serie A', active: true },
+            { id: '4345', name: 'Liga MX', active: true },
+            { id: '4391', name: 'NFL', active: true },
+            { id: '4387', name: 'NBA', active: true },
+            { id: '4424', name: 'MLB', active: true }
+        ],
+        teams: []
+    },
     // MENU CATALOG - Para autocompletado en captura de consumo
     menuCatalog: {
         entries: [

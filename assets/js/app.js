@@ -184,7 +184,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v17.9 (Logo Logic Final)
+        v18.0 (Magic Ingest 🪄)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -4846,6 +4846,60 @@ function renderManagerGamesTab(container) {
     <!-- MAIN CONTAINER -->
     <div class="space-y-6 mb-24">
 
+        <!-- 0. CARTELERA MÁGICA (INGESTION) -->
+        <div class="bg-gradient-to-r from-purple-900/40 to-blue-900/40 p-4 rounded-xl border border-purple-500/30 mb-6 relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">🤖</div>
+            <div class="flex justify-between items-center mb-4 relative z-10">
+                 <div>
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        ⚡ Cartelera Automática
+                    </h3>
+                    <p class="text-[10px] text-purple-300">Conectado a TheSportsDB API</p>
+                 </div>
+                 <button onclick="window.runSportsIngest()" id="btn-sync-sports" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg flex items-center gap-2 transition border border-purple-400">
+                     <span>🔄</span> SINCRONIZAR
+                 </button>
+            </div>
+            
+            <!-- Toggle Content -->
+            <details class="group relative z-10">
+                <summary class="flex items-center gap-2 cursor-pointer text-gray-400 text-xs font-bold uppercase tracking-wider select-none mb-2 hover:text-white transition">
+                    <span>⚙️ Configurar Ligas y Equipos</span>
+                    <span class="transition group-open:rotate-180">▼</span>
+                </summary>
+                
+                <div class="bg-black/50 p-4 rounded mt-2 border border-white/5 space-y-4 backdrop-blur-sm">
+                     
+                     <!-- LEAGUES CONFIG -->
+                     <div>
+                         <h4 class="text-purple-300 font-bold text-xs uppercase mb-2">Ligas Seguidas (Todo el torneo)</h4>
+                         <div class="flex flex-wrap gap-2 mb-2" id="config-leagues-list">
+                             ${window.renderIngestionConfig('leagues')}
+                         </div>
+                         <div class="flex gap-2">
+                             <input id="new-league-id" type="text" placeholder="ID Liga (ej. 4328)" class="w-24 bg-black border border-gray-700 rounded text-xs px-2 py-1 text-white placeholder-gray-600">
+                             <input id="new-league-name" type="text" placeholder="Nombre" class="w-32 bg-black border border-gray-700 rounded text-xs px-2 py-1 text-white placeholder-gray-600">
+                             <button onclick="window.addIngestItem('leagues')" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 rounded font-bold">+</button>
+                         </div>
+                         <div class="text-[9px] text-gray-500 mt-1">IDs Populares: 4328 (Premier), 4335 (La Liga), 4345 (Liga MX), 4391 (NFL)</div>
+                     </div>
+
+                     <!-- TEAMS CONFIG -->
+                     <div class="border-t border-gray-700 pt-3">
+                         <h4 class="text-blue-300 font-bold text-xs uppercase mb-2">Equipos Francotirador (Solo sus juegos)</h4>
+                         <div class="flex flex-wrap gap-2 mb-2" id="config-teams-list">
+                             ${window.renderIngestionConfig('teams')}
+                         </div>
+                         <div class="flex gap-2">
+                             <input id="new-team-id" type="text" placeholder="ID Equipo" class="w-24 bg-black border border-gray-700 rounded text-xs px-2 py-1 text-white placeholder-gray-600">
+                             <input id="new-team-name" type="text" placeholder="Nombre" class="w-32 bg-black border border-gray-700 rounded text-xs px-2 py-1 text-white placeholder-gray-600">
+                             <button onclick="window.addIngestItem('teams')" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 rounded font-bold">+</button>
+                         </div>
+                     </div>
+                </div>
+            </details>
+        </div>
+
         <!-- 1. SOLICITUDES HOSTESS -->
         ${(window.db.getDailyInfo().gameRequests || []).length > 0 ? '<div id="manager-requests-container"></div>' : ''}
 
@@ -5755,3 +5809,78 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
+
+// --- INGESTION HELPERS ---
+
+window.renderIngestionConfig = function (type) {
+  if (!window.db || !window.db.data.ingestionConfig) return '';
+  const items = window.db.data.ingestionConfig[type] || [];
+  if (items.length === 0) return '<span class="text-xs text-gray-500 italic">Nada configurado</span>';
+
+  return items.map(item => `
+        <span onclick="window.removeIngestItem('${type}', '${item.id}')" 
+              class="cursor-pointer bg-${item.active ? 'green' : 'gray'}-900 border border-${item.active ? 'green' : 'gray'}-700 text-${item.active ? 'green' : 'gray'}-300 px-2 py-1 rounded text-[10px] font-bold hover:bg-red-900 hover:text-red-300 hover:border-red-700 transition" title="Clic para eliminar">
+              ${item.active ? '🟢' : '⚪'} ${item.name} (${item.id})
+        </span>
+    `).join('');
+};
+
+window.addIngestItem = function (type) {
+  const idInput = document.getElementById(type === 'leagues' ? 'new-league-id' : 'new-team-id');
+  const nameInput = document.getElementById(type === 'leagues' ? 'new-league-name' : 'new-team-name');
+
+  const id = idInput.value.trim();
+  const name = nameInput.value.trim();
+
+  if (!id || !name) {
+    if (window.showToast) window.showToast('❌ Faltan datos (ID y Nombre)', 'error');
+    return;
+  }
+
+  if (!window.db.data.ingestionConfig[type]) window.db.data.ingestionConfig[type] = [];
+
+  // Check duplicate
+  if (window.db.data.ingestionConfig[type].find(i => i.id === id)) {
+    if (window.showToast) window.showToast('⚠️ Ese ID ya está registrado', 'warning');
+    return;
+  }
+
+  window.db.data.ingestionConfig[type].push({ id, name, active: true });
+  window.db._save();
+
+  // Re-render
+  if (typeof renderManagerDashboard === 'function') renderManagerDashboard('games');
+};
+
+window.removeIngestItem = function (type, id) {
+  if (!confirm(`¿Dejar de seguir ${type === 'leagues' ? 'esta liga' : 'este equipo'}?`)) return;
+
+  if (!window.db.data.ingestionConfig[type]) return;
+  window.db.data.ingestionConfig[type] = window.db.data.ingestionConfig[type].filter(i => i.id !== id);
+  window.db._save();
+
+  if (typeof renderManagerDashboard === 'function') renderManagerDashboard('games');
+};
+
+window.runSportsIngest = async function () {
+  const btn = document.getElementById('btn-sync-sports');
+  if (btn) {
+    btn.innerHTML = '⏳ SINCRONIZANDO...';
+    btn.disabled = true;
+  }
+
+  if (!window.ingestor) window.ingestor = new window.SportIngestor();
+
+  try {
+    const count = await window.ingestor.runIngest();
+    if (window.showToast) window.showToast(`✅ Sincronización completa. ${count} partidos encontrados.`, 'success');
+  } catch (e) {
+    console.error(e);
+    if (window.showToast) window.showToast(`❌ Error al sincronizar. Revisa consola.`, 'error');
+  } finally {
+    if (btn) {
+      btn.innerHTML = '🔄 SINCRONIZAR';
+      btn.disabled = false;
+    }
+  }
+};
