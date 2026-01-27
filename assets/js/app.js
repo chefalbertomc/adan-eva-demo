@@ -4948,7 +4948,7 @@ function renderManagerGamesTab(container) {
             <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
                 <div>
                     <h2 class="text-xl font-black text-white flex items-center gap-2">
-                        <span class="text-red-500 animate-pulse">●</span> EN VIVO / HOY
+                        <span class="text-red-500 animate-pulse">●</span> EN VIVO / HOY <span class="text-[10px] text-gray-500 ml-2">(${today})</span>
                     </h2>
                 </div>
                 <button onclick="const form = document.getElementById('inline-add-game-form'); form.classList.toggle('hidden'); if(!form.classList.contains('hidden')) form.scrollIntoView({behavior: 'smooth', block: 'center'});" 
@@ -5068,7 +5068,9 @@ function renderManagerGamesTab(container) {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     ${window.getTeamLogo(g.homeTeam) ? `<img src="${window.getTeamLogo(g.homeTeam)}" class="w-6 h-6 object-contain">` : ''}
-                                    <div class="font-bold text-white text-sm">${g.match}</div>
+                                    <div class="font-bold text-white text-sm">
+                                        ${g.homeTeam ? `${g.homeTeam} vs ${g.awayTeam}` : g.match}
+                                    </div>
                                     ${window.getTeamLogo(g.awayTeam) ? `<img src="${window.getTeamLogo(g.awayTeam)}" class="w-6 h-6 object-contain">` : ''}
                                 </div>
                             </div>
