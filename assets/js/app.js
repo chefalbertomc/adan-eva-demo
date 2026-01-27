@@ -4858,9 +4858,36 @@ function renderManagerGamesTab(container) {
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                         ⚡ Cartelera Automática
                     </h3>
-                    <p class="text-[10px] text-purple-300">Conectado a TheSportsDB API</p>
+                     <p class="text-[10px] text-purple-300">Conectado a API-Football + Legacy</p>
                  </div>
-                 <button onclick="window.runSportsIngest()" id="btn-sync-sports" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg flex items-center gap-2 transition border border-purple-400">
+                 <button onclick="
+                    const btn = this; 
+                    btn.innerHTML = '⏳ BUSCANDO...'; 
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50');
+                    // Force small delay to show feedback even if fast
+                    setTimeout(() => {
+                        window.runSportsIngest().then(count => {
+                            btn.innerHTML = '✅ ENCONTRADOS (' + count + ')';
+                            btn.classList.remove('bg-purple-600');
+                            btn.classList.add('bg-green-600');
+                            setTimeout(() => { 
+                                btn.innerHTML = '🔄 SINCRONIZAR'; 
+                                btn.disabled = false;
+                                btn.classList.remove('opacity-50', 'bg-green-600');
+                                btn.classList.add('bg-purple-600');
+                            }, 4000);
+                        }).catch(e => {
+                            console.error(e);
+                            btn.innerHTML = '❌ ERROR';
+                            setTimeout(() => { 
+                                btn.innerHTML = '🔄 SINCRONIZAR'; 
+                                btn.disabled = false; 
+                                btn.classList.remove('opacity-50');
+                            }, 3000);
+                        });
+                    }, 500);" 
+                 id="btn-sync-sports" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg flex items-center gap-2 transition border border-purple-400">
                      <span>🔄</span> SINCRONIZAR
                  </button>
             </div>
