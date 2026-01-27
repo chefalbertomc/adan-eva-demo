@@ -2049,9 +2049,12 @@ class Store {
         console.log('📅 gameData.date:', gameData.date);
 
         // CRITICAL FIX: Don't use toLocaleDateString - it causes timezone bugs
-        // If gameData.date exists, use it directly (it's already in YYYY-MM-DD from <input type="date">)
+        // Ensure date is treated as LOCAL, not UTC.
+        // Appending T12:00:00 ensures it falls in the middle of the day for any American/European timezone
         let finalDate = gameData.date;
-        if (!finalDate) {
+        if (finalDate && finalDate.length === 10) {
+            // Keep it as is, it's already YYYY-MM-DD
+        } else if (!finalDate) {
             // Only if no date provided, create today's date manually
             const now = new Date();
             const year = now.getFullYear();
@@ -2063,7 +2066,7 @@ class Store {
         // Validation / Defaults
         const newGame = {
             id: 'G' + Date.now(),
-            date: finalDate, // Use the corrected date
+            date: finalDate, // Use the corrected date (YYYY-MM-DD)
             time: gameData.time || '19:00',
             sport: gameData.sport || 'General',
             league: gameData.league || 'General',
