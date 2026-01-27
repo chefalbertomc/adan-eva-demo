@@ -184,7 +184,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v19.2 (Conexión API-Fútbol Activa)
+        v19.3 (Motor ESPN Activo)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -4858,7 +4858,7 @@ function renderManagerGamesTab(container) {
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                         ⚡ Cartelera Automática
                     </h3>
-                     <p class="text-[10px] text-purple-300">Conectado a API-Football + Legacy</p>
+                     <p class="text-[10px] text-purple-300">Conectado a ESPN (Public API)</p>
                  </div>
                  <button onclick="
                     const btn = this; 

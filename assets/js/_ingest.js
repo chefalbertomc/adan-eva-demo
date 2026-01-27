@@ -1,144 +1,109 @@
 window.SportIngestor = class {
     constructor() {
-        // 1. API-FOOTBALL CONFIG (Soccer)
-        // ⚠️ USER: PLEASE PASTE YOUR RAPIDAPI KEY HERE
-        this.apiFootballKey = "a290447c97fc1a6e9561bcef1b5b8eef";
-        this.apiFootballHost = "v3.football.api-sports.io";
-        this.apiFootballBase = "https://v3.football.api-sports.io";
-
-        // 2. THESPORTSDB CONFIG (Others: NBA, NFL, etc.)
-        this.legacyBaseUrl = "https://www.thesportsdb.com/api/v1/json/1";
+        // ESPN Public Endpoints (Hidden Gems 💎)
+        this.baseUrl = "https://site.api.espn.com/apis/site/v2/sports";
     }
 
-    // --- A. SOCCER: API-FOOTBALL ---
-    async fetchSoccerFixtures(leagueId) {
-        if (!this.apiFootballKey || this.apiFootballKey === "TU_API_KEY_AQUI") {
-            console.warn("⚠️ Faltan credenciales de API-Football.");
-            return [];
+    // Helper: Mags ESPN Slug parts
+    // soccer/mex.1
+    // basketball/nba
+    getEndpoint(type, id) {
+        // Handle special cases
+        let sport = type; // 'soccer', 'football', 'basketball', 'baseball'
+        let league = id;  // 'mex.1', 'nfl', 'nba'
+
+        // Basic routing
+        if (id === 'nfl') return `${this.baseUrl}/football/nfl/scoreboard`;
+        if (id === 'nba') return `${this.baseUrl}/basketball/nba/scoreboard`;
+        if (id === 'mlb') return `${this.baseUrl}/baseball/mlb/scoreboard`;
+
+        // Soccer routing
+        if (type === 'soccer') {
+            return `${this.baseUrl}/soccer/${id}/scoreboard`;
         }
 
-        const today = new Date().toISOString().split('T')[0];
-        // NOTE: European leagues usually start previous year. 
-        // LIGA MX (262): Season 2025 covers Apertura 2025 / Clausura 2026
-        // We will try '2025' as a safe default for current active season ID, or '2026' if explicitly requested.
-        // User asked for 2026. Let's try 2026 for Mexico/MLS, but 2025 for Europe logic?
-        // Let's stick to user request Season 2026, but if it fails we might need to fallback.
-
-        let season = '2026';
-        // Override for European Leagues which might still be '2025' in API logic until June
-        if (['39', '140', '135', '2'].includes(leagueId)) season = '2025';
-
-        const url = `${this.apiFootballBase}/fixtures?league=${leagueId}&season=${season}&date=${today}`;
-
-        try {
-            const res = await fetch(url, {
-                method: "GET",
-                headers: {
-                    "x-rapidapi-host": this.apiFootballHost,
-                    "x-rapidapi-key": this.apiFootballKey
-                }
-            });
-
-            if (!res.ok) throw new Error("API-Football Error " + res.status);
-
-            const data = await res.json();
-            return data.response || [];
-        } catch (e) {
-            console.error(`⚽ Error fetching Soccer League ${leagueId}:`, e);
-            return [];
-        }
+        return null;
     }
 
-    // --- B. OTHER SPORTS: THESPORTSDB (LEGACY) ---
-    async fetchLegacyEvents(id) {
+    async fetchEspnLeague(leagueConfig) {
+        const url = this.getEndpoint(leagueConfig.type, leagueConfig.id);
+        if (!url) return [];
+
         try {
-            const res = await fetch(`${this.legacyBaseUrl}/eventsnextleague.php?id=${id}`);
-            if (!res.ok) throw new Error('Network response was not ok');
+            console.log(`📡 ESPN Fetch: ${leagueConfig.name} (${url})`);
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("ESPN Error " + res.status);
             const data = await res.json();
+
             return data.events || [];
         } catch (e) {
-            console.error(`🏀 Error fetching Legacy League ${id}:`, e);
+            console.warn(`⚠️ ESPN Fetch Failed for ${leagueConfig.name}:`, e);
             return [];
         }
     }
 
-    // --- MAIN ETL ---
     async runIngest() {
         if (!window.db || !window.db.data) return console.error("Database not ready");
 
         const config = window.db.data.ingestionConfig || { leagues: [] };
-        console.log('🚀 Starting Hybrid Sports Ingest...', config);
+        console.log('🚀 Starting ESPN Ingest...', config);
 
         let newGames = [];
-        const today = new Date().toISOString().split('T')[0];
+        const todayStr = new Date().toISOString().split('T')[0];
 
-        // 1. Process configured leagues
         if (config.leagues) {
             for (const league of config.leagues) {
                 if (!league.active) continue;
 
-                if (league.type === 'soccer') {
-                    // USE NEW API
-                    console.log(`⚽ Fetching Soccer: ${league.name} (${league.id})`);
-                    const fixtures = await this.fetchSoccerFixtures(league.id);
+                const events = await this.fetchEspnLeague(league);
 
-                    fixtures.forEach(f => {
-                        // API-Football format normalization
-                        const gameTime = new Date(f.fixture.date);
-                        // Format HH:MM
-                        const timeStr = gameTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                events.forEach(e => {
+                    // ESPN Data Structure
+                    const competition = e.competitions[0];
+                    const gameDate = new Date(e.date); // "2026-01-27T19:00:00Z"
+                    const dateStr = gameDate.toISOString().split('T')[0];
 
-                        newGames.push({
-                            id: `af_${f.fixture.id}`, // af prefix for api-football
-                            league: league.name.toUpperCase(),
-                            homeTeam: f.teams.home.name,
-                            awayTeam: f.teams.away.name,
-                            time: timeStr,
-                            date: today, // Ensure it's for today's list
-                            sport: 'Soccer',
-                            apiId: f.fixture.id,
-                            // Extra Metadata if needed
-                            logoHome: f.teams.home.logo,
-                            logoAway: f.teams.away.logo
-                        });
+                    // Filter: Only Today or Future
+                    // (Optional: ESPN usually returns current "scoreboard" window, often just today/tomorrow)
+                    if (dateStr < todayStr) return;
+
+                    const timeStr = gameDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+                    const home = competition.competitors.find(c => c.homeAway === 'home');
+                    const away = competition.competitors.find(c => c.homeAway === 'away');
+
+                    newGames.push({
+                        id: `espn_${e.id}`,
+                        league: league.name.toUpperCase(),
+                        homeTeam: home.team.displayName,
+                        awayTeam: away.team.displayName,
+                        time: timeStr,
+                        date: dateStr,
+                        sport: league.type === 'soccer' ? 'Soccer' : 'General',
+                        apiId: e.id,
+                        // Extra Metadata
+                        status: e.status.type.state, // 'pre', 'in', 'post'
+                        logoHome: home.team.logo,
+                        logoAway: away.team.logo
                     });
-
-                } else {
-                    // USE OLD API (NBA, NFL, MLB)
-                    console.log(`🏀 Fetching Legacy: ${league.name} (${league.id})`);
-                    const events = await this.fetchLegacyEvents(league.id);
-
-                    events.forEach(e => {
-                        // Strict filter: Only today or future
-                        if (!e.dateEvent || e.dateEvent < today) return;
-
-                        const timeParts = (e.strTime || "00:00").split(':');
-                        const shortTime = `${timeParts[0]}:${timeParts[1]}`;
-
-                        newGames.push({
-                            id: `api_${e.idEvent}`,
-                            league: league.name.toUpperCase(), // Use config name as standard
-                            homeTeam: e.strHomeTeam,
-                            awayTeam: e.strAwayTeam,
-                            time: shortTime,
-                            date: e.dateEvent,
-                            sport: 'General',
-                            apiId: e.idEvent
-                        });
-                    });
-                }
+                });
             }
         }
 
-        console.log(`✅ Found ${newGames.length} valid games via APIs.`);
+        console.log(`✅ ESPN Found ${newGames.length} games.`);
 
-        // 2. Merge Logic (Preserve Manual Games)
+        // Merge Logic
         const currentGames = window.db.getDailyInfo().games || [];
-        const manualGames = currentGames.filter(g =>
-            !g.id.toString().startsWith('api_') &&
-            !g.id.toString().startsWith('af_') &&
-            !g.id.toString().startsWith('agent_')
-        );
+
+        // Remove only previous auto-ingested games (api_, af_, espn_, agent_)
+        // BUT KEEP MANUAL ones
+        const manualGames = currentGames.filter(g => {
+            const id = g.id.toString();
+            return !id.startsWith('api_') &&
+                !id.startsWith('af_') &&
+                !id.startsWith('espn_') &&
+                !id.startsWith('agent_');
+        });
 
         const finalGames = [...manualGames, ...newGames];
 
@@ -148,7 +113,7 @@ window.SportIngestor = class {
             return a.time.localeCompare(b.time);
         });
 
-        // 3. Save
+        // Save
         const daily = window.db.getDailyInfo();
         daily.games = finalGames;
         window.db._save();
@@ -159,17 +124,12 @@ window.SportIngestor = class {
                 .catch(e => console.error('🔥 Sync ingest error', e));
         }
 
-        // 4. Update UI
+        // Update UI
         if (typeof renderManagerDashboard === 'function') renderManagerDashboard('games');
         window.dispatchEvent(new CustomEvent('db-daily-update', { detail: { type: 'games' } }));
-
-        if (newGames.length === 0 && (!this.apiFootballKey || this.apiFootballKey === "TU_API_KEY_AQUI")) {
-            alert("⚠️ OJO: No has puesto tu API KEY de API-Football.\nEdita assets/js/_ingest.js y ponla.");
-        }
 
         return newGames.length;
     }
 };
 
-// Initializer
 window.ingestor = new window.SportIngestor();

@@ -449,20 +449,20 @@ const INITIAL_DATA = {
     reservations: [],
     campaigns: [],
 
-    // AUTO-INGESTION CONFIGURATION
+    // AUTO-INGESTION CONFIGURATION (ESPN SLUGS)
     ingestionConfig: {
         leagues: [
-            // API-FOOTBALL IDs (Soccer)
-            { id: '39', name: 'Premier League', type: 'soccer', active: true },      // Antes 4328
-            { id: '140', name: 'La Liga', type: 'soccer', active: true },            // Antes 4335
-            { id: '135', name: 'Serie A', type: 'soccer', active: true },            // Antes 4332 (135 es It)
-            { id: '262', name: 'Liga MX', type: 'soccer', active: true },            // Antes 4345
-            { id: '2', name: 'Champions League', type: 'soccer', active: true },     // Nuevo
+            // SOCCER
+            { id: 'mex.1', name: 'Liga MX', type: 'soccer', active: true },
+            { id: 'eng.1', name: 'Premier League', type: 'soccer', active: true },
+            { id: 'esp.1', name: 'La Liga', type: 'soccer', active: true },
+            { id: 'ita.1', name: 'Serie A', type: 'soccer', active: true },
+            { id: 'uefa.champions', name: 'Champions Cloud', type: 'soccer', active: true },
 
-            // THESPORTSDB IDs (Legacy/Other Sports)
-            { id: '4391', name: 'NFL', type: 'nfl', active: true },
-            { id: '4387', name: 'NBA', type: 'nba', active: true },
-            { id: '4424', name: 'MLB', type: 'mlb', active: true }
+            // US SPORTS
+            { id: 'nfl', name: 'NFL', type: 'football', active: true },
+            { id: 'nba', name: 'NBA', type: 'basketball', active: true },
+            { id: 'mlb', name: 'MLB', type: 'baseball', active: true }
         ],
         teams: []
     },
