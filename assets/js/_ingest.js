@@ -1,8 +1,7 @@
 window.SportIngestor = class {
     constructor() {
-        // ESPN Public Endpoints (Hidden Gems 💎)
-        // CRITICAL FIX: Use AllOrigins Proxy (More reliable for API JSON)
-        this.corsProxy = "https://api.allorigins.win/raw?url=";
+        // ESPN Public Endpoints via LOCAL PROXY (Bypasses CORS)
+        this.localProxy = "http://localhost:8006/proxy?url=";
         this.baseUrl = "https://site.api.espn.com/apis/site/v2/sports";
     }
 
@@ -33,14 +32,15 @@ window.SportIngestor = class {
         if (!url) return [];
 
         try {
-            // Use Proxy + URL
-            const finalUrl = this.corsProxy + encodeURIComponent(url);
-            console.log(`📡 ESPN Fetch: ${leagueConfig.name} (${finalUrl})`);
+            // Use LOCAL Proxy + URL
+            const finalUrl = this.localProxy + encodeURIComponent(url);
+            console.log(`📡 ESPN Fetch via Local Proxy: ${leagueConfig.name}`);
 
             const res = await fetch(finalUrl);
-            if (!res.ok) throw new Error("ESPN Error " + res.status);
+            if (!res.ok) throw new Error(`Proxy Error ${res.status}`);
             const data = await res.json();
 
+            console.log(`✅ ${leagueConfig.name}: Received ${data.events?.length || 0} events`);
             return data.events || [];
         } catch (e) {
             console.error(`⚠️ ESPN Fetch Failed for ${leagueConfig.name}:`, e);
@@ -67,67 +67,62 @@ window.SportIngestor = class {
         if (!window.db || !window.db.data) return console.error("Database not ready");
 
         const config = window.db.data.ingestionConfig || { leagues: [] };
-        console.log('🚀 ESPN Ingest BYPASSED (CORS Blocked) - Using Fallback Only');
+        console.log('🚀 Starting ESPN Ingest via Local Proxy...');
 
         let newGames = [];
         // CRITICAL: Use same date format as UI expects
         const todayLocal = new Date().toLocaleDateString('en-CA');
         console.log(`📅 Local Date: ${todayLocal}`);
 
-        // SKIP ESPN API ENTIRELY - CORS is blocking all requests
-        // Go straight to fallback
-        console.log("⚠️ Skipping ESPN API calls (CORS blocked). Using hardcoded games.");
-
-        /*
-        // ORIGINAL LOOP - COMMENTED OUT DUE TO CORS
+        // RE-ENABLE ESPN API via Local Proxy
         if (config.leagues) {
             for (const league of config.leagues) {
                 if (!league.active) continue;
-        
+
                 const events = await this.fetchEspnLeague(league);
                 console.log(`🔎 ESPN ${league.name}: Found ${events.length} raw events.`);
-        
+
                 events.forEach(e => {
                     // Start permissive: Accept 'pre' (scheduled), 'in' (live), 'post' (finished recently)
                     const status = e.status?.type?.state;
-        
+
                     // ESPN Data Structure
                     const competition = e.competitions?.[0];
                     if (!competition) return;
-        
+
                     const gameDate = new Date(e.date); // "2026-01-27T19:00:00Z" (UTC)
                     // Convert to Local Date String for storage
                     const dateStr = gameDate.toLocaleDateString('en-CA'); // YYYY-MM-DD local
                     const timeStr = gameDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        
+
                     // 1. DATE FILTER: Allow Today AND Future (for upcoming games in list)
                     if (dateStr < todayLocal) {
                         // console.log(`⏩ Skipping old game: ${e.shortName} (${dateStr})`);
                         return;
                     }
-        
+
                     // SAFETY CHECK: Ensure competitors exist (F1 sometimes lacks this structure or is different)
                     if (!competition.competitors || !Array.isArray(competition.competitors)) {
                         console.warn(`⚠️ Skipping event due to missing competitors: ${e.shortName || e.id}`);
                         return;
                     }
-        
+
                     const home = competition.competitors.find(c => c.homeAway === 'home');
                     const away = competition.competitors.find(c => c.homeAway === 'away');
-        
+
                     // Specific Handling for F1/MMA/Boxing where homeAway might not act as expected or be generic
                     let homeName = home?.team?.displayName || competition.competitors[0]?.athlete?.displayName || e.name || 'Evento';
                     let awayName = away?.team?.displayName || competition.competitors[1]?.athlete?.displayName || '';
-        
+
                     // Logic to handle F1 Grand Prix names better
                     if (league.type === 'racing') {
                         homeName = e.shortName || e.name; // e.g. "Mexico City GP"
                         awayName = 'F1 Race';
                     }
-        
+
                     const homeLogo = home?.team?.logo || '';
                     const awayLogo = away?.team?.logo || '';
-        
+
                     newGames.push({
                         id: `espn_${e.id}`,
                         league: league.name.toUpperCase(),
@@ -145,11 +140,14 @@ window.SportIngestor = class {
                 });
             }
         }
-        */ // END COMMENTED ESPN API LOOP
 
-        // FORCE FALLBACK ALWAYS (ESPN blocked)
-        console.log("🛡️ Using Fallback NBA Games (7 games)");
-        newGames = this.getFallbackGames();
+        console.log(`✅ ESPN Ingest Complete: ${newGames.length} events found`);
+
+        // If no games from API, use fallback
+        if (newGames.length === 0) {
+            console.warn("⚠️ No events from ESPN. Using fallback.");
+            newGames = this.getFallbackGames();
+        }
 
         // Merge Logic
         const currentGames = window.db.getDailyInfo().games || [];
