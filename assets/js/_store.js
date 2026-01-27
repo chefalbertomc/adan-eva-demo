@@ -588,7 +588,7 @@ class Store {
         setTimeout(startSync, 3000);
 
         this.listeners = [];
-        
+
         // Iniciar Sync Local (Eventos entre pestañas)
         this._initLocalSync();
     }
@@ -646,7 +646,7 @@ class Store {
             console.log('🔄 Refreshing Waiter UI (Auto)');
             window.renderWaiterDashboard();
         }
-        
+
         // Notificar listeners genéricos si los hay
         this.notifyListeners();
     }
@@ -1995,62 +1995,74 @@ class Store {
         }
     }
 
-    addGame(arg1, league, teams, time) {
-        // Support both signatures:
-        // 1. addGame({ league, homeTeam, awayTeam, time }) -> Used by Manager App
-        // 2. addGame(sport, league, teams, time) -> Legacy / Internal
-        let gameData = {};
+    addGame(arg1) {
+        // Advanced Signature: addGame({ date, time, sport, league, homeTeam, awayTeam, tvs, audio })
+        let gameData = arg1;
 
-        // Extraction variables for Learning
-        let homeToLearn = '';
-        let awayToLearn = '';
-
-        if (typeof arg1 === 'object') {
-            gameData = {
-                sport: 'General',
-                league: arg1.league,
-                homeTeam: arg1.homeTeam,
-                awayTeam: arg1.awayTeam,
-                teams: arg1.homeTeam + ' vs ' + arg1.awayTeam,
-                match: arg1.homeTeam + ' vs ' + arg1.awayTeam,
-                time: arg1.time
-            };
-            homeToLearn = arg1.homeTeam;
-            awayToLearn = arg1.awayTeam;
-        } else {
-            gameData = {
-                sport: arg1,
-                league: league,
-                teams: teams,
-                match: teams,
-                time: time,
-                // Attempt to extract for learning if possible
-                homeTeam: (teams || '').split(' vs ')[0] || 'Local',
-                awayTeam: (teams || '').split(' vs ')[1] || 'Visitante'
-            };
-            homeToLearn = gameData.homeTeam;
-            awayToLearn = gameData.awayTeam;
-        }
-
-        // LEARNING PHASE
-        if (window.KNOWN_TEAMS) {
-            this.learnTeams(homeToLearn);
-            this.learnTeams(awayToLearn);
-        }
-
+        // Validation / Defaults
         const newGame = {
-            id: 'game_' + Date.now(),
+            id: 'G' + Date.now(),
+            date: gameData.date || new Date().toISOString().split('T')[0], // YYYY-MM-DD
+            time: gameData.time || '19:00',
+            sport: gameData.sport || 'General',
             league: gameData.league || 'General',
             homeTeam: gameData.homeTeam || 'Local',
             awayTeam: gameData.awayTeam || 'Visitante',
-            match: gameData.match || 'Partido',
-            time: gameData.time || '00:00',
-            sport: gameData.league // Simplified mapping
+            // Computed display string
+            match: `${gameData.homeTeam} vs ${gameData.awayTeam}`,
+            // New Fields
+            tvs: gameData.tvs || '', // String: "1, 2, 3"
+            audio: {
+                salon: gameData.audio?.salon || false,
+                terraza: gameData.audio?.terraza || false
+            },
+            isAdHoc: gameData.isAdHoc || false
         };
+
+        // LEARNING PHASE
+        if (window.KNOWN_TEAMS) {
+            this.learnTeams(newGame.homeTeam);
+            this.learnTeams(newGame.awayTeam);
+        }
 
         if (!this.data.dailyInfo.games) this.data.dailyInfo.games = [];
         this.data.dailyInfo.games.push(newGame);
+
+        // Trigger Sync
         this.updateDailyGames(this.data.dailyInfo.games);
+
+        return newGame;
+    }
+
+    // New Helpers for Game Management
+    updateGameTVs(gameId, tvString) {
+        const game = (this.data.dailyInfo.games || []).find(g => g.id === gameId);
+        if (game) {
+            game.tvs = tvString;
+            this.updateDailyGames(this.data.dailyInfo.games);
+        }
+    }
+
+    setGameAudio(gameId, zone, state) {
+        // Zone: 'salon' | 'terraza'
+        // State: true | false
+        const games = this.data.dailyInfo.games || [];
+        const game = games.find(g => g.id === gameId);
+
+        if (game) {
+            // Logic: If turning ON, turn OFF for all others in that zone (Exclusive Audio)
+            if (state === true) {
+                games.forEach(g => {
+                    if (g.audio) g.audio[zone] = false;
+                });
+            }
+
+            // Now set target
+            if (!game.audio) game.audio = { salon: false, terraza: false };
+            game.audio[zone] = state;
+
+            this.updateDailyGames(games);
+        }
     }
 
     learnTeams(teamName) {

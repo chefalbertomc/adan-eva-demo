@@ -1798,12 +1798,22 @@ function renderWaiterDashboard() {
               </div>
               <div class="space-y-2">
                 ${grouped[sport].map(game => `
-                  <div class="bg-black/50 p-3 rounded-lg border border-blue-400/50 flex justify-between items-center">
-                    <div>
-                      <div class="text-xs text-blue-300 font-bold">${game.league || ''}</div>
-                      <div class="text-lg font-bold text-white">${game.match || (game.homeTeam + ' vs ' + game.awayTeam)}</div>
+                  <div class="bg-black/50 p-3 rounded-lg border border-blue-400/50 flex flex-col gap-2">
+                    <div class="flex justify-between items-start">
+                        <div>
+                          <div class="text-[10px] text-blue-300 font-bold uppercase tracking-wider">${game.league || ''}</div>
+                          <div class="text-lg font-black text-white leading-tight">${game.homeTeam} <span class="text-gray-500 text-xs font-normal">vs</span> ${game.awayTeam}</div>
+                        </div>
+                        <div class="text-xl font-black text-yellow-400 py-1 px-2 bg-yellow-900/20 rounded">${game.time}</div>
                     </div>
-                    <div class="text-2xl font-black text-yellow-400">${game.time}</div>
+                    
+                    <!-- INFO EXTENDIDA (TVs y Audio) -->
+                    <div class="flex gap-2 text-[10px] font-bold mt-1 border-t border-white/5 pt-2">
+                        ${game.tvs ? `<div class="bg-gray-800 text-yellow-500 px-2 py-1 rounded flex items-center gap-1 flex-1">📺 TVs: ${game.tvs}</div>` : ''}
+                        
+                        ${game.audio?.salon ? `<div class="bg-green-900/50 text-green-400 px-2 py-1 rounded flex items-center gap-1 border border-green-700/50">🔊 SALÓN</div>` : ''}
+                        ${game.audio?.terraza ? `<div class="bg-green-900/50 text-green-400 px-2 py-1 rounded flex items-center gap-1 border border-green-700/50">🔊 TERRAZA</div>` : ''}
+                    </div>
                   </div>
                 `).join('')}
               </div>
@@ -4634,69 +4644,236 @@ window.filterManagerTables = function (waiterId) {
   });
 };
 
-function renderManagerGamesTab(container) {
-  // Inject Notification Area first
-  renderManagerGameRequests(container);
+// --- MANAGER TABS IMPLEMENTATION ---
 
-  // Scheduled Games
+function renderManagerGamesTab(container) {
   const games = window.db.getMatches();
+  const today = new Date().toISOString().split('T')[0];
+
+  // Filter games
+  const todaysGames = games.filter(g => g.date === today);
+  const futureGames = games.filter(g => g.date > today);
+
   const div = document.createElement('div');
   div.innerHTML = `
-    <div class="card bg-blue-900/10 border-2 border-blue-600 shadow-xl mb-20">
-      <div class="flex justify-between items-center mb-4 border-b border-blue-800 pb-2">
-          <h2 class="text-xl font-bold text-blue-400 flex items-center gap-2">📺 Partidos Hoy</h2>
-          <button onclick="document.getElementById('add-game-form').classList.toggle('hidden')" class="bg-blue-600 px-3 py-1 rounded text-white text-sm font-bold shadow hover:bg-blue-500 transition">
-             + Nuevo
-          </button>
-      </div>
-      
-      <!-- ADD GAME FORM -->
-      <div id="add-game-form" class="hidden bg-black/40 p-4 rounded-lg border border-blue-500/30 mb-4 animate-fade-in">
-          <div class="grid grid-cols-2 gap-2 mb-2">
-             <select id="new-league" class="bg-gray-800 text-white p-2 rounded border border-gray-600 text-sm">
-                <option value="NFL">NFL</option>
-                <option value="NBA">NBA</option>
-                <option value="MLB">MLB</option>
-                <option value="LIGA MX">LIGA MX</option>
-                <option value="FUTBOL">FUTBOL</option>
-                <option value="UFC">UFC</option>
-                <option value="BOX">BOX</option>
-                <option value="General">Otro</option>
-             </select>
-             <input type="time" id="new-time" class="bg-gray-800 text-white p-2 rounded border border-gray-600 text-sm" value="19:00">
-          </div>
-          <div class="grid grid-cols-2 gap-2 mb-2">
-             <input list="team-suggestions" id="new-home" placeholder="Local" class="bg-gray-800 text-white p-2 rounded border border-gray-600 text-sm w-full">
-             <input list="team-suggestions" id="new-away" placeholder="Visitante" class="bg-gray-800 text-white p-2 rounded border border-gray-600 text-sm w-full">
-          </div>
-          <button onclick="window.addGameFromManager()" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-bold shadow-lg">AGREGAR PARTIDO</button>
-      </div>
+    <!-- MAIN CONTAINER -->
+    <div class="space-y-6 mb-24">
 
-      <!-- Datalist (Fail-safe re-injection) -->
-      <datalist id="team-suggestions">
-          ${window.KNOWN_TEAMS.map(t => `<option value="${t}">`).join('')}
-      </datalist>
-      
-      ${games.length === 0 ? '<p class="text-gray-400 text-center py-8 text-sm">No hay partidos. Agrega uno.</p>' : `
-      <div class="grid grid-cols-1 gap-3">
-         ${games.map(g => `
-            <div class="flex justify-between items-center bg-gray-900 p-3 rounded border border-gray-700 relative hover:border-blue-500 transition">
-                <div class="flex items-center gap-3">
-                   <span class="text-3xl filter drop-shadow">${window.getSportIcon(g.league)}</span>
-                   <div>
-                       <div class="font-bold text-white text-base leading-tight">${g.homeTeam} <span class="text-gray-500 text-xs">vs</span> ${g.awayTeam}</div>
-                       <div class="text-[10px] text-blue-300 font-bold uppercase tracking-wider bg-blue-900/30 inline-block px-1.5 py-0.5 rounded mt-1">${g.league} • ⏰ ${g.time}</div>
-                   </div>
-                </div>
-                <button onclick="if(confirm('¿Borrar?')) { window.db.removeGame('${g.id}'); renderManagerDashboard('games'); }" class="text-red-500 bg-red-900/10 p-2 rounded hover:bg-red-900/30 w-8 h-8 flex items-center justify-center">🗑️</button>
+        <!-- 1. SOLICITUDES HOSTESS -->
+        ${(window.db.getDailyInfo().gameRequests || []).length > 0 ? '<div id="manager-requests-container"></div>' : ''}
+
+        <!-- 2. PARTIDOS DE HOY (LIVE CONTROL) -->
+        <div class="card bg-gray-900 border-2 border-blue-600 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                <span class="text-9xl">📡</span>
             </div>
-         `).join('')}
-      </div>
-      `}
+            
+            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+                <div>
+                    <h2 class="text-2xl font-black text-white flex items-center gap-2">
+                        <span class="text-red-500 animate-pulse">●</span> EN VIVO / HOY
+                    </h2>
+                    <p class="text-gray-400 text-xs uppercase tracking-widest font-bold mt-1">Control de Pantallas y Audio</p>
+                </div>
+                <button onclick="document.getElementById('add-game-modal').classList.remove('hidden')" 
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-black shadow-lg flex items-center gap-2 transition transform active:scale-95">
+                    <span>+</span> PROGRAMAR
+                </button>
+            </div>
+
+            ${todaysGames.length === 0
+      ? '<div class="text-center py-12 bg-black/20 rounded-xl border border-dashed border-gray-700"><p class="text-gray-500 italic mb-2">No hay partidos programados para hoy.</p><button onclick="document.getElementById(\'add-game-modal\').classList.remove(\'hidden\')" class="text-blue-400 font-bold underline">Agregar uno ahora</button></div>'
+      : `<div class="grid grid-cols-1 gap-4">
+                    ${todaysGames.map(g => renderGameControlCard(g)).join('')}
+                   </div>`
+    }
+        </div>
+
+        <!-- 3. PRÓXIMOS PARTIDOS -->
+        <div class="card bg-gray-800/50 border border-gray-700">
+            <h3 class="text-lg font-bold text-gray-400 mb-4 uppercase tracking-wider">📅 Próximos Eventos</h3>
+            ${futureGames.length === 0
+      ? '<p class="text-gray-500 text-sm">No hay partidos a futuro.</p>'
+      : `<div class="space-y-2">
+                    ${futureGames.map(g => `
+                        <div class="flex justify-between items-center bg-black/20 p-3 rounded border border-white/5">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-gray-700 w-12 h-12 rounded flex items-center justify-center text-xl font-bold text-gray-400">
+                                    ${new Date(g.date).getDate()}
+                                </div>
+                                <div>
+                                    <div class="font-bold text-white">${g.match}</div>
+                                    <div class="text-xs text-gray-400">${window.getSportIcon(g.league)} ${g.league} • ${g.time}</div>
+                                </div>
+                            </div>
+                            <button onclick="window.db.removeGame('${g.id}'); renderManagerDashboard('games');" class="text-red-400 hover:text-red-300 px-3">🗑️</button>
+                        </div>
+                    `).join('')}
+                   </div>`
+    }
+        </div>
+
+    </div>
+
+    <!-- MODAL: AGREGAR PARTIDO -->
+    <div id="add-game-modal" class="fixed inset-0 z-[9999] bg-black/90 hidden backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-gray-800 w-full max-w-lg rounded-2xl shadow-2xl border border-gray-700 overflow-hidden transform transition-all scale-100">
+            <div class="bg-gray-900 p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-black text-white">🗓️ PROGRAMAR PARTIDO</h3>
+                <button onclick="document.getElementById('add-game-modal').classList.add('hidden')" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <!-- Fecha y Hora -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Fecha</label>
+                        <input type="date" id="new-date" class="w-full bg-gray-700 text-white rounded p-3 font-bold border border-gray-600 focus:border-blue-500 outline-none" value="${new Date().toISOString().split('T')[0]}">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Hora</label>
+                        <input type="time" id="new-time" class="w-full bg-gray-700 text-white rounded p-3 font-bold border border-gray-600 focus:border-blue-500 outline-none" value="19:00">
+                    </div>
+                </div>
+
+                <!-- Liga y Deporte -->
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Liga / Deporte</label>
+                    <select id="new-league" class="w-full bg-gray-700 text-white rounded p-3 font-bold border border-gray-600 focus:border-blue-500 outline-none">
+                        <option value="LIGA MX">🇲🇽 LIGA MX</option>
+                        <option value="LIGA INGLESA">🇬🇧 PREMIER LEAGUE</option>
+                        <option value="LIGA ESPAÑOLA">🇪🇸 LA LIGA</option>
+                        <option value="LIGA ITALIANA">🇮🇹 SERIE A</option>
+                        <option value="CHAMPIONS LEAGUE">🇪🇺 CHAMPIONS</option>
+                        <option value="NFL">🏈 NFL</option>
+                        <option value="NBA">🏀 NBA</option>
+                        <option value="MLB">⚾ MLB</option>
+                        <option value="NHL">🏒 NHL</option>
+                        <option value="UFC">🥊 UFC</option>
+                        <option value="BOX">🥊 BOX</option>
+                        <option value="F1">🏎️ F1</option>
+                    </select>
+                </div>
+
+                <!-- Equipos -->
+                <div class="grid grid-cols-2 gap-4 relative">
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Local</label>
+                        <input list="team-suggestions" id="new-home" placeholder="Ej. América" class="w-full bg-gray-700 text-white rounded p-3 font-bold border border-gray-600 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Visitante</label>
+                        <input list="team-suggestions" id="new-away" placeholder="Ej. Chivas" class="w-full bg-gray-700 text-white rounded p-3 font-bold border border-gray-600 focus:border-blue-500 outline-none">
+                    </div>
+                    
+                    <!-- Datalist Injection -->
+                    <datalist id="team-suggestions">
+                        ${window.KNOWN_TEAMS.map(t => `<option value="${t}">`).join('')}
+                    </datalist>
+                </div>
+
+                <!-- Botón Acción -->
+                <button onclick="window.submitNewGame()" class="w-full bg-green-600 hover:bg-green-500 text-white font-black text-lg py-4 rounded-xl shadow-lg mt-4 transform active:scale-95 transition-all">
+                    GUARDAR PARTIDO
+                </button>
+            </div>
+        </div>
+    </div>
+  `;
+
+  container.appendChild(div);
+
+  // Render Requests if any
+  const reqContainer = div.querySelector('#manager-requests-container');
+  if (reqContainer) renderManagerGameRequests(reqContainer);
+}
+
+// Helper to render individual game card with controls
+function renderGameControlCard(game) {
+  const isSalonAudio = game.audio?.salon || false;
+  const isTerrazaAudio = game.audio?.terraza || false;
+
+  return `
+    <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-lg flex flex-col gap-4 transition hover:border-blue-500/50">
+        <!-- HEADER INFO -->
+        <div class="flex justify-between items-start">
+            <div class="flex items-center gap-4">
+                <div class="text-4xl filter drop-shadow-md">${window.getSportIcon(game.league)}</div>
+                <div>
+                    <div class="text-[10px] text-blue-400 font-bold uppercase tracking-widest bg-blue-900/20 px-2 py-0.5 rounded inline-block mb-1">
+                        ${game.league} • ${game.time}
+                    </div>
+                    <div class="text-xl font-black text-white leading-none">
+                        ${game.homeTeam} <span class="text-gray-500 text-sm font-normal">vs</span> ${game.awayTeam}
+                    </div>
+                </div>
+            </div>
+            <button onclick="if(confirm('¿Borrar este partido?')) { window.db.removeGame('${game.id}'); renderManagerDashboard('games'); }" class="text-gray-600 hover:text-red-500 p-2">
+                🗑️
+            </button>
+        </div>
+
+        <!-- CONTROLS ROW -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-black/20 p-3 rounded-lg">
+            
+            <!-- TV ASSIGNMENT -->
+            <div>
+                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">📺 Asignar Pantallas</label>
+                <input type="text" 
+                       value="${game.tvs || ''}" 
+                       placeholder="Ej: 1, 3, Bar, Terraza"
+                       onchange="window.db.updateGameTVs('${game.id}', this.value)"
+                       class="w-full bg-gray-900 text-yellow-400 font-mono text-sm border border-gray-600 rounded px-2 py-1.5 focus:border-yellow-500 outline-none placeholder-gray-700">
+            </div>
+
+            <!-- AUDIO CONTROL -->
+            <div>
+                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">🔈 Audio (Zona)</label>
+                <div class="flex gap-2">
+                    <button onclick="window.db.setGameAudio('${game.id}', 'salon', ${!isSalonAudio}); renderManagerDashboard('games');" 
+                            class="flex-1 px-2 py-1.5 rounded text-xs font-bold transition flex items-center justify-center gap-1 ${isSalonAudio ? 'bg-green-600 text-white shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}">
+                        ${isSalonAudio ? '🔊' : '🔈'} SALÓN
+                    </button>
+                    <button onclick="window.db.setGameAudio('${game.id}', 'terraza', ${!isTerrazaAudio}); renderManagerDashboard('games');" 
+                            class="flex-1 px-2 py-1.5 rounded text-xs font-bold transition flex items-center justify-center gap-1 ${isTerrazaAudio ? 'bg-green-600 text-white shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}">
+                        ${isTerrazaAudio ? '🔊' : '🔈'} TERRAZA
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
     `;
-  container.appendChild(div);
 }
+
+window.submitNewGame = function () {
+  const date = document.getElementById('new-date').value;
+  const time = document.getElementById('new-time').value;
+  const league = document.getElementById('new-league').value;
+  const home = document.getElementById('new-home').value;
+  const away = document.getElementById('new-away').value;
+
+  if (!home || !away) {
+    alert('Por favor ingresa los nombres de los equipos.');
+    return;
+  }
+
+  // Determine Sport from League map
+  let sport = 'General';
+  if (league.includes('NFL')) sport = 'Americano';
+  else if (league.includes('NBA')) sport = 'Basquet';
+  else if (league.includes('MLB')) sport = 'Beisbol';
+  else if (league.includes('NHL')) sport = 'Hockey';
+  else if (league.includes('LIGA') || league.includes('CHAMPIONS')) sport = 'Futbol';
+  else if (league.includes('UFC') || league.includes('BOX')) sport = 'Peleas';
+  else if (league.includes('F1')) sport = 'Automovilismo';
+
+  window.db.addGame({
+    date, time, league, sport, homeTeam: home, awayTeam: away
+  });
+
+  document.getElementById('add-game-modal').classList.add('hidden');
+  renderManagerDashboard('games');
+};
 
 function renderManagerReportsTab(container) {
   container.innerHTML = `
