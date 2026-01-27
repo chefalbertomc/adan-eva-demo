@@ -462,7 +462,12 @@ const INITIAL_DATA = {
             // US SPORTS
             { id: 'nfl', name: 'NFL', type: 'football', active: true },
             { id: 'nba', name: 'NBA', type: 'basketball', active: true },
-            { id: 'mlb', name: 'MLB', type: 'baseball', active: true }
+            { id: 'mlb', name: 'MLB', type: 'baseball', active: true },
+
+            // FIGHTING & RACING
+            { id: 'f1', name: 'F1', type: 'racing', active: true },
+            { id: 'ufc', name: 'UFC', type: 'mma', active: true },
+            { id: 'boxing', name: 'Boxeo', type: 'boxing', active: true }
         ],
         teams: []
     },

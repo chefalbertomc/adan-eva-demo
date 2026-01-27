@@ -9,8 +9,9 @@ window.SportIngestor = class {
     // basketball/nba
     getEndpoint(type, id) {
         // Handle special cases
-        let sport = type; // 'soccer', 'football', 'basketball', 'baseball'
-        let league = id;  // 'mex.1', 'nfl', 'nba'
+        if (type === 'racing') return `${this.baseUrl}/racing/f1/scoreboard`;
+        if (type === 'mma') return `${this.baseUrl}/mma/ufc/scoreboard`;
+        if (type === 'boxing') return `${this.baseUrl}/boxing/boxing/scoreboard`;
 
         // Basic routing
         if (id === 'nfl') return `${this.baseUrl}/football/nfl/scoreboard`;
@@ -46,7 +47,7 @@ window.SportIngestor = class {
         if (!window.db || !window.db.data) return console.error("Database not ready");
 
         const config = window.db.data.ingestionConfig || { leagues: [] };
-        console.log('🚀 Starting ESPN Ingest...', config);
+        console.log('🚀 Starting ESPN Ingest (Full Coverage)...', config);
 
         let newGames = [];
         const todayStr = new Date().toISOString().split('T')[0];
@@ -58,39 +59,45 @@ window.SportIngestor = class {
                 const events = await this.fetchEspnLeague(league);
 
                 events.forEach(e => {
+                    // FILTER: Only 'pre' (Scheduled) or 'in' (Live)
+                    const status = e.status?.type?.state;
+                    if (status !== 'pre' && status !== 'in') return;
+
                     // ESPN Data Structure
                     const competition = e.competitions[0];
-                    const gameDate = new Date(e.date); // "2026-01-27T19:00:00Z"
-                    const dateStr = gameDate.toISOString().split('T')[0];
-
-                    // Filter: Only Today or Future
-                    // (Optional: ESPN usually returns current "scoreboard" window, often just today/tomorrow)
-                    if (dateStr < todayStr) return;
-
+                    const gameDate = new Date(e.date); // "2026-01-27T19:00:00Z" (UTC)
+                    // Convert to Local Date String for storage
+                    const dateStr = gameDate.toLocaleDateString('en-CA'); // YYYY-MM-DD local
                     const timeStr = gameDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
                     const home = competition.competitors.find(c => c.homeAway === 'home');
                     const away = competition.competitors.find(c => c.homeAway === 'away');
 
+                    // Fallbacks for sports like F1/Boxing where "home/away" concept differs
+                    const homeName = home?.team?.displayName || e.name || 'Evento';
+                    const awayName = away?.team?.displayName || '';
+                    const homeLogo = home?.team?.logo || '';
+                    const awayLogo = away?.team?.logo || '';
+
                     newGames.push({
                         id: `espn_${e.id}`,
                         league: league.name.toUpperCase(),
-                        homeTeam: home.team.displayName,
-                        awayTeam: away.team.displayName,
+                        homeTeam: homeName,
+                        awayTeam: awayName,
                         time: timeStr,
                         date: dateStr,
                         sport: league.type === 'soccer' ? 'Soccer' : 'General',
                         apiId: e.id,
                         // Extra Metadata
-                        status: e.status.type.state, // 'pre', 'in', 'post'
-                        logoHome: home.team.logo,
-                        logoAway: away.team.logo
+                        status: status,
+                        logoHome: homeLogo,
+                        logoAway: awayLogo
                     });
                 });
             }
         }
 
-        console.log(`✅ ESPN Found ${newGames.length} games.`);
+        console.log(`✅ ESPN Found ${newGames.length} active/scheduled games.`);
 
         // Merge Logic
         const currentGames = window.db.getDailyInfo().games || [];
