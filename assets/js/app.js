@@ -5099,59 +5099,72 @@ function renderManagerGamesTab(container) {
             ${futureGames.length === 0
       ? '<p class="text-gray-500 text-sm">No hay partidos a futuro.</p>'
       : (() => {
-        // GROUP BY MONTH
-        const grouped = {};
+        // 1. GROUP BY MONTH
+        const groupedByMonth = {};
         futureGames.forEach(g => {
-          const dateObj = new Date(g.date + 'T12:00:00'); // Force middle of day to avoid timezone shifts
+          const dateObj = new Date(g.date + 'T12:00:00');
           const monthKey = dateObj.toLocaleString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
-          if (!grouped[monthKey]) grouped[monthKey] = [];
-          grouped[monthKey].push(g);
+          if (!groupedByMonth[monthKey]) groupedByMonth[monthKey] = [];
+          groupedByMonth[monthKey].push(g);
         });
 
-        return Object.keys(grouped).map(month => `
-              <div class="mb-6 last:mb-0">
-                  <h4 class="text-yellow-500 font-black text-sm uppercase tracking-widest border-b border-gray-700 pb-1 mb-3">
+        return Object.keys(groupedByMonth).map(month => {
+          const gamesInMonth = groupedByMonth[month];
+
+          // 2. GROUP BY LEAGUE (Nested)
+          const groupedByLeague = {};
+          gamesInMonth.forEach(g => {
+            const leagueKey = g.league || 'OTROS';
+            if (!groupedByLeague[leagueKey]) groupedByLeague[leagueKey] = [];
+            groupedByLeague[leagueKey].push(g);
+          });
+
+          // Render Leagues
+          const leaguesHtml = Object.keys(groupedByLeague).sort().map(league => `
+                <div class="mb-4 pl-2">
+                    <div class="text-[10px] font-bold text-blue-300 uppercase tracking-widest mb-2 flex items-center gap-1 bg-blue-900/20 w-fit px-2 py-1 rounded">
+                       ${window.getSportIcon ? window.getSportIcon(league) : '🏆'} ${league}
+                    </div>
+                    <div class="space-y-2">
+                        ${groupedByLeague[league].map(g => `
+                            <div class="flex justify-between items-center bg-black/40 p-2 rounded-lg border border-gray-700/50 hover:border-gray-500 transition">
+                                <div class="flex items-center gap-3">
+                                    <!-- FECHA (Día) -->
+                                    <div class="flex flex-col items-center bg-gray-800 p-1.5 rounded border border-gray-700 min-w-[45px]">
+                                        <span class="text-[10px] text-red-400 font-bold uppercase">${new Date(g.date + 'T12:00:00').toLocaleString('es-MX', { weekday: 'short' }).replace('.', '')}</span>
+                                        <span class="text-xl font-black text-white leading-none">${g.date.split('-')[2]}</span>
+                                    </div>
+                                    <!-- INFO -->
+                                    <div>
+                                        <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1 mb-0.5">
+                                            ⏰ ${g.time}
+                                        </div>
+                                        <div class="text-sm font-bold text-white leading-tight flex items-center gap-1">
+                                            ${window.getTeamLogo(g.homeTeam) ? `<img src="${window.getTeamLogo(g.homeTeam)}" class="inline-block object-contain" style="width: 20px; height: 20px; max-width: 20px; max-height: 20px;">` : ''}
+                                            <span>${g.match || `${g.homeTeam} vs ${g.awayTeam}`}</span>
+                                            ${window.getTeamLogo(g.awayTeam) ? `<img src="${window.getTeamLogo(g.awayTeam)}" class="inline-block object-contain" style="width: 20px; height: 20px; max-width: 20px; max-height: 20px;">` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onclick="try { if(confirm('¿Borrar evento futuro?')) { window.db.removeGame('${g.id}'); renderManagerDashboard('games'); } } catch(e) { alert('Error: ' + e.message); console.error(e); }" 
+                                        class="text-gray-600 hover:text-red-500 hover:bg-red-900/10 p-2 rounded transition">
+                                    🗑️
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+          return `
+              <div class="mb-8 last:mb-0">
+                  <h4 class="text-yellow-500 font-black text-base uppercase tracking-widest border-b border-gray-700 pb-2 mb-4">
                       ${month}
                   </h4>
-                  <div class="space-y-2">
-                      ${grouped[month].map(g => `
-                          <div class="flex justify-between items-center bg-black/40 p-3 rounded-lg border border-gray-700/50 hover:border-gray-500 transition">
-                              
-                              <div class="flex items-center gap-4">
-                                  <!-- FECHA (Día) -->
-                                  <div class="flex flex-col items-center bg-gray-800 p-2 rounded border border-gray-700 min-w-[50px]">
-                                      <span class="text-xs text-red-400 font-bold uppercase">${new Date(g.date + 'T12:00:00').toLocaleString('es-MX', { weekday: 'short' }).replace('.', '')}</span>
-                                      <span class="text-2xl font-black text-white leading-none">${g.date.split('-')[2]}</span>
-                                  </div>
-
-                                  <!-- INFO PARTIDO -->
-                                  <div>
-                                      <div class="flex items-center gap-2 mb-1">
-                                          <span class="text-[10px] font-bold bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded border border-blue-800/50">
-                                              ${g.league}
-                                          </span>
-                                          <span class="text-xs font-bold text-gray-400 flex items-center gap-1">
-                                              ⏰ ${g.time}
-                                          </span>
-                                      </div>
-                                      <div class="text-base font-bold text-white leading-tight">
-                                          ${window.getTeamLogo(g.homeTeam) ? `<img src="${window.getTeamLogo(g.homeTeam)}" class="inline-block w-5 h-5 mr-1 align-sub object-contain">` : ''}
-                                          ${g.match || `${g.homeTeam} vs ${g.awayTeam}`}
-                                          ${window.getTeamLogo(g.awayTeam) ? `<img src="${window.getTeamLogo(g.awayTeam)}" class="inline-block w-5 h-5 ml-1 align-sub object-contain">` : ''}
-                                      </div>
-                                  </div>
-                              </div>
-
-                              <!-- BOTÓN BORRAR -->
-                              <button onclick="try { if(confirm('¿Borrar evento futuro?')) { window.db.removeGame('${g.id}'); renderManagerDashboard('games'); } } catch(e) { alert('Error: ' + e.message); console.error(e); }" 
-                                      class="text-gray-600 hover:text-red-500 hover:bg-red-900/10 p-2 rounded transition">
-                                  🗑️
-                              </button>
-                          </div>
-                      `).join('')}
-                  </div>
+                  ${leaguesHtml}
               </div>
-          `).join('');
+            `;
+        }).join('');
       })()
     }
         </div>
