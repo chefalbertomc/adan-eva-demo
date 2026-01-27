@@ -30,7 +30,27 @@ window.addEventListener('db-daily-update', (event) => {
   // 3. HOSTESS - SHOW TOAST INSTEAD OF RELOAD (To avoid input loss)
   if (document.getElementById('content-tables') && !document.getElementById('content-tables').classList.contains('hidden')) {
     if (window.showToast) window.showToast('📅 Información de Partidos Actualizada', 'success');
-    // We can also try to update the hidden selects if we are clever, but Toast is safer
+  }
+
+  // 4. MANAGER NOTIFICATIONS (NEW REQUESTS & ASSIGNMENTS)
+  // Check if we are the Manager
+  if (STATE.user && (STATE.user.role === 'manager' || STATE.user.role === 'admin')) {
+
+    // A. Check for NEW Custom Game Requests ("OTRO")
+    const currentRequests = window.db.getDailyInfo().gameRequests || [];
+    const prevRequestsCount = window.PREV_REQ_COUNT !== undefined ? window.PREV_REQ_COUNT : currentRequests.length;
+
+    if (currentRequests.length > prevRequestsCount) {
+      const newReq = currentRequests[currentRequests.length - 1]; // Grab last one
+      if (window.showToast) window.showToast(`🔔 Solicitud de Hostess: ${newReq.gameName}`, 'info');
+      // Refresh games tab if active to show it
+      if (window.CURRENT_MANAGER_TAB === 'games') renderManagerDashboard('games');
+    }
+    window.PREV_REQ_COUNT = currentRequests.length;
+
+    // B. Check for Game Assignments on Tables (Simple Check)
+    // This is harder to track diffs without heavy state, but we can check if a "recent" change happened
+    // For now, let's just log it. A full "Waiter requested X" requires dedicated event log in DB.
   }
 });
 
