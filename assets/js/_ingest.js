@@ -50,25 +50,36 @@ window.SportIngestor = class {
         console.log('🚀 Starting ESPN Ingest (Full Coverage)...', config);
 
         let newGames = [];
-        const todayStr = new Date().toISOString().split('T')[0];
+        // CRITICAL FIX: Use LOCAL DATE string, not UTC
+        // The user is in CST (-6), so UTC might be tomorrow.
+        const todayLocal = new Date().toLocaleDateString('en-CA');
+        console.log(`📅 Local Ingest Date: ${todayLocal}`);
 
         if (config.leagues) {
             for (const league of config.leagues) {
                 if (!league.active) continue;
 
                 const events = await this.fetchEspnLeague(league);
+                console.log(`🔎 ESPN ${league.name}: Found ${events.length} raw events.`);
 
                 events.forEach(e => {
-                    // FILTER: Only 'pre' (Scheduled) or 'in' (Live)
+                    // Start permissive: Accept 'pre' (scheduled), 'in' (live), 'post' (finished recently)
                     const status = e.status?.type?.state;
-                    if (status !== 'pre' && status !== 'in') return;
 
                     // ESPN Data Structure
-                    const competition = e.competitions[0];
+                    const competition = e.competitions?.[0];
+                    if (!competition) return;
+
                     const gameDate = new Date(e.date); // "2026-01-27T19:00:00Z" (UTC)
                     // Convert to Local Date String for storage
                     const dateStr = gameDate.toLocaleDateString('en-CA'); // YYYY-MM-DD local
                     const timeStr = gameDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+                    // 1. DATE FILTER: Allow Today AND Future (for upcoming games in list)
+                    if (dateStr < todayLocal) {
+                        // console.log(`⏩ Skipping old game: ${e.shortName} (${dateStr})`);
+                        return;
+                    }
 
                     const home = competition.competitors.find(c => c.homeAway === 'home');
                     const away = competition.competitors.find(c => c.homeAway === 'away');
