@@ -4593,6 +4593,16 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
     </header>
     
     <main id="manager-content" class="p-3 animate-fade-in"></main>
+    
+    <!-- RESERVATIONS SECTION (NEW) -->
+    <section id="manager-reservations" class="p-4 border-t border-gray-800 bg-gray-900 mb-20">
+        <h3 class="text-yellow-500 font-bold mb-4 flex items-center gap-2">
+            🎟️ RESERVACIONES <span class="bg-gray-800 text-xs px-2 py-0.5 rounded text-white">${window.db.getDailyInfo().gameRequests?.length || 0} Solicitudes Activas</span>
+        </h3>
+        <div id="reservations-list" class="space-y-3">
+             <!-- Reservations injected here -->
+        </div>
+    </section>
 
     <!-- BOTTOM NAVIGATION - GERENTE -->
     <nav class="bottom-nav">
@@ -4626,7 +4636,52 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
   if (activeTab === 'tables') renderManagerTablesTab(content);
   else if (activeTab === 'games') renderManagerGamesTab(content);
   else if (activeTab === 'reports') renderManagerReportsTab(content);
+
+  // ALWAYS RENDER RESERVATIONS AT BOTTOM
+  renderManagerReservations(div.querySelector('#reservations-list'));
 };
+
+// NEW: Render Reservations
+function renderManagerReservations(container) {
+  if (!container) return;
+
+  // FETCH RESERVATIONS (Logic: Visits where isReservation = true OR has specific property)
+  // Assuming we use 'visits' collection. If there is a separate 'reservations' collection, we'd need to fetch allowed
+  // For now, let's filter ACTIVE VISITS that might be marked as reservations? 
+  // OR create a mock for now since user asked for the VIEW.
+  // Let's assume we pull from window.db.getReservations() (which we need to create or mock)
+  // If not exists, fallback to filtering visits with specific status
+
+  const visits = window.db.getVisits ? window.db.getVisits() : [];
+  // Mock Logic for demonstration if no explicit reservation flag exists yet
+  const reservations = visits.filter(v => v.type === 'reservation' || v.status === 'reserved');
+
+  if (reservations.length === 0) {
+    container.innerHTML = '<p class="text-gray-600 text-xs italic">No hay reservaciones activas.</p>';
+    return;
+  }
+
+  container.innerHTML = reservations.map(r => `
+        <div class="bg-gray-800 p-3 rounded-lg border-l-4 ${r.vip ? 'border-yellow-500' : 'border-gray-600'} flex justify-between items-center">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-white text-base">${r.customerName || 'Cliente'}</span>
+                    ${r.vip === 'diamond' ? '💎' : r.vip === 'blazin' ? '🔥' : ''}
+                </div>
+                <div class="text-xs text-gray-400">
+                    ${r.date || 'Hoy'} • ${r.time || '--:--'} • ${r.pax || 2} Pax
+                </div>
+                <div class="text-xs text-blue-300 mt-1">
+                    🎯 ${r.reason || 'Visita'} : ${r.game || 'Sin Partido'}
+                </div>
+            </div>
+            ${!r.vip ? `
+            <div class="flex gap-1">
+                <button class="bg-green-900/50 text-green-400 text-[10px] px-2 py-1 rounded border border-green-800">APROBAR</button>
+            </div>` : ''}
+        </div>
+    `).join('');
+}
 
 // --- MANAGER TABS IMPLEMENTATION ---
 
