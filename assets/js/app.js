@@ -802,16 +802,14 @@ function renderHostessDashboard() {
           </div>
         `}
       </div>
-    </div>
-
     <!-- Tab Content: Reservations - SOLO LECTURA -->
     <div id="content-reservations" class="tab-content hidden">
       <div class="card">
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex justify-between items-center mb-6">
           <h3 class="text-xl">Reservaciones de Hoy</h3>
-          <div class="text-sm text-secondary bg-blue-900/30 px-3 py-1 rounded">
-            📌 Solo lectura - Gerente crea reservaciones
-          </div>
+          <button onclick="window.showReservationModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2">
+            🎟️ Nueva Reservación
+          </button>
         </div>
         
         ${reservations.length === 0 ? `
@@ -6201,3 +6199,123 @@ function renderManagerGameRequests(container) {
         </div>
     `;
 }
+
+// === HOSTESS RESERVATION UI ===
+
+window.showReservationModal = function () {
+  // Simple prompt-based flow for now, or inject a modal if preferred.
+  // Let's inject a modal for better UX as requested "Professional"
+
+  // Check if modal exists
+  let modal = document.getElementById('reservation-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'reservation-modal';
+    modal.className = 'fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in hidden';
+    modal.innerHTML = `
+            <div class="bg-gray-900 border border-yellow-500/50 rounded-xl p-6 w-full max-w-md relative shadow-2xl">
+                <button onclick="document.getElementById('reservation-modal').classList.add('hidden')" class="absolute top-2 right-2 text-gray-500 hover:text-white text-xl">✕</button>
+                
+                <h3 class="text-xl font-black text-yellow-500 mb-6 flex items-center gap-2">
+                    🎟️ NUEVA RESERVACIÓN
+                </h3>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Nombre Cliente</label>
+                        <input type="text" id="res-name" class="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Ej. Juan Pérez">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                         <div>
+                            <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Pax</label>
+                            <input type="number" id="res-pax" class="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white outline-none" value="2">
+                        </div>
+                         <div>
+                            <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Hora</label>
+                            <input type="time" id="res-time" class="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Categoría VIP</label>
+                        <div class="flex gap-2">
+                            <button onclick="selectResVip(this, '')" class="res-vip-btn flex-1 p-2 rounded border border-gray-600 bg-gray-800 text-gray-400 text-sm selected">Normal</button>
+                            <button onclick="selectResVip(this, 'blazin')" class="res-vip-btn flex-1 p-2 rounded border border-orange-500/50 bg-gray-800 text-orange-500 text-sm">🔥 Blazin</button>
+                            <button onclick="selectResVip(this, 'diamond')" class="res-vip-btn flex-1 p-2 rounded border border-blue-400/50 bg-gray-800 text-blue-400 text-sm">💎 Diamond</button>
+                        </div>
+                        <input type="hidden" id="res-vip" value="">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Motivo / Partido</label>
+                        <select id="res-reason" class="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white mb-2" onchange="toggleResGameDisplay(this)">
+                            <option value="Casual">Casual / Comida</option>
+                            <option value="Partido">Ver Partido</option>
+                            <option value="Cumpleaños">Cumpleaños</option>
+                            <option value="Negocios">Negocios</option>
+                        </select>
+                        
+                        <div id="res-game-container" class="hidden">
+                             <select id="res-game" class="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white text-sm">
+                                <!-- Populated dynamically -->
+                             </select>
+                        </div>
+                    </div>
+
+                    <button onclick="submitReservation()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-lg mt-4 shadow-lg transform active:scale-95 transition">
+                        💾 GUARDAR RESERVACIÓN
+                    </button>
+                </div>
+            </div>
+        `;
+    document.body.appendChild(modal);
+  }
+
+  // Reset and Show
+  document.getElementById('res-name').value = '';
+  document.getElementById('res-pax').value = '2';
+  document.getElementById('res-time').value = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+  // Populate Games
+  const gameSelect = document.getElementById('res-game');
+  if (window.generateGameOptions) {
+    gameSelect.innerHTML = window.generateGameOptions('');
+  }
+
+  document.getElementById('reservation-modal').classList.remove('hidden');
+};
+
+window.selectResVip = function (btn, val) {
+  document.querySelectorAll('.res-vip-btn').forEach(b => {
+    b.classList.remove('bg-gray-700', 'ring-2', 'ring-yellow-500');
+    b.classList.add('bg-gray-800');
+  });
+  btn.classList.remove('bg-gray-800');
+  btn.classList.add('bg-gray-700', 'ring-2', 'ring-yellow-500');
+  document.getElementById('res-vip').value = val;
+};
+
+window.toggleResGameDisplay = function (sel) {
+  const cont = document.getElementById('res-game-container');
+  if (sel.value === 'Partido') cont.classList.remove('hidden');
+  else cont.classList.add('hidden');
+};
+
+window.submitReservation = function () {
+  const name = document.getElementById('res-name').value;
+  if (!name) return alert('Nombre requerido');
+
+  const data = {
+    customerName: name,
+    pax: document.getElementById('res-pax').value,
+    time: document.getElementById('res-time').value,
+    vip: document.getElementById('res-vip').value,
+    reason: document.getElementById('res-reason').value,
+    game: document.getElementById('res-reason').value === 'Partido' ? document.getElementById('res-game').value : '',
+    date: new Date().toLocaleDateString('en-CA') // Today
+  };
+
+  window.db.addReservation(data);
+  document.getElementById('reservation-modal').classList.add('hidden');
+};
