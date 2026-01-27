@@ -1,6 +1,8 @@
 window.SportIngestor = class {
     constructor() {
         // ESPN Public Endpoints (Hidden Gems 💎)
+        // CRITICAL FIX: Add CORS Proxy to avoid browser blocking
+        this.corsProxy = "https://corsproxy.io/?";
         this.baseUrl = "https://site.api.espn.com/apis/site/v2/sports";
     }
 
@@ -31,14 +33,22 @@ window.SportIngestor = class {
         if (!url) return [];
 
         try {
-            console.log(`📡 ESPN Fetch: ${leagueConfig.name} (${url})`);
-            const res = await fetch(url);
+            // Use Proxy + URL
+            const finalUrl = this.corsProxy + encodeURIComponent(url);
+            console.log(`📡 ESPN Fetch: ${leagueConfig.name} (${finalUrl})`);
+
+            const res = await fetch(finalUrl);
             if (!res.ok) throw new Error("ESPN Error " + res.status);
             const data = await res.json();
 
             return data.events || [];
         } catch (e) {
-            console.warn(`⚠️ ESPN Fetch Failed for ${leagueConfig.name}:`, e);
+            console.error(`⚠️ ESPN Fetch Failed for ${leagueConfig.name}:`, e);
+            // ALERTA DE ERROR VISIBLE (Solo el primero para no spammear)
+            if (!window.hasShownIngestError) {
+                alert(`Error conectando a ESPN (${leagueConfig.name}):\n${e.message}\n\nPosible bloqueo de CORS.`);
+                window.hasShownIngestError = true;
+            }
             return [];
         }
     }
