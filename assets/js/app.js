@@ -5011,47 +5011,6 @@ function renderManagerGamesTab(container) {
 
             <!-- INLINE ADD GAME FORM (Desplegable) -->
             <div id="inline-add-game-form" class="hidden bg-gray-800/80 p-4 rounded-xl border border-blue-500/30 mb-6 shadow-inner animate-fade-in-down">
-                <h3 class="text-sm font-bold text-blue-300 uppercase mb-3 border-b border-blue-500/20 pb-1">⚡ Accesos Rápidos (Favoritos)</h3>
-                
-                <div class="grid grid-cols-4 md:grid-cols-6 gap-2 mb-4">
-                    <button onclick="window.fillGameForm('LIGA MX', 'Querétaro')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-blue-500 rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">🐔</span> <span class="text-[9px] font-bold text-gray-300">Gallos</span>
-                    </button>
-                    <button onclick="window.fillGameForm('LIGA MX', 'Club América')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-yellow-500 rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">🦅</span> <span class="text-[9px] font-bold text-gray-300">América</span>
-                    </button>
-                    <button onclick="window.fillGameForm('LIGA MX', 'Chivas Guadalajara')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-red-500 rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">🐐</span> <span class="text-[9px] font-bold text-gray-300">Chivas</span>
-                    </button>
-                    <button onclick="window.fillGameForm('LIGA MX', 'Pumas UNAM')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-yellow-200 rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">🐱</span> <span class="text-[9px] font-bold text-gray-300">Pumas</span>
-                    </button>
-                    <button onclick="window.fillGameForm('LIGA ESPAÑOLA', 'Real Madrid')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-white rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">👑</span> <span class="text-[9px] font-bold text-gray-300">Madrid</span>
-                    </button>
-                    <button onclick="window.fillGameForm('LIGA ESPAÑOLA', 'FC Barcelona')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-blue-700 rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">🔵</span> <span class="text-[9px] font-bold text-gray-300">Barça</span>
-                    </button>
-                    <button onclick="window.fillGameForm('LMB', 'Conspiradores')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-purple-500 rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">⚾</span> <span class="text-[9px] font-bold text-gray-300">Conspira</span>
-                    </button>
-                    <button onclick="window.fillGameForm('LFA', 'Gallos Negros')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-gray-500 rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">🏈</span> <span class="text-[9px] font-bold text-gray-300">G.Negros</span>
-                    </button>
-                    <button onclick="window.fillGameForm('F1', 'GP F1')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-red-600 rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">🏎️</span> <span class="text-[9px] font-bold text-gray-300">F1</span>
-                    </button>
-                    <button onclick="window.fillGameForm('UFC', 'UFC Fight Night')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-red-600 rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">🥊</span> <span class="text-[9px] font-bold text-gray-300">UFC</span>
-                    </button>
-                    <button onclick="window.fillGameForm('BOX', 'Pelea Estelar')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-red-600 rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">🥊</span> <span class="text-[9px] font-bold text-gray-300">Box</span>
-                    </button>
-                    <button onclick="window.fillGameForm('LIGA INGLESA', 'Manchester City')" class="bg-black/40 hover:bg-black/60 border border-gray-700 hover:border-blue-400 rounded p-2 flex flex-col items-center gap-1 transition">
-                        <span class="text-xl">🏙️</span> <span class="text-[9px] font-bold text-gray-300">ManCity</span>
-                    </button>
-                </div>
-
                 <h3 class="text-sm font-bold text-blue-300 uppercase mb-3 border-b border-blue-500/20 pb-1">Programación Manual</h3>
                 
                 <div class="grid grid-cols-2 gap-3 mb-3">
