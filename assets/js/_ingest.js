@@ -2,7 +2,7 @@ window.SportIngestor = class {
     constructor() {
         // 1. API-FOOTBALL CONFIG (Soccer)
         // ⚠️ USER: PLEASE PASTE YOUR RAPIDAPI KEY HERE
-        this.apiFootballKey = "TU_API_KEY_AQUI";
+        this.apiFootballKey = "a290447c97fc1a6e9561bcef1b5b8eef";
         this.apiFootballHost = "v3.football.api-sports.io";
         this.apiFootballBase = "https://v3.football.api-sports.io";
 
