@@ -2427,6 +2427,27 @@ class Store {
         }
     }
 
+    clearTodayGames() {
+        const today = new Date().toLocaleDateString('en-CA');
+        const info = this.getDailyInfo();
+        const beforeCount = info.games.length;
+
+        // Keep only games NOT from today
+        info.games = info.games.filter(g => g.date !== today);
+        const afterCount = info.games.length;
+
+        console.log(`🗑️ Cleared ${beforeCount - afterCount} games from ${today}`);
+        this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
+                .catch(e => console.error('🔥 Sync clear today error', e));
+        }
+    }
+
+
     // === GAME REQUESTS ===
     addGameRequest(gameName) {
         const info = this.getDailyInfo();

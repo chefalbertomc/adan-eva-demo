@@ -615,6 +615,42 @@ function renderHostessDashboard() {
                 <div id="management-${v.id}" class="hidden border-t-2 border-dashed border-gray-800 pt-6 mt-6 animate-fade-in">
                     <label class="text-xs text-gray-500 mb-4 block uppercase font-bold tracking-widest text-center">GESTIÓN OPERATIVA</label>
                     
+                   <form id="inline-add-game-form" class="bg-gray-800/50 p-4 rounded-lg border border-gray-700 space-y-3 hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-white font-bold text-sm">➕ Programar Evento</h4>
+                        <button type="button" onclick="this.closest('form').classList.add('hidden')" class="text-gray-500 hover:text-white">✕</button>
+                    </div>
+                    
+                    <!-- Team Suggestions DataList -->
+                    <datalist id="team-suggestions">
+                        <option value="Los Angeles Lakers">
+                        <option value="Golden State Warriors">
+                        <option value="Boston Celtics">
+                        <option value="Miami Heat">
+                        <option value="Dallas Mavericks">
+                        <option value="Phoenix Suns">
+                        <option value="New York Knicks">
+                        <option value="Brooklyn Nets">
+                        <option value="América">
+                        <option value="Chivas">
+                        <option value="Cruz Azul">
+                        <option value="Tigres">
+                        <option value="Monterrey">
+                        <option value="Pumas">
+                        <option value="Real Madrid">
+                        <option value="Barcelona">
+                        <option value="Manchester United">
+                        <option value="Liverpool">
+                        <option value="Arsenal">
+                        <option value="Chelsea">
+                    </datalist>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="quick-game-home" list="team-suggestions" placeholder="🏠 Equipo Local" class="bg-gray-900 text-white border border-gray-600 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none" required>
+                        <input type="text" id="quick-game-away" list="team-suggestions" placeholder="✈️ Equipo Visitante" class="bg-gray-900 text-white border border-gray-600 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none" required>
+                    </div>
+                   </form>
+                    
                     <div class="grid grid-cols-2 gap-4 mb-6">
                         <!-- Cambio Mesa -->
                         <div class="bg-black/40 p-3 rounded-lg border border-gray-800">
@@ -4862,85 +4898,23 @@ function renderManagerGamesTab(container) {
     <!-- MAIN CONTAINER -->
     <div class="space-y-6 mb-24">
 
-        <!-- 0. CARTELERA MÁGICA (INGESTION) -->
-        <div class="bg-gradient-to-r from-purple-900/40 to-blue-900/40 p-4 rounded-xl border border-purple-500/30 mb-6 relative overflow-hidden">
-            <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">🤖</div>
-            <div class="flex justify-between items-center mb-4 relative z-10">
-                 <div>
-                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                        ⚡ Cartelera Automática
-                    </h3>
-                     <p class="text-[10px] text-purple-300">Conectado a ESPN (Public API)</p>
-                 </div>
-                 <button onclick="
-                    const btn = this; 
-                    btn.innerHTML = '⏳ BUSCANDO...'; 
-                    btn.disabled = true;
-                    btn.classList.add('opacity-50');
-                    // Force small delay to show feedback even if fast
-                    setTimeout(() => {
-                        window.runSportsIngest().then(count => {
-                            btn.innerHTML = '✅ ENCONTRADOS (' + count + ')';
-                            btn.classList.remove('bg-purple-600');
-                            btn.classList.add('bg-green-600');
-                            setTimeout(() => { 
-                                btn.innerHTML = '🔄 SINCRONIZAR'; 
-                                btn.disabled = false;
-                                btn.classList.remove('opacity-50', 'bg-green-600');
-                                btn.classList.add('bg-purple-600');
-                            }, 4000);
-                        }).catch(e => {
-                            console.error(e);
-                            btn.innerHTML = '❌ ERROR';
-                            setTimeout(() => { 
-                                btn.innerHTML = '🔄 SINCRONIZAR'; 
-                                btn.disabled = false; 
-                                btn.classList.remove('opacity-50');
-                            }, 3000);
-                        });
-                    }, 500);" 
-                 id="btn-sync-sports" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg flex items-center gap-2 transition border border-purple-400">
-                     <span>🔄</span> SINCRONIZAR
-                 </button>
+        <!-- QUICK ACTIONS BAR -->
+        <div class="bg-gradient-to-r from-blue-900/40 to-purple-900/40 p-4 rounded-xl border border-blue-500/30 flex justify-between items-center">
+            <div>
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    ⚡ Gestión Rápida
+                </h3>
+                <p class="text-[10px] text-blue-300">Programación manual de eventos deportivos</p>
             </div>
-            
-            <!-- Toggle Content -->
-            <details class="group relative z-10">
-                <summary class="flex items-center gap-2 cursor-pointer text-gray-400 text-xs font-bold uppercase tracking-wider select-none mb-2 hover:text-white transition">
-                    <span>⚙️ Configurar Ligas y Equipos</span>
-                    <span class="transition group-open:rotate-180">▼</span>
-                </summary>
-                
-                <div class="bg-black/50 p-4 rounded mt-2 border border-white/5 space-y-4 backdrop-blur-sm">
-                     
-                     <!-- LEAGUES CONFIG -->
-                     <div>
-                         <h4 class="text-purple-300 font-bold text-xs uppercase mb-2">Ligas Seguidas (Todo el torneo)</h4>
-                         <div class="flex flex-wrap gap-2 mb-2" id="config-leagues-list">
-                             ${window.renderIngestionConfig('leagues')}
-                         </div>
-                         <div class="flex gap-2">
-                             <input id="new-league-id" type="text" placeholder="ID Liga (ej. 4328)" class="w-24 bg-black border border-gray-700 rounded text-xs px-2 py-1 text-white placeholder-gray-600">
-                             <input id="new-league-name" type="text" placeholder="Nombre" class="w-32 bg-black border border-gray-700 rounded text-xs px-2 py-1 text-white placeholder-gray-600">
-                             <button onclick="window.addIngestItem('leagues')" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 rounded font-bold">+</button>
-                         </div>
-                         <div class="text-[9px] text-gray-500 mt-1">IDs Populares: 4328 (Premier), 4335 (La Liga), 4345 (Liga MX), 4391 (NFL)</div>
-                     </div>
-
-                     <!-- TEAMS CONFIG -->
-                     <div class="border-t border-gray-700 pt-3">
-                         <h4 class="text-blue-300 font-bold text-xs uppercase mb-2">Equipos Francotirador (Solo sus juegos)</h4>
-                         <div class="flex flex-wrap gap-2 mb-2" id="config-teams-list">
-                             ${window.renderIngestionConfig('teams')}
-                         </div>
-                         <div class="flex gap-2">
-                             <input id="new-team-id" type="text" placeholder="ID Equipo" class="w-24 bg-black border border-gray-700 rounded text-xs px-2 py-1 text-white placeholder-gray-600">
-                             <input id="new-team-name" type="text" placeholder="Nombre" class="w-32 bg-black border border-gray-700 rounded text-xs px-2 py-1 text-white placeholder-gray-600">
-                             <button onclick="window.addIngestItem('teams')" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 rounded font-bold">+</button>
-                         </div>
-                     </div>
-                </div>
-            </details>
+            <div class="flex gap-2">
+                <button onclick="if(confirm('¿Eliminar TODOS los partidos de hoy?')) { 
+                    window.db.clearTodayGames(); 
+                    renderManagerDashboard('games'); 
+                    window.showToast('🗑️ Partidos eliminados', 'info');
+                }" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded-lg font-bold text-sm shadow-lg flex items-center gap-2 transition">
+                    🗑️ Limpiar Hoy
+                </button>
+            </div>
         </div>
 
         <!-- 1. SOLICITUDES HOSTESS -->
