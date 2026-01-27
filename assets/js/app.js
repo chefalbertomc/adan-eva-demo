@@ -145,7 +145,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div style="margin-top: 20px; color: #666; font-size: 10px; font-family: monospace;">
-        v17.1 (Sincronizado)
+        v17.2 (Fix UI)
         <br>
         <button onclick="window.location.reload(true)" style="margin-top: 10px; background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
            🔄 FORZAR ACTUALIZACIÓN
