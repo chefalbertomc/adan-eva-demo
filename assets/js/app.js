@@ -3972,25 +3972,42 @@ function loadTodaysGames(customerId, customerFavoriteTeam) {
     return;
   }
 
+  // FILTER & SORT GAMES
+  // 1. Filter for Favorite Team (if provided) logic is handled during render, but let's sort first.
+
+  games.sort((a, b) => {
+    // 1. Time (HH:MM)
+    const timeA = a.time || '23:59';
+    const timeB = b.time || '23:59';
+    if (timeA !== timeB) return timeA.localeCompare(timeB);
+    // 2. League
+    return (a.league || '').localeCompare(b.league || '');
+  });
+
   let html = '';
+  let lastTime = '';
+
   games.forEach((game, index) => {
     const isFavoriteTeamPlaying = customerFavoriteTeam &&
       (game.homeTeam.toLowerCase().includes(customerFavoriteTeam.toLowerCase()) ||
         game.awayTeam.toLowerCase().includes(customerFavoriteTeam.toLowerCase()));
 
+    // Time Header
+    if (game.time !== lastTime) {
+      html += `<div class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-4 mb-2 pl-1 border-b border-gray-700 pb-1">⏰ ${game.time}</div>`;
+      lastTime = game.time;
+    }
+
     html += `
       <button onclick="handleGameSelection(${index}, '${customerId}', '${customerFavoriteTeam}')" 
-              class="w-full p-3 bg-gray-800 border-2 ${isFavoriteTeamPlaying ? 'border-yellow-500 ring-2 ring-yellow-500/50' : 'border-gray-600'} hover:border-blue-400 rounded-lg text-left transition group">
+              class="w-full p-3 bg-gray-800 border-2 ${isFavoriteTeamPlaying ? 'border-yellow-500 ring-2 ring-yellow-500/50' : 'border-gray-600'} hover:border-blue-400 rounded-lg text-left transition group mb-2">
         <div class="flex justify-between items-start">
           <div class="flex-1">
-            <div class="font-bold text-white group-hover:text-blue-300 transition">
-              ${game.awayTeam} @ ${game.homeTeam}
-            </div>
-            <div class="text-xs text-gray-400 mt-1">
-              ${game.league} • ${game.time || 'Hora por confirmar'}
+            <div class="font-bold text-white group-hover:text-blue-300 transition text-sm">
+              <span class="text-blue-400 font-normal text-xs">[${game.league}]</span> ${game.awayTeam} vs ${game.homeTeam}
             </div>
           </div>
-          ${isFavoriteTeamPlaying ? '<span class="text-2xl">⭐</span>' : ''}
+          ${isFavoriteTeamPlaying ? '<span class="text-xl">⭐</span>' : ''}
         </div>
       </button>
     `;
@@ -6146,13 +6163,13 @@ window.runSportsIngest = async function () {
 
 // RENDER HOSTESS REQUESTS (With Dismiss Logic)
 function renderManagerGameRequests(container) {
-    const requests = window.db.getDailyInfo().gameRequests || [];
-    if (requests.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
+  const requests = window.db.getDailyInfo().gameRequests || [];
+  if (requests.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
 
-    container.innerHTML = `
+  container.innerHTML = `
         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 mb-4 animate-fade-in">
             <h4 class="text-blue-300 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
                 🔔 Solicitudes Recientes (${requests.length})
@@ -6173,7 +6190,7 @@ function renderManagerGameRequests(container) {
                                 ✕
                             </button>
                             ${!(window.db.getMatches().find(m => m.match === (req.gameName || req.name))) ?
-            `<button onclick="document.getElementById('new-home').value = '${req.gameName || req.name}'; document.getElementById('new-league').value='UFC'; document.getElementById('new-league').focus();" 
+      `<button onclick="document.getElementById('new-home').value = '${req.gameName || req.name}'; document.getElementById('new-league').value='UFC'; document.getElementById('new-league').focus();" 
                                          class="text-blue-400 hover:text-blue-300 text-xs border border-blue-500/50 px-2 py-1 rounded">
                                     + Agregar
                                 </button>` : ''}

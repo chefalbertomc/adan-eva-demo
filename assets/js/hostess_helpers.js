@@ -9,16 +9,26 @@ window.generateGameOptions = function (selected) {
 
     if (matches.length === 0 && !selected) return '<option disabled>Sin partidos hoy</option>';
 
-    let html = matches.map(m => {
+    // DEDUPLICATION LOGIC
+    const seen = new Set();
+    const uniqueMatches = matches.filter(m => {
+        const name = m.match || `${m.homeTeam} vs ${m.awayTeam}`;
+        // Normalize for comparison
+        const key = name.trim().toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    let html = uniqueMatches.map(m => {
         // Handle both structure types
         const matchName = m.match || (m.homeTeam && m.awayTeam ? `${m.homeTeam} vs ${m.awayTeam}` : 'Partido Desconocido');
         const isSelected = matchName === selected;
-        // Fix for "Giant Logo" or weird formatting in select? No, select only supports text.
         return `<option value="${matchName}" ${isSelected ? 'selected' : ''}>${matchName} (${m.time})</option>`;
     }).join('');
 
     // If selected game is NOT in today's list (e.g. was deleted or date changed), show it anyway to avoid data loss visual
-    if (selected && !matches.find(m => (m.match || `${m.homeTeam} vs ${m.awayTeam}`) === selected)) {
+    if (selected && !uniqueMatches.find(m => (m.match || `${m.homeTeam} vs ${m.awayTeam}`) === selected)) {
         html += `<option value="${selected}" selected>${selected} (⚠️ No en lista de hoy)</option>`;
     }
 
