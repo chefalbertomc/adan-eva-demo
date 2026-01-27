@@ -138,7 +138,7 @@
       return new Promise((resolve, reject) => {
         const s = document.createElement('script');
         // FORCE NEW VERSION: Add random timestamp to avoid strong caching
-        s.src = src + '?v=18.4&t=' + new Date().getTime();
+        s.src = src + '?v=19.0&t=' + new Date().getTime();
         s.onload = resolve;
         s.onerror = reject;
         document.body.appendChild(s);
