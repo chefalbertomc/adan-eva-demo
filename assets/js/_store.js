@@ -2008,18 +2008,27 @@ class Store {
     }
 
     // Request a game to be added (Hostess -> Manager)
-    // Request a game to be added (Hostess -> Manager)
     requestGame(gameName) {
         if (!gameName) return;
 
-        // Check duplication
+        // CRITICAL FIX: Robust Deduplication (Case insensitive + Trim)
         const info = this.getDailyInfo();
-        const existingReq = (info.gameRequests || []).find(r => r.name === gameName);
-        if (existingReq) return; // Already requested
+        const normalizedName = gameName.trim().toLowerCase();
+
+        const existingReq = (info.gameRequests || []).find(r =>
+            (r.name || '').trim().toLowerCase() === normalizedName
+        );
+
+        if (existingReq) {
+            console.log("⚠️ Duplicate request blocked:", gameName);
+            if (typeof alert === 'function') alert("⚠️ Esta solicitud ya fue enviada anteriormente.");
+            return;
+        }
 
         const newReq = {
             id: 'req_' + Date.now(),
-            name: gameName,
+            gameName: gameName, // CORRECTED PROPERTY NAME to match usage elsewhere
+            name: gameName, // Maintain legacy for safety
             createdAt: new Date().toISOString()
         };
 
@@ -2032,12 +2041,31 @@ class Store {
             const { doc, setDoc } = window.FB;
             const docRef = doc(window.dbFirestore, 'config', 'allGames');
 
-            // Use setDoc with merge instead of arrayUnion to be safer with non-existent docs
+            // Use setDoc with merge 
             setDoc(docRef, { gameRequests: info.gameRequests }, { merge: true })
                 .then(() => {
                     console.log('📨 Game Request sent to Manager:', gameName);
                     if (typeof alert === 'function') alert(`✅ Solicitud enviada al Gerente: "${gameName}"`);
                 }).catch(e => console.error('🔥 Error sending game request:', e));
+        }
+    }
+
+    // NEW: Remove Game Request (Manager -> Dismiss)
+    removeGameRequest(reqId) {
+        const info = this.getDailyInfo();
+        if (!info.gameRequests) return;
+
+        info.gameRequests = info.gameRequests.filter(r => r.id !== reqId);
+        this._save();
+        this.updateDailyGames(info.games); // Reuse sync logic or direct update
+
+        // Manual Sync for Requests to be sure
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            const docRef = doc(window.dbFirestore, 'config', 'allGames');
+            setDoc(docRef, { gameRequests: info.gameRequests }, { merge: true })
+                .then(() => console.log('🗑️ Request removed:', reqId))
+                .catch(e => console.error('Error removing req:', e));
         }
     }
 
