@@ -5292,6 +5292,8 @@ function renderWaiterDashboard() {
                 </div>`;
   }
 }
+window.renderWaiterDashboard = renderWaiterDashboard;
+window.renderWaiterDashboard = renderWaiterDashboard;
 
 function switchWaiterTab(tabName) {
   // Hide all tab content
@@ -7401,41 +7403,3 @@ function openDailyInfoModal() {
 
                   <!--TAB CONTENT: PRODUCTS86-- >
                   <div id="dailycontent-products86" class="daily-tab-content hidden">
-                    <div class="card bg-red-900/20 border-2 border-red-500">
-// Resto de openDailyInfoModal
-                  <div class="text-3xl">🚫</div>
-                  <div>
-                    <div class="font-bold text-white">${product.name}</div>
-                    <div class="text-xs text-gray-400">${product.category}</div>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          `}
-                    </div>
-                  </div>
-                </div >
-                `;
-
-                document.body.appendChild(modal);
-}
-
-                function closeDailyInfoModal() {
-  const modal = document.getElementById('daily-info-modal');
-                if (modal) modal.remove();
-}
-
-                function switchDailyTab(tabName) {
-                  // Hide all content
-                  document.querySelectorAll('.daily-tab-content').forEach(el => el.classList.add('hidden'));
-  document.querySelectorAll('.daily-tab').forEach(el => el.classList.remove('active'));
-
-                // Show selected
-                document.getElementById(`dailycontent - ${tabName} `).classList.remove('hidden');
-                document.getElementById(`dailytab - ${tabName} `).classList.add('active');
-}
-
-
-                // ------ DIGITAL ORDER INTERFACE (Comandero Digital) ------
-                let CURRENT_ORDER_CART = [];
-                let CURRENT_ORDER_VISIT = null;
