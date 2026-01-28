@@ -1441,6 +1441,20 @@ function addItemToSeatOrder(itemName) {
 }
 window.addItemToSeatOrder = addItemToSeatOrder;
 
+// Helper: Get Sport Icon
+window.getSportIcon = function (league) {
+  if (!league) return '🏆';
+  const l = league.toLowerCase();
+  if (l.includes('soccer') || l.includes('ligamx') || l.includes('liga mx') || l.includes('laliga') || l.includes('premier')) return '⚽';
+  if (l.includes('nfl') || l.includes('football')) return '🏈';
+  if (l.includes('nba') || l.includes('basketball')) return '🏀';
+  if (l.includes('mlb') || l.includes('baseball')) return '⚾';
+  if (l.includes('ufc') || l.includes('mma') || l.includes('box')) return '🥊';
+  if (l.includes('f1') || l.includes('formula')) return '🏎️';
+  if (l.includes('tennis') || l.includes('tenis')) return '🎾';
+  return '🏆';
+};
+
 function updateComanderoSummary() {
   let summary = '';
   // Iterar de seguro sobre los indices conocidos
