@@ -1441,6 +1441,22 @@ function addItemToSeatOrder(itemName) {
 }
 window.addItemToSeatOrder = addItemToSeatOrder;
 
+// Polyfill for getVisits (Hostess Dashboard Crash Fix)
+if (window.db && !window.db.getVisits) {
+  window.db.getVisits = function () {
+    return this.data.visits || [];
+  };
+} else if (!window.db) {
+  // Safety mock if db initializes later
+  window.addEventListener('DOMContentLoaded', () => {
+    if (window.db && !window.db.getVisits) {
+      window.db.getVisits = function () {
+        return this.data.visits || [];
+      };
+    }
+  });
+}
+
 // Helper: Get Sport Icon
 window.getSportIcon = function (league) {
   if (!league) return '🏆';
@@ -4870,3 +4886,2546 @@ window.renderHostessDashboard = function () {
   div.className = 'p-4 max-w-6xl mx-auto has-bottom-nav';
   appContainer.appendChild(div);
 }
+function renderWaiterDashboard() {
+  try {
+    appContainer.innerHTML = '';
+    // SAFETY CHECK
+    if (!STATE.user || !STATE.user.id) {
+      console.warn("Waiter dashboard accessed without user.");
+      renderLogin();
+      return;
+    }
+
+    // Subscribe to updates for real-time reactivity
+    if (!window.waiterSubscription) {
+      window.waiterSubscription = window.db.addListener(() => {
+        if (STATE.view === 'waiter-dashboard') {
+          const currentScroll = window.scrollY; // Preserve scroll
+          renderWaiterDashboard();
+          window.scrollTo(0, currentScroll);
+        }
+      });
+    }
+
+    const visits = window.db ? window.db.getActiveVisits(STATE.user.id) : []; // Guard against db issues
+    const dailyInfo = window.db ? window.db.getDailyInfo() : {};
+
+    const div = document.createElement('div');
+    div.className = 'p-4 max-w-4xl mx-auto pb-20';
+
+    let mesasHtml = visits.length === 0
+      ? `<div class="text-center py-12">
+                  <div class="text-6xl mb-4">🍽️</div>
+                  <p class="text-xl text-secondary">No tienes mesas activas</p>
+                  <p class="text-sm text-gray-400 mt-2">Espera a que Hostess te asigne mesas</p>
+                </div>`
+      : visits.map(v => {
+        const classification = window.db.getCustomerClassification(v.customerId);
+        const badge = window.ClientClassifier ? window.ClientClassifier.getBadgeHTML(classification) : '';
+
+        // Time Calculation
+        const startTime = new Date(v.date);
+        const now = new Date();
+        const diffMs = now - startTime;
+        const diffMins = Math.floor(diffMs / 60000);
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+        const timeElapsed = hours > 0 ? `${hours}h ${mins}m` : `${mins} min`;
+        const timeColor = diffMins > 120 ? '#EF4444' : diffMins > 60 ? '#F59E0B' : '#22C55E';
+
+        // Determine Sport Icon
+        let sportIcon = '📺';
+        if (v.reason === 'Partido' && v.selectedGame) {
+          const game = window.db.getMatches().find(m => (m.match || (m.homeTeam + ' vs ' + m.awayTeam)) === v.selectedGame);
+          if (game && game.league) sportIcon = window.getSportIcon(game.league);
+        }
+
+        const reasonDisplay = v.reason === 'Partido'
+          ? `<div class="flex items-start gap-3">
+                  <div class="text-4xl filter drop-shadow-md">${sportIcon}</div>
+                  <div class="flex-1">
+                    <div class="text-sm text-green-400 font-bold uppercase tracking-widest mb-1">PARTIDO</div>
+                    <div class="text-2xl font-black text-white leading-tight">
+                      ${v.selectedGame || 'Sin partido asig.'}
+                    </div>
+                    ${v.isFavoriteTeamMatch ? '<div class="mt-2 inline-block bg-yellow-500 text-black text-xs font-black px-2 py-1 rounded shadow-lg animate-pulse">🌟 EQUIPO FAVORITO</div>' : ''}
+                  </div>
+                </div>`
+          : (v.reason === 'Cumpleaños' ? '🎂 CUMPLEAÑOS' : (v.reason === 'Negocios' ? '💼 NEGOCIOS' : (v.reason || '🍽️ COMER')));
+
+        return `
+                <div class="card border-l-8 border-yellow-500 p-5 mb-5 shadow-2xl bg-gray-900/80">
+                  <!-- HEADER -->
+                  <div class="flex justify-between items-start mb-4">
+                    <div>
+                      <div class="text-5xl font-black text-white mb-2 leading-none tracking-tighter shadow-black drop-shadow-lg">MESA ${v.table}</div>
+                      <div class="text-2xl font-bold text-gray-300">${v.customer.firstName} ${v.customer.lastName}</div>
+                    </div>
+                    <div class="text-right flex flex-col items-end">
+                      <div class="transform scale-110 origin-top-right mb-2">${badge}</div>
+                      <div class="bg-black/40 px-3 py-1 rounded-lg">
+                        <div class="text-xs text-gray-400 font-bold uppercase tracking-widest">Tiempo</div>
+                        <div class="text-3xl font-black" style="color: ${timeColor};">${timeElapsed}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- INFO GRID -->
+                  <div class="grid grid-cols-2 gap-3 text-sm mt-4 mb-4">
+                    <!-- MOTIVO (NUEVO) -->
+                    <div class="bg-white/10 p-3 rounded-lg border border-white/10 col-span-2">
+                      <span class="text-gray-400 text-xs font-bold uppercase tracking-widest block mb-1">🎯 Motivo de Visita</span>
+                      <div class="font-black text-2xl text-green-400 uppercase">${reasonDisplay}</div>
+                    </div>
+
+                    <div class="bg-white/5 p-3 rounded-lg">
+                      <span class="text-gray-400 text-xs font-bold uppercase">👥 Personas</span>
+                      <div class="font-bold text-2xl text-white">${v.pax}</div>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-lg">
+                      <span class="text-gray-400 text-xs font-bold uppercase">🕐 Check-in</span>
+                      <div class="font-bold text-2xl text-white">${new Date(v.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                  </div>
+
+                  <!-- ACTION -->
+                  <div class="mt-4">
+                    <button onclick="navigateTo('waiter-detail', {visitId: '${v.id}'})" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-black text-2xl py-6 rounded-xl shadow-lg border-2 border-blue-400/30 transform active:scale-95 transition-all flex items-center justify-center gap-3">
+                      <span>💰</span> CAPTURAR CONSUMO
+                    </button>
+                  </div>
+                </div>
+      `}).join('');
+
+    div.innerHTML = `
+                <header class="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 class="text-accent text-xl md:text-2xl">Mesero | ${STATE.user.name}</h2>
+                  </div>
+                  <button onclick="handleLogout()" class="btn-secondary text-sm px-3 py-2">Salir</button>
+                </header>
+
+                <!-- TAB CONTENT: MIS MESAS -->
+                <div id="waitercontent-mesas" class="waiter-tab-content active">
+                  ${mesasHtml}
+                </div>
+
+                <!-- TAB CONTENT: PARTIDOS -->
+                <div id="waitercontent-partidos" class="waiter-tab-content hidden">
+                  <div class="card bg-blue-900/20 border-2 border-blue-500">
+                    <h3 class="text-xl font-bold mb-4 text-blue-300">🏈 Partidos de Hoy</h3>
+                    ${(() => {
+        const today = new Date().toISOString().split('T')[0];
+        const games = (dailyInfo.games || []).filter(g => g.date === today); // Strict filter: only today
+        if (games.length === 0) return '<p class="text-gray-400 italic">Sin partidos programados para hoy.</p>';
+
+        // Group by sport
+        const grouped = {};
+        games.forEach(game => {
+          const sport = game.sport || 'Otros';
+          if (!grouped[sport]) grouped[sport] = [];
+          grouped[sport].push(game);
+        });
+
+        // Sort each group by time
+        Object.keys(grouped).forEach(sport => {
+          grouped[sport].sort((a, b) => {
+            const timeA = a.time ? a.time.replace(':', '') : '9999';
+            const timeB = b.time ? b.time.replace(':', '') : '9999';
+            return timeA.localeCompare(timeB);
+          });
+        });
+
+        // Render grouped
+        // Icon mapping based on sport names
+        const getSportIcon = (sport) => {
+          const s = sport.toLowerCase();
+          if (s.includes('football') || s.includes('americano')) return '🏈';
+          if (s.includes('basket')) return '🏀';
+          if (s.includes('soccer') || s.includes('futbol') || s.includes('fútbol')) return '⚽';
+          if (s.includes('baseball') || s.includes('beisbol')) return '⚾';
+          if (s.includes('hockey')) return '🏒';
+          if (s.includes('tennis') || s.includes('tenis')) return '🎾';
+          if (s.includes('golf')) return '⛳';
+          if (s.includes('box')) return '🥊';
+          if (s.includes('mma') || s.includes('ufc')) return '🥋';
+          if (s.includes('f1') || s.includes('formula') || s.includes('nascar')) return '🏎️';
+          return '🏆';
+        };
+
+        return Object.keys(grouped).map(sport => `
+            <div class="mb-6 last:mb-0">
+              <div class="flex items-center gap-2 mb-3 border-b border-blue-500/30 pb-2">
+                <span class="text-2xl">${getSportIcon(sport)}</span>
+                <span class="text-lg font-bold text-blue-200">${sport}</span>
+                <span class="text-xs text-gray-400">(${grouped[sport].length} partidos)</span>
+              </div>
+              <div class="space-y-2">
+                ${grouped[sport].map(game => `
+                  <div class="bg-black/50 p-3 rounded-lg border border-blue-400/50 flex flex-col gap-2">
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-2">
+                           ${(() => {
+            const l1 = window.getTeamLogo(game.homeTeam);
+            const l2 = window.getTeamLogo(game.awayTeam);
+            if (l1 || l2) {
+              return `
+                                    <div class="flex flex-col items-center justify-center w-10">
+                                        ${l1 ? `<img src="${l1}" class="w-8 h-8 object-contain mx-auto" style="max-width: 32px; max-height: 32px;">` : `<span class="text-xs">🏠</span>`}
+                                    </div>
+                                    <div class="text-[10px] text-gray-400 px-1">vs</div>
+                                    <div class="flex flex-col items-center justify-center w-10">
+                                        ${l2 ? `<img src="${l2}" class="w-8 h-8 object-contain mx-auto" style="max-width: 32px; max-height: 32px;">` : `<span class="text-xs">✈️</span>`}
+                                    </div>
+                                    <div class="ml-2 flex-1">
+                                        <div class="text-[10px] text-blue-300 font-bold uppercase tracking-wider">${game.league || ''}</div>
+                                        <div class="text-lg font-black text-white leading-tight">${game.homeTeam} <span class="text-gray-500 text-xs font-normal">vs</span> ${game.awayTeam}</div>
+                                    </div>`;
+            } else {
+              return `
+                                    <div>
+                                      <div class="text-[10px] text-blue-300 font-bold uppercase tracking-wider">${game.league || ''}</div>
+                                      <div class="text-lg font-black text-white leading-tight">${game.homeTeam} <span class="text-gray-500 text-xs font-normal">vs</span> ${game.awayTeam}</div>
+                                    </div>`;
+            }
+          })()}
+                        </div>
+                        <div class="text-xl font-black text-yellow-400 py-1 px-2 bg-yellow-900/20 rounded">${game.time}</div>
+                    </div>
+                    
+                    <!-- INFO EXTENDIDA (TVs y Audio) -->
+                    <div class="flex gap-2 text-[10px] font-bold mt-1 border-t border-white/5 pt-2">
+                        ${game.tvs ? `<div class="bg-gray-800 text-yellow-500 px-2 py-1 rounded flex items-center gap-1 flex-1">📺 TVs: ${game.tvs}</div>` : ''}
+                        
+                        ${game.audio?.salon ? `<div class="bg-green-900/50 text-green-400 px-2 py-1 rounded flex items-center gap-1 border border-green-700/50">🔊 SALÓN</div>` : ''}
+                        ${game.audio?.terraza ? `<div class="bg-green-900/50 text-green-400 px-2 py-1 rounded flex items-center gap-1 border border-green-700/50">🔊 TERRAZA</div>` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('');
+      })()}
+                  </div>
+                </div>
+
+                <!-- TAB CONTENT: PROMOS -->
+                <div id="waitercontent-promos" class="waiter-tab-content hidden">
+                  <div class="card bg-green-900/20 border-2 border-green-500">
+                    <h3 class="text-xl font-bold mb-4 text-green-300">🎁 Promociones del Día</h3>
+                    ${(() => {
+        const activePromos = window.db.getActivePromos();
+        if (activePromos.length === 0) return '<p class="text-gray-400 italic">Sin promociones activas.</p>';
+        return `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${activePromos.map(promo => `
+                <div class="bg-black/50 p-4 rounded-lg border border-green-400">
+                  <div class="text-xl font-bold text-yellow-400 mb-2">${promo.title}</div>
+                  <div class="text-gray-300">${promo.description}</div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+      })()}
+                  </div>
+                </div>
+
+                <!-- TAB CONTENT: DINÁMICAS -->
+                <div id="waitercontent-dinamicas" class="waiter-tab-content hidden">
+                  <div class="card bg-purple-900/20 border-2 border-purple-500">
+                    <h3 class="text-xl font-bold mb-4 text-purple-300">🎯 Dinámica del Día</h3>
+                    ${(() => {
+        const dynamic = window.db.getActiveDynamic();
+        if (!dynamic) return '<p class="text-gray-400 italic">Sin dinámicas activas hoy.</p>';
+        return `
+            <div class="bg-black/50 p-4 rounded-lg border border-purple-400 mb-6">
+              <div class="text-2xl font-black text-yellow-400 mb-2">${dynamic.title}</div>
+              <div class="text-lg text-gray-300">${dynamic.description}</div>
+            </div>
+            
+            <h4 class="text-lg font-bold mb-3 text-purple-300">🏆 Tabla de Posiciones</h4>
+            ${(dynamic.scores || []).length === 0 ? '<p class="text-gray-400 italic text-sm">Aún no hay puntuaciones.</p>' : `
+              <div class="space-y-2">
+                ${dynamic.scores.map((entry, idx) => {
+          const medals = ['🥇', '🥈', '🥉'];
+          const medal = medals[idx] || (idx + 1) + '.';
+          const bgColors = ['bg-yellow-600/30', 'bg-gray-500/30', 'bg-orange-600/30'];
+          const bgColor = bgColors[idx] || 'bg-gray-800/30';
+          const isMe = entry.odoo_id === STATE.user.odoo_id || entry.odoo_id === STATE.user.id;
+
+          return `
+                    <div class="${bgColor} p-3 rounded-lg border ${idx === 0 ? 'border-yellow-400' : 'border-gray-600'} ${isMe ? 'ring-2 ring-green-500' : ''} flex justify-between items-center">
+                      <div class="flex items-center gap-3">
+                        <span class="text-2xl">${medal}</span>
+                        <div>
+                          <div class="font-bold text-lg">${entry.waiterName} ${isMe ? '(TÚ)' : ''}</div>
+                        </div>
+                      </div>
+                      <div class="text-3xl font-black text-yellow-400">${entry.score}</div>
+                    </div>
+                  `;
+        }).join('')}
+              </div>
+            `}
+          `;
+      })()}
+                  </div>
+                </div>
+
+                <!-- TAB CONTENT: PRODUCTOS (86/85/PUSH) -->
+                <div id="waitercontent-productos86" class="waiter-tab-content hidden">
+                  <div class="card bg-red-900/20 border-2 border-red-500">
+                    <h3 class="text-xl font-bold mb-4 text-red-300">📦 Productos (86 / 85 / Push)</h3>
+
+                    ${(() => {
+        const prods = dailyInfo.products || { outOfStock86: [], lowStock85: [], push: [] };
+        const barraProds = {
+          p86: (prods.outOfStock86 || []).filter(p => p.category === 'barra'),
+          p85: (prods.lowStock85 || []).filter(p => p.category === 'barra'),
+          push: (prods.push || []).filter(p => p.category === 'barra')
+        };
+
+        const hasAny = barraProds.p86.length > 0 || barraProds.p85.length > 0 || barraProds.push.length > 0;
+
+        if (!hasAny) {
+          return '<p class="text-green-400 font-bold text-center py-6">¡Todo disponible hoy! 🎉</p>';
+        }
+
+        return `
+            <div class="space-y-4">
+              ${barraProds.p86.length > 0 ? `
+                <div>
+                  <div class="text-sm font-bold text-red-400 mb-2">🚫 86 - AGOTADOS (NO ofrecer)</div>
+                  <div class="grid grid-cols-2 gap-2">
+                    ${barraProds.p86.map(p => `
+                      <div class="bg-red-900/50 p-3 rounded border border-red-500 flex items-center gap-2">
+                        <span class="text-xl">🚫</span>
+                        <span class="font-bold">${p.name}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+              
+              ${barraProds.p85.length > 0 ? `
+                <div>
+                  <div class="text-sm font-bold text-yellow-400 mb-2">⚠️ 85 - Por Agotarse (Vender con cuidado)</div>
+                  <div class="grid grid-cols-2 gap-2">
+                    ${barraProds.p85.map(p => `
+                      <div class="bg-yellow-900/50 p-3 rounded border border-yellow-500 flex items-center gap-2">
+                        <span class="text-xl">⚠️</span>
+                        <span class="font-bold">${p.name}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+              
+              ${barraProds.push.length > 0 ? `
+                <div>
+                  <div class="text-sm font-bold text-green-400 mb-2">🚀 PUSH - ¡Impulsa la venta!</div>
+                  <div class="grid grid-cols-2 gap-2">
+                    ${barraProds.push.map(p => `
+                      <div class="bg-green-900/50 p-3 rounded border border-green-500 flex items-center gap-2">
+                        <span class="text-xl">🚀</span>
+                        <span class="font-bold">${p.name}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+      })()}
+                  </div>
+                </div>
+
+                <!-- BOTTOM NAVIGATION BAR - MESERO -->
+                <nav class="bottom-nav">
+                  <button onclick="switchWaiterTab('mesas')" id="waitertab-mesas" class="bottom-nav-item active" style="position: relative; min-width: 60px;">
+                    <span class="bottom-nav-icon">🍽️</span>
+                    <span class="bottom-nav-label">Mesas</span>
+                    ${visits.length > 0 ? `<span class="bottom-nav-badge">${visits.length}</span>` : ''}
+                  </button>
+                  <button onclick="switchWaiterTab('partidos')" id="waitertab-partidos" class="bottom-nav-item" style="position: relative;">
+                    <span class="bottom-nav-icon">🏈</span>
+                    <span class="bottom-nav-label">Partidos</span>
+                  </button>
+                  <button onclick="switchWaiterTab('promos')" id="waitertab-promos" class="bottom-nav-item" style="position: relative;">
+                    <span class="bottom-nav-icon">🎁</span>
+                    <span class="bottom-nav-label">Promos</span>
+                  </button>
+                  <button onclick="switchWaiterTab('dinamicas')" id="waitertab-dinamicas" class="bottom-nav-item" style="position: relative;">
+                    <span class="bottom-nav-icon">🎯</span>
+                    <span class="bottom-nav-label">Dinámica</span>
+                  </button>
+                  <button onclick="switchWaiterTab('productos86')" id="waitertab-productos86" class="bottom-nav-item" style="position: relative;">
+                    <span class="bottom-nav-icon">⚠️</span>
+                    <span class="bottom-nav-label">86/85</span>
+                  </button>
+                  <button onclick="switchWaiterTab('info')" id="waitertab-info" class="bottom-nav-item" style="position: relative;">
+                    <span class="bottom-nav-icon">👤</span>
+                    <span class="bottom-nav-label">Mi Info</span>
+                  </button>
+                  <button onclick="showQRReviews()" class="bottom-nav-item" style="position: relative;">
+                    <span class="bottom-nav-icon">⭐</span>
+                    <span class="bottom-nav-label">QR</span>
+                  </button>
+                </nav>
+
+                <!-- DuckOS Footer -->
+                <div class="dashboard-footer">
+                  Powered by <span style="color: #F97316;">DuckOS</span> | Bar & Restaurant Solutions
+                </div>
+                `;
+
+    // Add class for bottom nav padding
+    div.className = 'p-4 max-w-4xl mx-auto has-bottom-nav';
+    appContainer.appendChild(div);
+  } catch (error) {
+    console.error("🔥 Error rendering Waiter Dashboard:", error);
+    appContainer.innerHTML = `<div class="p-10 text-center text-red-500">
+                  <h1 class="text-4xl">⚠️ Error</h1>
+                  <p>${error.message}</p>
+                  <p class="text-sm mt-4">${error.stack}</p>
+                  <button onclick="window.location.reload()" class="mt-8 bg-yellow-500 text-black px-6 py-3 rounded font-bold">RECARGAR</button>
+                </div>`;
+  }
+}
+
+function switchWaiterTab(tabName) {
+  // Hide all tab content
+  document.querySelectorAll('.waiter-tab-content').forEach(el => el.classList.add('hidden'));
+
+  // Remove active from all bottom nav items
+  document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+
+  // Show selected content
+  const contentEl = document.getElementById(`waitercontent-${tabName}`);
+  if (contentEl) contentEl.classList.remove('hidden');
+
+  // Activate bottom nav item
+  const tabEl = document.getElementById(`waitertab-${tabName}`);
+  if (tabEl) tabEl.classList.add('active');
+}
+
+function renderWaiterDetail(visitId) {
+  // If user is manager, get all visits from branch. If waiter, get only their visits.
+  const visits = STATE.user.role === 'manager'
+    ? window.db.getActiveVisitsByBranch(STATE.branch.id)
+    : window.db.getActiveVisits(STATE.user.id);
+
+  const visit = visits.find(v => v.id === visitId);
+
+  if (!visit) {
+    alert("Visita no encontrada");
+    // Return to appropriate dashboard based on role
+    if (STATE.user.role === 'manager') {
+      navigateTo('manager-dashboard');
+    } else {
+      navigateTo('waiter-dashboard');
+    }
+    return;
+  }
+
+  const customer = visit.customer;
+  const classification = window.db.getCustomerClassification(customer.id);
+  const badge = window.ClientClassifier ? window.ClientClassifier.getBadgeHTML(classification) : '';
+
+  // INITIALIZE SEAT STATE for this visit - RESTORE FROM DB IF EXISTS
+  window.CURRENT_SEAT = 0;
+
+  if (visit.seatOrders && Array.isArray(visit.seatOrders) && visit.seatOrders.length > 0) {
+    // Restore persisted order state
+    window.SEAT_ORDERS = JSON.parse(JSON.stringify(visit.seatOrders));
+  } else {
+    // Validar si estamos recargando la MISMA visita o cambiando de mesa
+    // Por seguridad, si la visita no tiene órdenes guardadas, iniciamos LIMPIO
+    // para evitar que aparezcan órdenes de la mesa anterior.
+    window.SEAT_ORDERS = [];
+  }
+
+  // Restore Manual Notes
+  window.ORDER_NOTES = visit.manualNotes || '';
+
+  // Ensure slots exist for all current pax
+  for (let i = 0; i < visit.pax; i++) {
+    if (!window.SEAT_ORDERS[i]) window.SEAT_ORDERS[i] = {};
+  }
+
+  const div = document.createElement('div');
+  // Only add bottom nav padding if user is a waiter
+  div.className = STATE.user.role === 'waiter'
+    ? 'p-4 max-w-4xl mx-auto has-bottom-nav'
+    : 'p-4 max-w-4xl mx-auto pb-8';
+
+  div.innerHTML = `
+                <button onclick="savePartialData('${visitId}'); setTimeout(() => goBack(), 500)" class="text-secondary text-lg mb-4 hover:text-white transition flex items-center gap-2">
+                  <span>←</span> Volver (Auto-Guardar)
+                </button>
+
+                <!--HEADER: Cliente Info-- >
+                <div class="card mb-4 bg-gradient-to-r from-gray-900 to-black border-2 border-yellow-500">
+                  <div class="flex justify-between items-start mb-3">
+                    <div>
+                      <div class="text-3xl md:text-4xl font-black text-yellow-400 mb-1">MESA ${visit.table}</div>
+                      <h1 class="text-2xl md:text-3xl font-bold">${customer.firstName} ${customer.lastName}</h1>
+                      ${badge}
+                    </div>
+                    <div class="text-right">
+                      <div class="text-5xl">🏈</div>
+                      <div class="text-xs text-secondary">${customer.team || 'Sin Equipo'}</div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div class="bg-white/5 p-2 rounded">
+                      <span class="text-secondary block text-xs">Visitas Totales</span>
+                      <div class="font-bold text-lg">${customer.visits || 1}</div>
+                    </div>
+                    <div class="bg-white/5 p-2 rounded">
+                      <span class="text-secondary block text-xs">👥 Personas Hoy</span>
+                      <div class="font-bold text-lg">${visit.pax}</div>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+                    <div class="bg-blue-900/30 p-2 rounded border border-blue-500">
+                      <span class="text-blue-300 block text-xs">🍺 TOP BEBIDAS</span>
+                      <div class="text-xs">${customer.topDrinks && customer.topDrinks.length ? customer.topDrinks.join(', ') : 'Sin datos'}</div>
+                    </div>
+                    <div class="bg-orange-900/30 p-2 rounded border border-orange-500">
+                      <span class="text-orange-300 block text-xs">🍗 TOP COMIDA</span>
+                      <div class="text-xs">${customer.topFood && customer.topFood.length ? customer.topFood.join(', ') : 'Sin datos'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!--SUGERENCIA IA PERSONALIZADA-- >
+                <div class="card border border-yellow-500/50 bg-yellow-900/20 mb-4">
+                  <h4 class="text-yellow-400 mb-2 font-bold flex items-center gap-2">
+                    💡 Sugerencia IA para este Cliente
+                  </h4>
+                  <p class="text-sm italic text-gray-300">"${window.db.generateAISuggestion(customer.id)}"</p>
+                </div>
+
+                <!--COMANDERO POR ASIENTOS-- >
+                <div class="card mb-4 bg-green-900/10 border-2 border-green-600">
+                  <h4 class="text-green-400 mb-3 font-bold">📝 COMANDERO - Por Asientos</h4>
+
+                  <!-- Tabs de Asientos -->
+                  <div class="flex gap-2 mb-4 overflow-x-auto">
+                    ${Array.from({ length: visit.pax }, (_, i) => `
+          <button onclick="switchSeat(${i})" id="seat-tab-${i}" class="${i === 0 ? 'bg-yellow-600 text-black' : 'bg-gray-700'} px-4 py-2 rounded font-bold text-sm whitespace-nowrap">
+            ${i === 0 ? '👑 Anfitrión' : 'Asiento ' + (i + 1)}
+          </button>
+        `).join('')}
+                  </div>
+
+                  <!-- Contenido por Asiento -->
+                  ${Array.from({ length: visit.pax }, (_, i) => `
+        <div id="seat-content-${i}" class="${i === 0 ? '' : 'hidden'}">
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <button onclick="openMenuFor(${i}, 'entrada')" class="p-4 bg-gray-800 border-2 border-green-600 rounded-lg hover:border-green-400 text-left relative overflow-hidden group">
+              <div class="relative z-10">
+                <div class="text-2xl mb-1">🥟</div>
+                <div class="font-bold text-sm">Entrada</div>
+                <div id="seat-${i}-entrada" class="text-xs text-yellow-400 mt-1">-</div>
+              </div>
+              <div class="absolute inset-0 bg-green-900/20 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+            </button>
+            
+            <button onclick="openMenuFor(${i}, 'platillo')" class="p-4 bg-gray-800 border-2 border-orange-600 rounded-lg hover:border-orange-400 text-left relative overflow-hidden group">
+              <div class="relative z-10">
+                <div class="text-2xl mb-1">🍗</div>
+                <div class="font-bold text-sm">Platillo</div>
+                <div id="seat-${i}-platillo" class="text-xs text-yellow-400 mt-1">-</div>
+              </div>
+              <div class="absolute inset-0 bg-orange-900/20 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+            </button>
+            
+            <button onclick="openMenuFor(${i}, 'postre')" class="p-4 bg-gray-800 border-2 border-pink-600 rounded-lg hover:border-pink-400 text-left relative overflow-hidden group">
+              <div class="relative z-10">
+                <div class="text-2xl mb-1">🍰</div>
+                <div class="font-bold text-sm">Postre</div>
+                <div id="seat-${i}-postre" class="text-xs text-yellow-400 mt-1">-</div>
+              </div>
+              <div class="absolute inset-0 bg-pink-900/20 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+            </button>
+            
+            <button onclick="openMenuFor(${i}, 'bebida')" class="p-4 bg-gray-800 border-2 border-blue-600 rounded-lg hover:border-blue-400 text-left relative overflow-hidden group">
+              <div class="relative z-10">
+                <div class="text-2xl mb-1">🍺</div>
+                <div class="font-bold text-sm">Bebida</div>
+                <div id="seat-${i}-bebida" class="text-xs text-yellow-400 mt-1">-</div>
+              </div>
+              <div class="absolute inset-0 bg-blue-900/20 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+            </button>
+          </div>
+
+          <!-- CONTENEDOR DE MENÚ INLINE (ACORDEÓN) -->
+          <div id="inline-menu-container-${i}" class="hidden bg-gray-900 border-2 border-yellow-500 rounded-lg p-4 mb-4 shadow-2xl animate-fade-in-down">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+              <h3 id="inline-menu-title-${i}" class="text-xl font-bold text-yellow-400">SELECCIONA PRODUCTO</h3>
+              <button onclick="closeInlineMenu(${i})" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded font-bold text-sm">CERRAR ✕</button>
+            </div>
+            
+            <!-- Barra de Búsqueda -->
+            <div class="mb-4">
+               <input type="text" id="inline-search-${i}" oninput="filterInlineMenu(this.value, ${i})" placeholder="🔍 Buscar aquí..." class="w-full bg-black text-white p-3 rounded-lg border border-gray-600 focus:border-yellow-500 font-bold">
+            </div>
+
+            <div id="inline-menu-content-${i}" class="max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <!-- AQUÍ SE INYECTAN LOS PRODUCTOS -->
+            </div>
+          </div>
+
+        </div>
+      `).join('')}
+
+                  <!-- Modal Eliminado/Oculto (Legacy Support si algo lo llama) -->
+                  <div id="menu-modal" class="hidden"></div>
+
+                  <!-- Resumen Final (readonly) -->
+                  <div class="flex justify-between items-center mb-2 mt-4">
+                    <label class="text-sm text-gray-400">📋 Resumen Completo:</label>
+                    <button onclick="openFullscreenSummary()" class="text-xs font-bold bg-yellow-600 text-black px-3 py-1 rounded hover:bg-yellow-500 transition flex items-center gap-1">
+                      🔍 VER PANTALLA COMPLETA
+                    </button>
+                  </div>
+                  <textarea id="w-comandero" readonly class="w-full bg-black text-green-400 font-mono text-sm p-4 rounded-lg border-2 border-gray-700 focus:border-yellow-500 outline-none resize-none mb-2 shadow-inner" rows="6"></textarea>
+
+
+                </div>
+
+
+
+                <!--ZONA DE ACCIONES DE ORDEN-->
+                <div class="mb-4">
+                  <!-- BOTÓN GUARDAR -->
+                  <button onclick="savePartialData('${visitId}')" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-lg font-bold py-4 rounded-xl shadow-lg mb-3 flex items-center justify-center gap-2">
+                    💾 GUARDAR COMANDA
+                  </button>
+                </div>
+
+                <!--BOTÓN GUARDAR SIN CERRAR-- >
+                <button onclick="savePartialData('${visitId}')" class="btn-secondary w-full text-base py-4 mb-4 border-dashed border-2 font-bold">
+                  💾 GUARDAR DATOS (Sin cerrar mesa)
+                </button>
+
+                <!--CIERRE DE MESA - Collapsible-- >
+                <div class="mb-4" style="position: relative; z-index: 1;">
+                  <!-- Toggle Button -->
+                  <button onclick="toggleCerrarMesa()" id="btn-toggle-cerrar" class="w-full bg-red-600 hover:bg-red-700 text-white font-black text-xl py-5 rounded-xl transition flex items-center justify-center gap-3">
+                    🔴 CERRAR MESA
+                  </button>
+
+                  <!-- Expandable Form (hidden by default) -->
+                  <div id="cerrar-mesa-form" class="hidden mt-3 card bg-red-900/20 border-2 border-red-600">
+                    <label class="text-sm text-gray-400 block mb-1">Número de Cuenta / Folio del Ticket</label>
+                    <input type="text" id="w-folio" placeholder="Ej. A1234" class="w-full mb-3 text-lg p-3 text-center font-bold bg-black border border-gray-600 rounded" style="min-height: 50px;">
+
+                      <label class="text-sm text-gray-400 block mb-1">Total del Ticket ($)</label>
+                      <input type="number" id="w-ticket" placeholder="$" class="w-full mb-4 text-2xl p-4 text-center font-black text-green-400 bg-black border border-gray-600 rounded" style="min-height: 60px;">
+
+                        <div class="grid grid-cols-2 gap-3">
+                          <button onclick="toggleCerrarMesa()" class="btn-secondary py-4 font-bold">
+                            ← Cancelar
+                          </button>
+                          <button onclick="saveConsumption('${visitId}')" class="bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl transition">
+                            ✅ CONFIRMAR
+                          </button>
+                        </div>
+                      </div>
+                  </div>
+
+                  <!-- MENÚ DEBUG -->
+                  <button onclick="forceMenuRefresh()" class="w-full mt-4 mb-2 p-2 text-xs text-gray-500 uppercase border border-gray-700 rounded hover:bg-gray-800 hover:text-white transition-colors">
+                    🛠️ ¿Falta Menú? Actualizar Datos
+                  </button>
+
+                  <!-- MARCAR PROSPECTO -->
+                  <button onclick="markProspect('${visitId}')" class="btn-secondary w-full border-dashed border-2 p-4 text-center font-bold text-base">
+                    ⭐ MARCAR COMO PROSPECTO
+                  </button>
+
+                  <!-- BOTTOM NAV PERSISTENTE -->
+                  ${renderWaiterBottomNav('mesas', visits.length)}
+                  `;
+  appContainer.appendChild(div);
+
+  // Set defaults and load saved data
+  document.getElementById('w-reason').value = visit.reason || customer.lastReason || 'Comer';
+  toggleSportField(document.getElementById('w-reason'));
+
+  // Load saved visit data if it exists
+  // Load saved visit data if it exists
+  if (visit.team) document.getElementById('w-team').value = visit.team;
+  if (visit.league) document.getElementById('w-league').value = visit.league;
+  if (visit.folio) document.getElementById('w-folio').value = visit.folio;
+  if (visit.folio) document.getElementById('w-folio').value = visit.folio;
+
+  // Refresh UI from loaded state
+  updateComanderoSummary();
+}
+
+// Toast Notification System
+window.showToast = function (message, type = 'success') {
+  const toast = document.createElement('div');
+  const bg = type === 'error' ? 'bg-red-600' : 'bg-green-600';
+  toast.className = `fixed top-4 right-4 z-[9999] ${bg} text-white px-6 py-4 rounded-lg shadow-2xl font-bold flex items-center gap-3 transform transition-all duration-300 translate-y-[-100%] border-2 border-white/20`;
+  toast.innerHTML = `<span class="text-2xl">${type === 'error' ? '⚠️' : '✅'}</span> <span>${message}</span>`;
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.remove('translate-y-[-100%]'));
+  setTimeout(() => {
+    toast.classList.add('translate-y-[-100%]', 'opacity-0');
+    setTimeout(() => toast.remove(), 500);
+  }, 3000);
+};
+
+window.savePartialData = function (visitId) {
+  try {
+    console.log('💾 Intentando guardar datos parciales para visita:', visitId);
+
+    // 1. Safe DOM Access
+    const reasonEl = document.getElementById('w-reason');
+    const reason = reasonEl ? reasonEl.value : (visitId ? 'Comer' : '');
+
+    const selectedGame = document.getElementById('w-selected-game')?.value || '';
+    const watchedTeam = document.getElementById('w-watched-team')?.value || '';
+    const league = document.getElementById('w-league')?.value || '';
+
+    // 2. Legacy Report Fields (Compatibilidad con reportes que leen del Host)
+    let entry = '', food = '', drink = '';
+
+    if (window.SEAT_ORDERS && window.SEAT_ORDERS[0]) {
+      const host = window.SEAT_ORDERS[0];
+      const entryArr = Array.isArray(host.entrada) ? host.entrada : (host.entrada ? [host.entrada] : []);
+      const platilloArr = Array.isArray(host.platillo) ? host.platillo : (host.platillo ? [host.platillo] : []);
+      const drinkArr = Array.isArray(host.bebida) ? host.bebida : (host.bebida ? [host.bebida] : []);
+
+      entry = entryArr.join(', ');
+      food = platilloArr.join(', ');
+      drink = drinkArr.join(', ');
+    }
+
+    // 3. Comandero Summary & Notes
+    let comandero = document.getElementById('w-comandero') ? document.getElementById('w-comandero').value : '';
+    const manualNotes = document.getElementById('w-manual-notes') ? document.getElementById('w-manual-notes').value : '';
+
+    if (manualNotes.trim()) {
+      comandero += `\n\n📝 NOTAS MANUALES:\n${manualNotes.trim()}`;
+    }
+
+    // 4. PERFORM SAVE
+    const updatedVisit = window.db.updateVisitDetails(visitId, {
+      reason,
+      selectedGame,
+      watchedTeam,
+      league,
+      entry,
+      food,
+      drink,
+      comandero,
+      manualNotes: manualNotes,
+      seatOrders: window.SEAT_ORDERS || [], // CRITICAL: Save order state
+      lastUpdated: new Date().toISOString()
+    });
+
+    // 5. Feedback & Sync
+    if (updatedVisit) {
+      console.log('✅ Guardado confirmado:', updatedVisit);
+      // Sync local
+      if (updatedVisit.seatOrders) {
+        window.SEAT_ORDERS = JSON.parse(JSON.stringify(updatedVisit.seatOrders));
+      }
+      showToast('✅ COMANDA GUARDADA CORRECTAMENTE', 'success');
+    } else {
+      console.warn('⚠️ Guardado ejecutado, pero sin retorno de objeto visit.');
+      // Fallback for visual confirmation
+      showToast('✅ Datos guardados.', 'success');
+    }
+
+  } catch (error) {
+    console.error('❌ Error CRÍTICO en savePartialData:', error);
+    alert('Error al guardar: ' + error.message);
+  }
+};
+// Alias for backwards compatibility if needed
+function savePartialData(visitId) { window.savePartialData(visitId); }
+
+
+function renderWaiterBottomNav(activeTab = '', visitsCount = 0) {
+  return `
+                  <nav class="bottom-nav" style="z-index: 50;">
+                    <button onclick="navigateTo('waiter-dashboard'); setTimeout(() => switchWaiterTab('mesas'), 100)" class="bottom-nav-item ${activeTab === 'mesas' ? 'active' : ''}" style="position: relative; min-width: 60px;">
+                      <span class="bottom-nav-icon">🍽️</span>
+                      <span class="bottom-nav-label">Mesas</span>
+                      ${visitsCount > 0 ? `<span class="bottom-nav-badge">${visitsCount}</span>` : ''}
+                    </button>
+                    <button onclick="navigateTo('waiter-dashboard'); setTimeout(() => switchWaiterTab('partidos'), 100)" class="bottom-nav-item" style="position: relative;">
+                      <span class="bottom-nav-icon">🏈</span>
+                      <span class="bottom-nav-label">Partidos</span>
+                    </button>
+                    <button onclick="navigateTo('waiter-dashboard'); setTimeout(() => switchWaiterTab('promos'), 100)" class="bottom-nav-item" style="position: relative;">
+                      <span class="bottom-nav-icon">🎁</span>
+                      <span class="bottom-nav-label">Promos</span>
+                    </button>
+                    <button onclick="navigateTo('waiter-dashboard'); setTimeout(() => switchWaiterTab('dinamicas'), 100)" class="bottom-nav-item" style="position: relative;">
+                      <span class="bottom-nav-icon">🎯</span>
+                      <span class="bottom-nav-label">Dinámica</span>
+                    </button>
+                    <button onclick="navigateTo('waiter-dashboard'); setTimeout(() => switchWaiterTab('productos86'), 100)" class="bottom-nav-item" style="position: relative;">
+                      <span class="bottom-nav-icon">⚠️</span>
+                      <span class="bottom-nav-label">86/85</span>
+                    </button>
+                    <button onclick="navigateTo('waiter-dashboard'); setTimeout(() => switchWaiterTab('info'), 100)" class="bottom-nav-item" style="position: relative;">
+                      <span class="bottom-nav-icon">👤</span>
+                      <span class="bottom-nav-label">Mi Info</span>
+                    </button>
+                    <button onclick="showQRReviews()" class="bottom-nav-item" style="position: relative;">
+                      <span class="bottom-nav-icon">⭐</span>
+                      <span class="bottom-nav-label">QR</span>
+                    </button>
+                  </nav>
+                  `;
+}
+
+// Toggle Cerrar Mesa form
+function toggleCerrarMesa() {
+  const form = document.getElementById('cerrar-mesa-form');
+  const btn = document.getElementById('btn-toggle-cerrar');
+
+  if (form.classList.contains('hidden')) {
+    form.classList.remove('hidden');
+    btn.classList.add('hidden');
+    // Focus on folio input
+    document.getElementById('w-folio')?.focus();
+  } else {
+    form.classList.add('hidden');
+    btn.classList.remove('hidden');
+  }
+}
+
+// COMANDERO MENU FUNCTIONS
+function renderComanderoMenuItems(type) {
+  const menu = window.db.getMenu();
+  const items = type === 'alimentos' ? menu.alimentos : menu.bebidas;
+
+  const byCategory = {};
+  items.forEach(item => {
+    if (!byCategory[item.category]) byCategory[item.category] = [];
+    byCategory[item.category].push(item);
+  });
+
+  let html = '<div class="max-h-60 overflow-y-auto">';
+  Object.keys(byCategory).forEach(category => {
+    html += `
+      <div class="mb-3">
+        <h5 class="text-yellow-400 font-bold text-xs mb-2 uppercase">${category}</h5>
+        <div class="grid grid-cols-3 gap-2">
+          ${byCategory[category].map(item => `
+            <button 
+              onclick="addToComandero('${item.name.replace(/'/g, "\\'")}')" 
+              class="p-2 bg-gray-800 border ${item.available ? 'border-gray-600 hover:border-yellow-500' : 'border-red-500 opacity-50'} rounded text-xs font-semibold ${!item.available ? 'line-through' : ''}"
+              ${!item.available ? 'disabled' : ''}>
+              ${item.name}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  return html;
+}
+
+function switchComanderoTab(tab) {
+  const alimentosTab = document.getElementById('comandero-tab-alimentos');
+  const bebidasTab = document.getElementById('comandero-tab-bebidas');
+  const alimentosContent = document.getElementById('comandero-content-alimentos');
+  const bebidasContent = document.getElementById('comandero-content-bebidas');
+
+  if (tab === 'alimentos') {
+    alimentosTab.className = 'flex-1 p-2 bg-yellow-600 rounded font-bold text-black text-sm';
+    bebidasTab.className = 'flex-1 p-2 bg-gray-700 rounded font-bold text-sm';
+    alimentosContent.classList.remove('hidden');
+    bebidasContent.classList.add('hidden');
+  } else {
+    alimentosTab.className = 'flex-1 p-2 bg-gray-700 rounded font-bold text-sm';
+    bebidasTab.className = 'flex-1 p-2 bg-yellow-600 rounded font-bold text-black text-sm';
+    alimentosContent.classList.add('hidden');
+    bebidasContent.classList.remove('hidden');
+  }
+}
+
+function addToComandero(itemName) {
+  const textarea = document.getElementById('w-comandero');
+  const currentValue = textarea.value.trim();
+
+  if (currentValue) {
+    textarea.value = currentValue + ', ' + itemName;
+  } else {
+    textarea.value = itemName;
+  }
+}
+
+// SEAT-BASED SYSTEM
+window.SEAT_ORDERS = [];
+window.CURRENT_SEAT = 0;
+window.CURRENT_COURSE = '';
+
+function switchSeat(seatIndex) {
+  // Update Global State
+  window.CURRENT_SEAT = seatIndex;
+
+  // Visual Updates
+  document.querySelectorAll('[id^="seat-content-"]').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('[id^="seat-tab-"]').forEach(el => {
+    el.className = 'bg-gray-800 text-gray-400 px-4 py-2 rounded font-bold text-sm whitespace-nowrap border border-transparent transition-all duration-200';
+  });
+
+  const contentEl = document.getElementById(`seat-content-${seatIndex}`);
+  const tabEl = document.getElementById(`seat-tab-${seatIndex}`);
+
+  if (contentEl) {
+    contentEl.classList.remove('hidden');
+
+    // Inject or update feedback banner
+    let banner = contentEl.querySelector('.seat-feedback-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.className = 'seat-feedback-banner bg-yellow-900/40 text-yellow-400 p-2 mb-4 text-center text-xs uppercase font-bold tracking-widest border border-yellow-600/50 rounded animate-pulse';
+      contentEl.insertBefore(banner, contentEl.firstChild);
+    }
+    banner.textContent = `📝 EDITANDO: ${seatIndex === 0 ? 'ANFITRIÓN' : 'ASIENTO ' + (seatIndex + 1)}`;
+  }
+
+  if (tabEl) {
+    // High contrast active state
+    tabEl.className = 'bg-yellow-500 text-black px-6 py-2 rounded-t-lg font-black text-sm whitespace-nowrap border-2 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)] transform scale-105 z-10';
+  }
+}
+
+function openMenuFor(seatIndex, course) {
+  window.CURRENT_SEAT = seatIndex;
+  window.CURRENT_COURSE = course;
+  const menu = window.db.getMenu();
+  let items = course === 'bebida' ? menu.bebidas : menu.alimentos;
+
+  // Specific Filter for Desserts
+  if (course === 'postre') {
+    items = items.filter(i => i.category.toLowerCase().includes('postre') || i.category.toLowerCase().includes('dessert'));
+  }
+
+  // Agrupar por categoría
+  const byCategory = {};
+  items.forEach(item => {
+    if (!byCategory[item.category]) byCategory[item.category] = [];
+    byCategory[item.category].push(item);
+  });
+
+  let html = '<div class="pb-24">';
+
+  if (course === 'bebida') {
+    const groups = {
+      '🍺 CERVEZAS': ['Cerveza Barril', 'Cerveza Botella'],
+      '🌶️ MICHELADOS': ['Michelados', 'Mezclas'],
+      '🥃 DESTILADOS': ['Ron', 'Tequila', 'Mezcal', 'Ginebra', 'Brandy', 'Whiskey', 'Vodka', 'Digestivos'],
+      '🥤 SIN ALCOHOL': ['REFILL', 'REFRESCOS', 'LIMONADAS SABORES']
+    };
+
+    // 1. Render mapped groups
+    const mappedCategories = new Set();
+    const VIRTUAL_CATS = ['REFILL', 'REFRESCOS', 'LIMONADAS SABORES'];
+
+    Object.keys(groups).forEach(grpTitle => {
+      const catsInGroup = groups[grpTitle];
+      const hasContent = catsInGroup.some(cat => byCategory[cat] || VIRTUAL_CATS.includes(cat));
+
+      if (hasContent) {
+        html += `<h3 class="text-yellow-500 font-bold mb-2 mt-4 uppercase border-b border-gray-700 pb-1 text-sm tracking-wider pl-1">${grpTitle}</h3>`;
+        html += `<div class="grid grid-cols-2 gap-3">`;
+        catsInGroup.forEach(cat => {
+          if (byCategory[cat] || VIRTUAL_CATS.includes(cat)) {
+            mappedCategories.add(cat); // Mark as used
+            html += `<button onclick="showCategoryItems('${cat}')" class="p-4 bg-gray-800 border-2 border-yellow-600 rounded-lg hover:border-yellow-400 text-left"><div class="font-bold uppercase text-sm">${cat}</div></button>`;
+
+            if (byCategory[cat]) delete byCategory[cat];
+          }
+        });
+        html += `</div>`;
+      }
+    });
+
+    // 2. Render remaining 
+    // 2. Render remaining 
+    const HIDDEN_CATS = ['Jarra Cerveza', 'Caguamas', 'Refrescos', 'Limonadas', 'Naranjadas', 'Café', 'Agua', 'Otros'];
+    const remaining = Object.keys(byCategory).filter(c => !HIDDEN_CATS.includes(c));
+
+    if (remaining.length > 0) {
+      html += `<h3 class="text-yellow-500 font-bold mb-2 mt-4 uppercase border-b border-gray-700 pb-1 text-sm tracking-wider pl-1">OTROS</h3>`;
+      html += `<div class="grid grid-cols-2 gap-3">`;
+      remaining.forEach(cat => {
+        html += `<button onclick="showCategoryItems('${cat}')" class="p-4 bg-gray-800 border-2 border-yellow-600 rounded-lg hover:border-yellow-400 text-left"><div class="font-bold uppercase text-sm">${cat}</div></button>`;
+      });
+      html += `</div>`;
+    }
+
+  } else {
+    // Default (Alimentos)
+    html += `<div class="grid grid-cols-2 gap-3">`;
+    Object.keys(byCategory).forEach(category => {
+      html += `<button onclick="showCategoryItems('${category}')" class="p-4 bg-gray-800 border-2 border-yellow-600 rounded-lg hover:border-yellow-400 text-left"><div class="font-bold uppercase">${category}</div></button>`;
+    });
+    html += `</div>`;
+  }
+
+  html += '</div>';
+
+  const modalTitle = document.getElementById('modal-title');
+  const modalContent = document.getElementById('modal-content');
+  const modal = document.getElementById('menu-modal');
+
+  if (modalTitle) modalTitle.textContent = `Selecciona ${course.toUpperCase()} (Asiento ${seatIndex === 0 ? 'Anfitrión' : seatIndex + 1})`;
+  if (modalContent) modalContent.innerHTML = html;
+  if (modal) modal.classList.remove('hidden');
+}
+
+// === BEER SUB-MENU LOGIC ===
+window.DRAFT_SIZE_SELECTION = null;
+
+function selectDraftSize(size) {
+  window.DRAFT_SIZE_SELECTION = size;
+  showCategoryItems('Cerveza Barril', true);
+}
+
+window.selectAndExecute = function (btn, action) {
+  // Visual Feedback: Turn button yellow and pop
+  btn.classList.remove('bg-gray-800', 'border-yellow-600', 'hover:bg-yellow-900/40');
+  btn.classList.add('bg-yellow-500', 'border-white', 'text-black', 'scale-105', 'shadow-[0_0_20px_rgba(234,179,8,0.6)]', 'z-50');
+
+  const span = btn.querySelector('span');
+  if (span) {
+    span.classList.remove('text-white', 'group-hover:text-yellow-300');
+    span.classList.add('text-black');
+  }
+
+  setTimeout(() => {
+    // Execute action
+    const fn = new Function(action);
+    fn();
+  }, 150);
+}
+
+function renderSubMenuOptions({ title, options, backAction }) {
+  let html = `
+                <div class="flex justify-between items-center mb-4 sticky top-0 bg-gray-900 z-10 py-2 border-b border-gray-800">
+                  <button onclick="${backAction}" class="text-yellow-400 font-bold flex items-center gap-2 text-sm">← ATRAS</button>
+                </div>
+                <div class="p-4 text-center">
+                  <h3 class="text-2xl text-yellow-400 font-black mb-6 uppercase">${title}</h3>
+                  <div class="grid grid-cols-1 gap-4 max-w-xs mx-auto">
+                    ${options.map(opt => `
+                <button onclick="selectAndExecute(this, '${opt.action.replace(/'/g, "\\'")}')" class="p-6 bg-gray-800 border-2 border-yellow-600 hover:bg-yellow-900/40 hover:border-yellow-400 rounded-xl transition-all transform active:scale-95 shadow-lg group">
+                    <span class="text-xl font-bold text-white group-hover:text-yellow-300">${opt.label}</span>
+                </button>
+            `).join('')}
+                  </div>
+                </div>
+                `;
+  const content = document.getElementById('modal-content');
+  if (content) content.innerHTML = html;
+}
+
+window.IS_REFILL_ACTIVE = false;
+
+function showCategoryItems(category, skipInterception = false) {
+  // INTERCEPTION FOR SUB-MENUS
+  if (!skipInterception) {
+    if (category === 'Cerveza Barril') {
+      renderSubMenuOptions({
+        title: 'TAMAÑO DE BARRIL',
+        options: [
+          { label: '🍺 REGULAR', action: "selectDraftSize('Regular')" },
+          { label: '🍺 TALL', action: "selectDraftSize('Tall')" },
+          { label: '🍺 JARRA', action: "showCategoryItems('Jarra Cerveza', true)" }
+        ],
+        backAction: `openMenuFor(${window.CURRENT_SEAT}, 'bebida')`
+      });
+      return;
+    }
+    if (category === 'Cerveza Botella') {
+      renderSubMenuOptions({
+        title: 'TIPO DE BOTELLA',
+        options: [
+          { label: '🍾 BOTELLA (355ml)', action: "showCategoryItems('Cerveza Botella', true)" },
+          { label: '🍾 CAGUAMA (1.18L)', action: "showCategoryItems('Caguamas', true)" }
+        ],
+        backAction: `openMenuFor(${window.CURRENT_SEAT}, 'bebida')`
+      });
+      return;
+    }
+    if (category === 'REFILL') {
+      renderSubMenuOptions({
+        title: 'BEBIDAS CON REFILL',
+        options: [
+          { label: '🥤 VASO / MÁQUINA', action: "showCategoryItems('Vaso Refill List', true)" },
+          { label: '🔄 REFILL (RELLENO)', action: "showCategoryItems('Refill List', true)" }
+        ],
+        backAction: `openMenuFor(${window.CURRENT_SEAT}, 'bebida')`
+      });
+      return;
+    }
+  }
+
+  window.CURRENT_CATEGORY_VIEW = category;
+
+  // LOGIC FOR ITEMS
+  let categoryItems = [];
+  window.IS_REFILL_ACTIVE = false;
+  window.IS_CAN_VIEW = false; // New flag
+  let backBtnAction = `openMenuFor(${window.CURRENT_SEAT}, '${window.CURRENT_COURSE}')`;
+
+  // HELPER: Ensure items exist (fixing stale localStorage issues)
+  const getItemsByName = (namesList, fallbackCat) => {
+    const menu = window.db.getMenu();
+    const all = [...(menu.bebidas || []), ...(menu.alimentos || [])];
+    return namesList.map(name => {
+      const item = all.find(i => i.name === name);
+      if (item) return item;
+      return { name: name, category: fallbackCat, available: true, id: 'tmp_' + name.replace(/\s/g, '') };
+    });
+  };
+
+  if (category === 'Vaso Refill List' || category === 'Refill List') {
+    backBtnAction = "showCategoryItems('REFILL', true)";
+    const machineDrks = ['Coca-Cola', 'Coca-Cola Light', 'Coca-Cola Sin Azúcar', 'Sprite', 'Fanta', 'Sidral Mundet', 'Manzana', 'Fuzetea'];
+    const basics = ['Limonada', 'Naranjada'];
+
+    const machineItems = getItemsByName(machineDrks, 'Refrescos');
+    const basicItems = getItemsByName(basics, 'Limonadas');
+
+    categoryItems = [...machineItems, ...basicItems];
+    if (category === 'Refill List') window.IS_REFILL_ACTIVE = true;
+
+  } else if (category === 'REFRESCOS') {
+    const canAndCoffeeList = [
+      'Coca-Cola', 'Coca-Cola Sin Azúcar', 'Coca-Cola Light',
+      'Sidral Mundet', 'Manzana', 'Sprite', 'Fresca', 'Fanta', 'Ginger Ale', 'Agua Quina',
+      'Agua Mineral Ciel', 'Agua Natural Ciel',
+      'Café Americano', 'Café Expresso', 'Café Capuccino'
+    ];
+    categoryItems = getItemsByName(canAndCoffeeList, 'Refrescos');
+    window.IS_CAN_VIEW = true;
+
+  } else if (category === 'LIMONADAS SABORES') {
+    const flavors = ['Limonada Mango', 'Limonada Fresa', 'Limonada Menta', 'Limonada Frutos Rojos'];
+    categoryItems = getItemsByName(flavors, 'Limonadas');
+
+  } else {
+    // Standard
+    const menu = window.db.getMenu();
+    const items = window.CURRENT_COURSE === 'bebida' ? menu.bebidas : menu.alimentos;
+    categoryItems = items.filter(i => i.category === category);
+  }
+
+  // RENDER
+  let html = `
+                <div class="flex justify-between items-center mb-4 sticky top-0 bg-gray-900 z-10 py-2 border-b border-gray-800">
+                  <button onclick="${backBtnAction}" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 font-bold py-2 px-4 rounded-lg flex items-center gap-2 text-sm shadow-sm border border-gray-600 transition-colors">
+                    <span>←</span> ATRÁS
+                  </button>
+
+                </div>
+                `;
+
+  const currentSeatOrders = window.SEAT_ORDERS[window.CURRENT_SEAT];
+  const activeItems = (currentSeatOrders && currentSeatOrders[window.CURRENT_COURSE]) || [];
+
+  html += `<div class="grid grid-cols-2 gap-3 pb-24">`;
+
+  // Render buttons
+  categoryItems.forEach(item => {
+    let displayName = item.name;
+    let logicName = item.name;
+
+    if (window.IS_REFILL_ACTIVE) {
+      displayName = `Refill ${item.name}`;
+      logicName = `Refill ${item.name}`;
+    } else if (window.IS_CAN_VIEW) {
+      if (!item.name.startsWith('Café') && !item.name.startsWith('Agua Natural')) {
+        displayName = `Lata ${item.name}`;
+        logicName = `Lata ${item.name}`;
+      }
+    }
+
+    const safeName = logicName.replace(/'/g, "\\'");
+    const qty = activeItems.filter(ord => ord === logicName || ord.startsWith(logicName + ' [')).length;
+
+    html += `
+                  <div class="flex items-stretch h-16 bg-gray-800 border ${item.available ? 'border-gray-600' : 'border-red-900 opacity-50'} rounded-lg overflow-hidden shadow-sm group">
+
+                    <!-- MINUS -->
+                    <button onclick="event.stopPropagation(); removeLastInstance('${safeName}', '${category}')"
+                      class="w-14 bg-black/20 hover:bg-red-900/40 text-gray-500 hover:text-red-400 font-bold text-2xl border-r border-gray-700/50 flex items-center justify-center transition-all active:bg-red-900/60 ${qty === 0 ? 'opacity-0 pointer-events-none' : ''}"
+                      aria-label="Disminuir cantidad">
+                      −
+                    </button>
+
+                    <!-- CENTER -->
+                    <button onclick="processMenuItemSelection('${safeName}', this)"
+                      class="flex-1 px-2 flex flex-col items-center justify-center group-hover:bg-gray-700/50 transition-colors active:bg-gray-700"
+                      ${!item.available ? 'disabled' : ''}>
+                      <span class="text-sm font-bold text-center leading-tight ${item.available ? 'text-gray-200' : 'line-through text-gray-500'}">${displayName}</span>
+                      ${qty > 0 ? `<div class="text-yellow-500 text-xs font-black mt-1 tracking-wider">${qty} PEDIDO${qty > 1 ? 'S' : ''}</div>` : ''}
+                    </button>
+
+                    <!-- PLUS -->
+                    <button onclick="event.stopPropagation(); processMenuItemSelection('${safeName}', this)"
+                      class="w-14 bg-black/20 hover:bg-green-900/40 text-green-500 hover:text-green-300 font-bold text-2xl border-l border-gray-700/50 flex items-center justify-center transition-all active:bg-green-900/60"
+                      ${!item.available ? 'disabled' : ''}
+                      aria-label="Aumentar cantidad">
+                      +
+                    </button>
+                  </div>`;
+  });
+  html += '</div>';
+
+  const modalContent = document.getElementById('modal-content');
+  if (modalContent) modalContent.innerHTML = html;
+}
+
+window.removeLastInstance = function (itemName, category) {
+  if (window.SEAT_ORDERS[window.CURRENT_SEAT] && window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE]) {
+    const items = window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE];
+    let foundIndex = -1;
+    // Find last occurrence to remove LIFO
+    for (let i = items.length - 1; i >= 0; i--) {
+      // STRICT MATCH FIX: Ensure we don't match substrings like "XX Ambar" inside "XX Ambar (Barril)"
+      if (items[i] === itemName || items[i].startsWith(itemName + ' [')) {
+        foundIndex = i;
+        break;
+      }
+    }
+
+    if (foundIndex !== -1) {
+      items.splice(foundIndex, 1);
+      if (window.showToast) showToast(`Se eliminó 1 ${itemName}`, 'success');
+
+      updateComanderoSummary();
+      showCategoryItems(category); // Re-render logic
+
+      // Update Main Button Label Logic 
+      const itemLabel = document.getElementById(`seat-${window.CURRENT_SEAT}-${window.CURRENT_COURSE}`);
+      if (itemLabel) {
+        if (items.length > 0) {
+          itemLabel.textContent = items.length > 1 ? `${items[items.length - 1]} (+${items.length - 1})` : items[0];
+          itemLabel.classList.add('text-green-400');
+        } else {
+          itemLabel.textContent = '-';
+          itemLabel.classList.remove('text-green-400');
+        }
+      }
+    }
+  }
+}
+
+// Legacy removal function kept but unused
+function removeSeatItem_LEGACY(itemIndex, currentCategory) {
+  if (window.SEAT_ORDERS[window.CURRENT_SEAT] && window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE]) {
+    window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE].splice(itemIndex, 1);
+
+    // Update summary and label immediately
+    updateComanderoSummary();
+
+    // Update Label
+    const itemLabel = document.getElementById(`seat-${window.CURRENT_SEAT}-${window.CURRENT_COURSE}`);
+    const items = window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE];
+    if (itemLabel) {
+      if (items.length > 0) {
+        itemLabel.textContent = items.length > 1 ? `${items[items.length - 1]} (+${items.length - 1})` : items[0];
+        itemLabel.classList.add('text-green-400');
+      } else {
+        itemLabel.textContent = '-';
+        itemLabel.classList.remove('text-green-400');
+      }
+    }
+
+    // Re-render the category view to update the list
+    showCategoryItems(currentCategory);
+  }
+}
+
+
+
+window.addGeneralObservation = function () {
+  try {
+    const text = prompt("📝 Escribe la observación para cocina:\n(Se agregará al pedido actual)");
+    if (text && text.trim().length > 0) {
+      const obs = `📝 NOTA: ${text.trim().toUpperCase()}`;
+
+      // Ensure structure exists
+      if (!window.SEAT_ORDERS[window.CURRENT_SEAT]) window.SEAT_ORDERS[window.CURRENT_SEAT] = {};
+      if (!window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE]) window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE] = [];
+
+      let items = window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE];
+      // Fix potential non-array legacy data
+      if (!Array.isArray(items)) {
+        items = items ? [items] : [];
+        window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE] = items;
+      }
+
+      items.push(obs);
+
+      console.log('Observation Added:', obs);
+      updateComanderoSummary();
+
+      // Refresh current view if possible
+      if (window.CURRENT_CATEGORY_VIEW) {
+        showCategoryItems(window.CURRENT_CATEGORY_VIEW);
+      }
+
+      // Update Label (Visual feedback on the main screen button)
+      const labelId = `seat-${window.CURRENT_SEAT}-${window.CURRENT_COURSE}`;
+      const lbl = document.getElementById(labelId);
+      if (lbl) {
+        if (items.length > 1) {
+          lbl.textContent = `${items[items.length - 1]} (+${items.length - 1})`;
+        } else {
+          lbl.textContent = "📝 Nota";
+        }
+        lbl.classList.add('text-green-400');
+      }
+    }
+  } catch (e) {
+    console.error('Error adding observation:', e);
+    alert('Error al agregar nota.');
+  }
+}
+
+// Alias to reuse existing pencil button safely
+window.editItemNote = function (index, category) {
+  window.addGeneralObservation();
+}
+
+function selectMenuItem(itemName, btnElement) {
+  let finalItemName = itemName;
+
+  // Initialize seat object if needed
+  if (!window.SEAT_ORDERS[window.CURRENT_SEAT]) {
+    window.SEAT_ORDERS[window.CURRENT_SEAT] = {};
+  }
+
+  // Initialize course array if needed
+  if (!window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE]) {
+    window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE] = [];
+  } else if (!Array.isArray(window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE])) {
+    window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE] = [window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE]];
+  }
+
+  // Add new item
+  window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE].push(finalItemName);
+
+  // Update UI for the specific item label (Main Screen)
+  const itemLabel = document.getElementById(`seat-${window.CURRENT_SEAT}-${window.CURRENT_COURSE}`);
+  const items = window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE];
+  if (itemLabel) {
+    if (items.length > 1) {
+      itemLabel.textContent = `${items[items.length - 1]} (+${items.length - 1})`;
+    } else {
+      itemLabel.textContent = finalItemName.length > 20 ? finalItemName.substring(0, 18) + '...' : finalItemName;
+    }
+    itemLabel.classList.add('text-green-400');
+  }
+
+  updateComanderoSummary();
+
+  // REFRESH VIEW TO UPDATE COUNTERS CLEANLY
+  if (window.CURRENT_CATEGORY_VIEW) {
+    showCategoryItems(window.CURRENT_CATEGORY_VIEW);
+  }
+
+  if (itemName.includes('|')) {
+    closeMenuModal();
+  }
+}
+
+
+function closeMenuModal() {
+  const modal = document.getElementById('menu-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+// ==========================================
+// SISTEMA DE MODIFICADORES (WIZARD)
+// ==========================================
+
+let WIZARD_STATE = {
+  itemName: '',
+  rules: [],
+  currentStep: 0,
+  selections: [],
+  btnElement: null
+};
+
+function getModifierRules(itemName) {
+  const menu = window.db.getMenu();
+  const getNames = (cat) => menu.alimentos.filter(i => i.category === cat).map(i => i.name).sort();
+  const getSalsas = () => menu.alimentos.filter(i => i.category === 'Salsas').map(i => i.name).sort();
+  const getSaz = () => menu.alimentos.filter(i => i.category === 'Sazonadores').map(i => i.name).sort();
+  const getSalsasAndSaz = () => [...getSalsas(), ...getSaz()].sort();
+  const getAderezos = () => menu.alimentos.filter(i => i.category === 'Aderezos').map(i => i.name).sort();
+
+  const rules = [];
+
+  // ALITAS & BONELESS
+  if (itemName.includes('Alitas Small') || itemName.includes('Boneless Small')) {
+    rules.push({ title: 'Selecciona hasta 2 Salsas', type: 'multi', max: 2, options: getSalsasAndSaz() });
+    rules.push({ title: 'Selecciona 1 Aderezo', type: 'single', options: getAderezos() });
+  }
+  else if (itemName.includes('Alitas Medium') || itemName.includes('Boneless Medium') || itemName.includes('Wings Platter')) {
+    rules.push({ title: 'Selecciona hasta 3 Salsas', type: 'multi', max: 3, options: getSalsasAndSaz() });
+    rules.push({ title: 'Selecciona hasta 2 Aderezos', type: 'multi', max: 2, options: getAderezos() });
+  }
+  else if (itemName.includes('Alitas Large') || itemName.includes('Boneless Large')) {
+    rules.push({ title: 'Selecciona hasta 4 Salsas', type: 'multi', max: 4, options: getSalsasAndSaz() });
+    rules.push({ title: 'Selecciona hasta 2 Aderezos', type: 'multi', max: 2, options: getAderezos() });
+  }
+  else if (itemName.includes('Corn Riblets')) {
+    rules.push({ title: 'Elige Sazonador o Salsa', type: 'single', options: getSalsasAndSaz() });
+  }
+  else if (itemName.includes('Potato Wedges') || itemName.includes('French Fries Basket')) {
+    rules.push({ title: '¿Agregar Extras?', type: 'multi', max: 2, options: ['Queso', 'Tocino'] });
+  }
+  else if (itemName.includes('Sampler') || itemName.includes('All Sports Pack')) {
+    rules.push({ title: 'Salsa para Boneless', type: 'single', options: getSalsasAndSaz() });
+    if (itemName.includes('All Sports Pack')) {
+      rules.push({ title: 'Salsa para Tenders', type: 'single', options: getSalsasAndSaz() });
+    }
+    rules.push({ title: 'Elige Aderezo', type: 'single', options: getAderezos() });
+  }
+  else if (itemName.includes('Tenders') || itemName.includes('Boneless Kids')) {
+    rules.push({ title: 'Elige Salsa o Sazonador', type: 'single', options: getSalsasAndSaz() });
+  }
+  else if (itemName.includes('(Barril)') || itemName.includes('Cerveza Barril')) {
+    // Only ask size if NOT already selected (not in name)
+    if (!itemName.includes('REGULAR') && !itemName.includes('TALL')) {
+      rules.push({ title: 'Selecciona Tamaño', type: 'single', options: ['Regular', 'Tall', 'Jarra'] });
+    }
+    rules.push({ title: 'Selecciona Preparación', type: 'single', options: ['Natural', 'Chelado', 'Michelado', 'Ojo Rojo', 'Clamato'] });
+  }
+  else if (itemName.includes('Cerveza Botella') || itemName.includes('Bohemia') || itemName.includes('XX') || itemName.includes('Tecate') || itemName.includes('Indio') || itemName.includes('Heineken') || itemName.includes('Miller') || itemName.includes('Amstel')) {
+    // CAGUAMA CHECK
+    if ((itemName.includes('Tecate') || itemName.includes('Indio') || itemName.includes('XX') || itemName.includes('Carta Blanca'))
+      && !itemName.includes('Caguama') && !itemName.includes('355ml')) {
+      rules.push({ title: 'Presentación', type: 'single', options: ['355ml', 'Caguama (940ml)'] });
+    }
+    rules.push({ title: 'Selecciona Preparación', type: 'single', options: ['Natural', 'Chelado', 'Michelado', 'Ojo Rojo', 'Clamato'] });
+  }
+  else if (itemName.includes('Chicken Salad') && !itemName.includes('Side')) {
+    rules.push({ title: 'Salsa para el Pollo', type: 'single', options: getSalsasAndSaz() });
+    rules.push({ title: 'Elige Aderezo', type: 'single', options: getAderezos() });
+  }
+  else if (itemName.includes('Limonada') || itemName.includes('Naranjada') ||
+    itemName.includes('Fresa') || itemName.includes('Mango') ||
+    itemName.includes('Menta') || itemName.includes('Frutos') ||
+    itemName.includes('Pepino') || itemName.includes('Maracuya')) {
+    rules.push({ title: 'Preparación', type: 'single', options: ['Agua Natural', 'Agua Mineral'] });
+  }
+
+  return rules;
+}
+
+// --- LEGACY WIZARD CODE REMOVED ---
+
+// --- LEGACY WIZARD FUNCTIONS REMOVED (NOW USING INLINE SYSTEM) ---
+
+// DEBUG TOOL
+window.forceMenuRefresh = function () {
+  if (confirm('¿Recargar el menú para ver los nuevos platillos (Alitas, Boneless)?')) {
+    // Borrar la estructura de menú actual para forzar regeneración
+    if (window.db && window.db.data) {
+      delete window.db.data.menu;
+      window.db._save();
+      console.log('Menú eliminado, recargando...');
+      location.reload();
+    }
+  }
+}
+// === CRITICAL FUNCTION RESTORED ===
+function addItemToSeatOrder(itemName) {
+  // Ensure we have valid context
+  if (typeof window.CURRENT_SEAT === 'undefined' || !window.CURRENT_COURSE) {
+    console.error("Missing context for adding item", window.CURRENT_SEAT, window.CURRENT_COURSE);
+    showToast("Error: No se ha seleccionado asiento o tiempo.", "error");
+    return;
+  }
+
+  // Handle Wizard Result (modifiers)
+  const finalItemName = itemName;
+
+  // Initialize seat object if needed
+  if (!window.SEAT_ORDERS[window.CURRENT_SEAT]) {
+    window.SEAT_ORDERS[window.CURRENT_SEAT] = {};
+  }
+
+  // Initialize course array if needed
+  if (!window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE]) {
+    window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE] = [];
+  } else if (!Array.isArray(window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE])) {
+    // Convert old string format to array if needed
+    window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE] = [window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE]];
+  }
+
+  // Add new item
+  window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE].push(finalItemName);
+
+  // Update UI for the specific item label (Main Screen)
+  const itemLabel = document.getElementById(`seat-${window.CURRENT_SEAT}-${window.CURRENT_COURSE}`);
+  const items = window.SEAT_ORDERS[window.CURRENT_SEAT][window.CURRENT_COURSE];
+
+  if (itemLabel) {
+    if (items.length > 1) {
+      itemLabel.textContent = `${items[items.length - 1]} (+${items.length - 1})`;
+    } else {
+      itemLabel.textContent = finalItemName.length > 25 ? finalItemName.substring(0, 23) + '...' : finalItemName;
+    }
+    itemLabel.classList.remove('text-yellow-400');
+    itemLabel.classList.add('text-green-400', 'font-black'); // Highlight active
+
+    // Add pop animation to parent button
+    const btn = itemLabel.parentElement.parentElement; // div -> button
+    if (btn) {
+      btn.classList.add('scale-105', 'border-yellow-400');
+      setTimeout(() => btn.classList.remove('scale-105', 'border-yellow-400'), 200);
+    }
+  }
+
+  updateComanderoSummary();
+  showToast(`✅ Agregado: ${finalItemName}`);
+}
+window.addItemToSeatOrder = addItemToSeatOrder;
+
+function updateComanderoSummary() {
+  let summary = '';
+  // Iterar de seguro sobre los indices conocidos
+  for (let index = 0; index < 20; index++) {
+    const seat = window.SEAT_ORDERS[index];
+    if (seat && Object.keys(seat).length > 0) {
+      summary += `${index === 0 ? '👑 Anfitrión' : `Asiento ${index + 1}`}:\n`;
+
+      const courses = ['entrada', 'platillo', 'alimentos', 'bebida', 'postre']; // Standardize keys
+      courses.forEach(course => {
+        if (seat[course]) {
+          const items = Array.isArray(seat[course]) ? seat[course] : [seat[course]];
+          const label = course.charAt(0).toUpperCase() + course.slice(1);
+          summary += `  ${label}:\n`;
+          items.forEach(it => summary += `    • ${it}\n`);
+        }
+      });
+
+      summary += '\n'; // Espacio entre asientos
+    }
+  }
+
+  /* Manual notes (ORDER_NOTES) are now in separate input, BUT user wants to see them merged on demand */
+  if (window.ORDER_NOTES && window.ORDER_NOTES.trim().length > 0) {
+    summary += `\n========== NOTAS DE COCINA ==========\n${window.ORDER_NOTES.trim()}\n=====================================\n`;
+  }
+
+  const textarea = document.getElementById('w-comandero');
+  if (textarea) textarea.value = summary.trim();
+}
+
+window.ORDER_NOTES = "";
+
+window.editGeneralNotes = function () {
+  const current = window.ORDER_NOTES;
+  const manual = prompt("📝 Observaciones Generales:\n(Ej: Todo sin hielo, Alergia nueces...)", current);
+  if (manual !== null) {
+    window.ORDER_NOTES = manual.trim();
+    updateComanderoSummary();
+  }
+}
+
+function openFullscreenSummary() {
+  const textarea = document.getElementById('w-comandero');
+  if (!textarea) return;
+
+  let content = textarea.value;
+  const notesArea = document.getElementById('w-manual-notes');
+
+  // Logic to prevent duplication: Only append if NOT already in content
+  if (notesArea && notesArea.value.trim()) {
+    const noteText = notesArea.value.trim();
+    if (!content.includes(noteText)) {
+      content += `\n\n📝 NOTAS MANUALES:\n${noteText}`;
+    }
+  }
+
+  if (!content.trim()) {
+    showToast('⚠️ El resumen está vacío.', 'error');
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:9999; display:flex; flex-direction:column; padding:10px; box-sizing:border-box;';
+
+  modal.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                  <h2 class="text-yellow-400 text-xl font-bold flex items-center gap-2">📝 PARA POS</h2>
+                  <button onclick="this.parentElement.parentElement.remove()" class="bg-red-600 active:bg-red-800 text-white px-4 py-2 rounded-lg font-bold text-sm uppercase">✕ CERRAR</button>
+                </div>
+                <div style="flex:1; background:#111; border:1px solid #CA8A04; border-radius:8px; padding:15px; overflow-y:auto; overflow-x:hidden;">
+                  <pre class="text-gray-100 text-base md:text-xl lg:text-2xl font-mono whitespace-pre-wrap break-words leading-relaxed select-text">${content}</pre>
+                </div>
+                `;
+
+  document.body.appendChild(modal);
+}
+
+// Make functions globally accessible
+// Make functions globally accessible
+// Make functions globally accessible
+window.switchSeat = switchSeat;
+
+// === INLINE MENU SYSTEM (RESTORATION COMPLETE) ===
+
+const FOOD_CATEGORIES_ORDER = [
+  'Para Compartir', 'Samplers', 'Alitas', 'Boneless', 'Platillos',
+  'Burgers', 'Sandwiches', 'Ensaladas', 'Kids', 'Postres',
+  'Salsas', 'Aderezos', 'Sazonadores'
+];
+
+const DRINK_CATEGORIES_ORDER = [
+  'Cerveza Barril', 'Cerveza Botella',
+  'Tequila', 'Whiskey', 'Ron', 'Vodka', 'Mezcal', 'Ginebra', 'Brandy',
+  'Digestivos', 'Coctelería',
+  'Refrescos', 'Refrescos Refill', 'Refrescos de Lata', 'Limonadas', 'Cafetería', 'Café'
+];
+
+window.openMenuFor = function (seatIndex, type) {
+  // 1. Close others
+  for (let i = 0; i < 20; i++) {
+    const other = document.getElementById(`inline-menu-container-${i}`);
+    if (other && i !== seatIndex) other.classList.add('hidden');
+  }
+
+  // 2. Set State
+  window.CURRENT_SEAT = seatIndex;
+  window.CURRENT_COURSE = type; // 'entrada', 'platillo', etc.
+
+  // 3. Get UI
+  const container = document.getElementById(`inline-menu-container-${seatIndex}`);
+  const title = document.getElementById(`inline-menu-title-${seatIndex}`);
+  const content = document.getElementById(`inline-menu-content-${seatIndex}`);
+
+  if (!container || !content) return;
+
+  // 4. Render CATEGORIES first (Level 1)
+  const isFood = (type === 'entrada' || type === 'platillo' || type === 'postre');
+
+  if (type === 'postre') {
+    container.classList.remove('hidden');
+    window.selectInlineCategory('Postres', seatIndex);
+    setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+    return;
+  }
+
+  renderInlineCategories(seatIndex, isFood ? 'alimentos' : 'bebidas');
+
+  // 5. Update Title
+  const icon = type === 'entrada' ? '🥟' : type === 'platillo' ? '🍗' : type === 'postre' ? '🍰' : '🍺';
+  title.innerHTML = `${icon} CATEGORÍAS`;
+
+  // 6. Show & Scroll
+  container.classList.remove('hidden');
+  setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+};
+
+window.renderInlineCategories = function (seatIndex, type) {
+  const content = document.getElementById(`inline-menu-content-${seatIndex}`);
+  const menu = window.db.getMenu();
+  let items = type === 'alimentos' ? menu.alimentos : menu.bebidas;
+  let orderList = [];
+
+  if (type === 'alimentos') {
+    orderList = FOOD_CATEGORIES_ORDER;
+  } else {
+    // STRICT WHITELIST FOR DRINKS
+    orderList = [
+      'Cerveza Barril', 'Cerveza Botella',
+      'Destilados',
+      'Coctelería', 'Refill', 'Limonadas', 'Refrescos (Lata)', 'Café', 'Digestivos'
+    ];
+
+    // Map Items to Virtual Categories for Display Check & grouping
+    items = items.map(i => {
+      // Destilados
+      if (['Tequila', 'Whiskey', 'Ron', 'Vodka', 'Mezcal', 'Ginebra', 'Brandy', 'Cognac'].includes(i.category)) {
+        return { ...i, category: 'Destilados' };
+      }
+      // Café
+      if (['Cafetería'].includes(i.category)) {
+        return { ...i, category: 'Café' };
+      }
+      // Caguamas merged to 'Cerveza Botella' for top navigation
+      if (i.name.includes('Caguama') || i.category === 'Caguamas') {
+        return { ...i, category: 'Cerveza Botella' };
+      }
+
+      // Limonadas / Naranjadas Logic
+      if (['Limonadas', 'Naranjadas'].includes(i.category)) {
+        const n = i.name.toLowerCase();
+        // Flavored -> Limonadas Button
+        if (n.includes('fresa') || n.includes('mango') || n.includes('frutos') || n.includes('pepino') || n.includes('menta') || n.includes('kiwi') || n.includes('maracuya')) {
+          return { ...i, category: 'Limonadas' };
+        }
+        // Natural/Mineral -> Refill Button
+        return { ...i, category: 'Refill' };
+      }
+
+      if (i.category === 'Refrescos') {
+        if (i.name.toLowerCase().includes('refill')) return { ...i, category: 'Refill' };
+        return { ...i, category: 'Refrescos (Lata)' };
+      }
+      return i;
+    });
+  }
+
+  // Extract unique categories present in items
+  const availableCats = [...new Set(items.map(i => i.category))];
+
+  // Filter: Show only categories that are in our Whitelist AND have items
+  const categoriesToShow = orderList.filter(c => availableCats.includes(c));
+
+  let html = `<div class="grid grid-cols-2 gap-3 pb-4">`;
+
+  categoriesToShow.forEach(cat => {
+    html += `
+      <button onclick="selectInlineCategory('${cat}', ${seatIndex})" 
+        class="p-6 bg-gray-800 border-2 border-gray-600 rounded-lg hover:border-yellow-500 hover:bg-gray-700 transition flex flex-col items-center justify-center text-center">
+        <span class="text-xl font-bold text-white uppercase">${cat}</span>
+        <span class="text-xs text-gray-400 mt-2">Ver Productos ➔</span>
+      </button>
+    `;
+  });
+
+  html += `</div>`;
+  content.innerHTML = html;
+
+  // Hide search bar in category view
+  const searchInput = document.getElementById(`inline-search-${seatIndex}`);
+  if (searchInput) searchInput.parentElement.classList.add('hidden');
+};
+
+window.selectInlineCategory = function (category, seatIndex) {
+  const content = document.getElementById(`inline-menu-content-${seatIndex}`);
+  const title = document.getElementById(`inline-menu-title-${seatIndex}`);
+  const searchInput = document.getElementById(`inline-search-${seatIndex}`);
+
+  // LEVEL 2 NAVIGATION CHECK
+  if (category === 'Cerveza Botella') {
+    renderSubCategories(seatIndex, category, ['Cerveza 355ml', 'Caguama']);
+    return;
+  }
+  if (category === 'Refill') {
+    renderSubCategories(seatIndex, category, ['Vaso', 'Refill']);
+    return;
+  }
+
+  // Update Title
+  title.innerHTML = `<button onclick="openMenuFor(${seatIndex}, window.CURRENT_COURSE)" class="text-sm bg-gray-700 px-2 py-1 rounded mr-2">⬅</button> ${category.toUpperCase()}`;
+
+  // Show Search
+  if (searchInput) {
+    searchInput.parentElement.classList.remove('hidden');
+    searchInput.value = ''; // Reset search
+    searchInput.setAttribute('placeholder', `🔍 Buscar en ${category}...`);
+  }
+
+  // Get Items
+  const menu = window.db.getMenu();
+  const allItems = [...(menu.alimentos || []), ...(menu.bebidas || [])];
+
+  // Logic for Virtual Categories
+  let categoryItems = [];
+
+  if (category === 'Destilados') {
+    const spirits = ['Tequila', 'Whiskey', 'Ron', 'Vodka', 'Mezcal', 'Ginebra', 'Brandy', 'Cognac'];
+    categoryItems = allItems.filter(i => spirits.includes(i.category));
+  } else if (category === 'Café') {
+    categoryItems = allItems.filter(i => i.category === 'Café' || i.category === 'Cafetería');
+  } else if (category === 'Refrescos (Lata)') {
+    categoryItems = allItems.filter(i => i.category === 'Refrescos' && !i.name.toLowerCase().includes('refill'));
+  } else if (category === 'Limonadas') {
+    const rawItems = allItems.filter(i => {
+      if (!['Limonadas', 'Naranjadas'].includes(i.category)) return false;
+      const n = i.name.toLowerCase();
+      return (n.includes('fresa') || n.includes('mango') || n.includes('frutos') || n.includes('pepino') || n.includes('menta') || n.includes('kiwi') || n.includes('maracuya'));
+    });
+
+    // DEDUPLICATE BY FLAVOR
+    const seenFlavors = new Set();
+    categoryItems = rawItems.filter(i => {
+      const n = i.name.toLowerCase();
+      let flavor = '';
+      if (n.includes('fresa')) flavor = 'fresa';
+      else if (n.includes('mango')) flavor = 'mango';
+      else if (n.includes('frutos')) flavor = 'frutos';
+      else if (n.includes('pepino')) flavor = 'pepino';
+      else if (n.includes('menta')) flavor = 'menta';
+      else if (n.includes('kiwi')) flavor = 'kiwi';
+      else if (n.includes('maracuya')) flavor = 'maracuya';
+
+      if (flavor && !seenFlavors.has(flavor)) {
+        seenFlavors.add(flavor);
+        return true;
+      }
+      return false;
+    });
+  } else {
+    categoryItems = allItems.filter(i => i.category === category);
+  }
+
+  let html = `<div class="grid grid-cols-2 gap-3 pb-4 animate-fade-in">`;
+
+  if (categoryItems.length === 0) {
+    html += `<p class="col-span-2 text-center text-gray-500 py-4">No hay productos disponibles.</p>`;
+  } else {
+    categoryItems.forEach(item => {
+      let paramName = item.name;
+      // Add Extra prefixes for specific categories
+      if (category === 'Salsas') paramName = 'Salsa Extra ' + item.name;
+      else if (category === 'Aderezos') paramName = 'Aderezo Extra ' + item.name;
+      else if (category === 'Sazonadores') paramName = 'Sazonador Extra ' + item.name;
+
+      const safeName = paramName.replace(/'/g, "\\'");
+
+      html += `
+        <button onclick="selectMenuItem('${safeName}')" 
+          class="p-4 bg-gray-800 border-2 ${item.available ? 'border-gray-600 hover:border-yellow-500 hover:bg-gray-700' : 'border-red-500 opacity-50'} rounded-lg font-semibold transition text-left relative overflow-hidden group ${!item.available ? 'cursor-not-allowed' : ''}"
+          ${!item.available ? 'disabled' : ''}>
+          <div class="relative z-10">
+            <div class="text-white font-bold leading-tight">${item.name}</div>
+            <div class="text-yellow-500 text-sm mt-1">$${item.price}</div>
+          </div>
+          ${!item.available ? '<div class="absolute inset-0 flex items-center justify-center bg-black/60 text-red-500 font-bold rotate-12 text-2xl border-2 border-red-500">AGOTADO</div>' : ''}
+        </button>
+      `;
+    });
+  }
+
+  html += `</div>`;
+  content.innerHTML = html;
+};
+
+window.closeInlineMenu = function (seatIndex) {
+  const container = document.getElementById(`inline-menu-container-${seatIndex}`);
+  if (container) container.classList.add('hidden');
+};
+
+window.filterInlineMenu = function (term, seatIndex) {
+  const content = document.getElementById(`inline-menu-content-${seatIndex}`);
+  if (!content) return;
+
+  const buttons = content.querySelectorAll('button');
+  const lowerTerm = term.toLowerCase();
+
+  buttons.forEach(btn => {
+    // Skip back button or categories if needed, but categories are usually replaced now
+    if (btn.textContent.includes('Volver') || btn.textContent.includes('➔')) return;
+
+    if (btn.textContent.toLowerCase().includes(lowerTerm)) {
+      btn.style.display = 'block';
+    } else {
+      btn.style.display = 'none';
+    }
+  });
+};
+
+window.selectMenuItem = function (itemName) {
+  try {
+    // ALWAYS USE WIZARD FOR NOTES
+    startWizardInline(itemName);
+  } catch (error) {
+
+    console.error('Error en selectMenuItem:', error);
+    alert('Error al seleccionar producto: ' + error.message);
+  }
+};
+
+// Inline Wizard Functions
+function startWizardInline(itemName) {
+  try {
+    const rules = getModifierRules(itemName);
+    WIZARD_STATE = {
+      itemName: itemName,
+      rules: rules,
+      currentStep: 0,
+      selections: []
+    };
+
+    if (rules.length === 0) {
+      renderWizardNotes(window.CURRENT_SEAT);
+    } else {
+      renderWizardInline();
+    }
+  } catch (e) {
+    console.error('Error starting wizard:', e);
+    alert('Error iniciando wizard: ' + e.message);
+  }
+}
+
+
+window.renderSubCategories = function (seatIndex, parentCat, options) {
+  const content = document.getElementById(`inline-menu-content-${seatIndex}`);
+  const title = document.getElementById(`inline-menu-title-${seatIndex}`);
+
+  // Title update with Back button to Categories
+  title.innerHTML = `<button onclick="window.renderInlineCategories(${seatIndex}, window.CURRENT_COURSE === 'platillo' ? 'alimentos' : 'bebidas')" class="text-sm bg-gray-700 px-2 py-1 rounded mr-2">⬅</button> ${parentCat.toUpperCase()}`;
+
+  let html = `<div class="grid grid-cols-2 gap-3 pb-4 animate-fade-in">`;
+  options.forEach(opt => {
+    // Clean display name
+    const displayName = opt.replace(' (1.18L)', '');
+    html += `
+                  <button onclick="selectInlineSubCategory('${parentCat}', '${opt}', ${seatIndex})"
+                    class="p-6 bg-gray-800 border-2 border-gray-600 rounded-lg hover:border-yellow-500 hover:bg-gray-700 transition flex flex-col items-center justify-center text-center">
+                    <span class="text-xl font-bold text-white uppercase">${displayName}</span>
+                  </button>
+                  `;
+  });
+  html += `</div>`;
+  content.innerHTML = html;
+};
+
+window.selectInlineSubCategory = function (parentCat, subCat, seatIndex) {
+  const content = document.getElementById(`inline-menu-content-${seatIndex}`);
+  const menu = window.db.getMenu();
+  const allItems = [...(menu.alimentos || []), ...(menu.bebidas || [])];
+
+  let items = [];
+  let suffix = ''; // Suffix to append to item name for ticket clarity
+
+  if (parentCat === 'Cerveza Botella') {
+    if (subCat.includes('355')) { // 355ml
+      items = allItems.filter(i =>
+        (i.category === 'Cerveza Botella' || i.name.includes('Cerveza') || i.name.includes('Bohemia') || i.name.includes('XX') || i.name.includes('Tecate') || i.name.includes('Indio') || i.name.includes('Heineken') || i.name.includes('Amstel'))
+        && !i.name.includes('Caguama') && i.category !== 'Caguamas'
+      );
+      // No suffix needed if item name is standard, or maybe [355ml]? 
+      // Let's leave standard names for 355ml as they are default.
+    } else { // Caguamas
+      items = allItems.filter(i => i.name.includes('Caguama') || i.category === 'Caguamas');
+      // Force suffix to ensure size question is skipped
+      suffix = ' [Caguama]';
+    }
+  }
+
+  if (parentCat === 'Refill') {
+    suffix = ` [${subCat}]`; // e.g. "Coca-Cola [Vaso]"
+    items = allItems.filter(i => {
+      // 1. Basic Sodas
+      if (i.category === 'Refrescos' && (i.name.includes('Coca') || i.name.includes('Sprite') || i.name.includes('Fanta') || i.name.toLowerCase().includes('refill'))) return true;
+
+      // 2. Limonadas/Naranjadas (NO FLAVORS)
+      if (['Limonadas', 'Naranjadas'].includes(i.category)) {
+        const n = i.name.toLowerCase();
+        if (n.includes('fresa') || n.includes('mango') || n.includes('frutos') || n.includes('pepino') || n.includes('menta') || n.includes('kiwi')) return false;
+        return true;
+      }
+      return false;
+    });
+  }
+
+  // Render Items
+  let html = `<div class="grid grid-cols-2 gap-3 pb-4 animate-fade-in">`;
+  if (items.length === 0) {
+    html += `<p class="col-span-2 text-center text-gray-500">No hay productos disponibles.</p>`;
+  } else {
+    items.forEach(item => {
+      // Use suffix in onclick
+      const finalName = item.name + suffix;
+      html += `
+            <button onclick="selectMenuItem('${finalName}')" 
+              class="p-4 bg-gray-800 border-2 ${item.available ? 'border-gray-600 hover:border-yellow-500 hover:bg-gray-700' : 'border-red-500 opacity-50'} rounded-lg font-semibold transition text-left relative overflow-hidden group">
+              <div class="text-white font-bold">${item.name}</div>
+              <div class="text-yellow-400 text-sm">$${item.price}</div>
+            </button>`;
+    });
+  }
+  html += `</div>`;
+  content.innerHTML = html;
+};
+
+function renderWizardInline() {
+  const seatIndex = window.CURRENT_SEAT;
+  const content = document.getElementById(`inline-menu-content-${seatIndex}`);
+  const title = document.getElementById(`inline-menu-title-${seatIndex}`);
+
+  if (!content) return;
+
+  const rule = WIZARD_STATE.rules[WIZARD_STATE.currentStep];
+
+  title.innerText = `🛠️ ${WIZARD_STATE.itemName} - Paso ${WIZARD_STATE.currentStep + 1}/${WIZARD_STATE.rules.length}`;
+
+  let html = `
+                <div class="p-4">
+                  <h4 class="text-yellow-400 font-bold text-lg mb-4">${rule.title}</h4>
+                  <div class="grid grid-cols-2 gap-3 mb-6">
+                    ${rule.options.map(opt => `
+          <button onclick="handleWizardOptionClick(this, '${opt.replace(/'/g, "\\'")}')" class="wizard-opt-btn p-4 bg-gray-800 border-2 border-gray-600 rounded-lg text-left font-bold hover:border-yellow-500 transition">
+            ${opt}
+          </button>
+        `).join('')}
+                  </div>
+                  <button onclick="nextWizardStepInline()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-lg shadow-lg">
+                    SIGUIENTE ➡️
+                  </button>
+                </div>
+                `;
+
+  content.innerHTML = html;
+}
+
+window.handleWizardOptionClick = function (btn, value) {
+  console.log('Wizard Option Clicked:', value);
+  const rule = WIZARD_STATE.rules[WIZARD_STATE.currentStep];
+
+  if (rule.type === 'single') {
+    btn.parentElement.querySelectorAll('.wizard-opt-btn').forEach(b => {
+      b.classList.remove('bg-yellow-600', 'text-black', 'selected');
+      b.classList.add('bg-gray-800');
+    });
+    btn.classList.remove('bg-gray-800');
+    btn.classList.add('bg-yellow-600', 'text-black', 'selected');
+
+    // Auto-advance after selection
+    setTimeout(() => {
+      window.nextWizardStepInline();
+    }, 300);
+  } else {
+    if (btn.classList.contains('selected')) {
+      btn.classList.remove('bg-yellow-600', 'text-black', 'selected');
+      btn.classList.add('bg-gray-800');
+    } else {
+      const currentSelected = btn.parentElement.querySelectorAll('.selected').length;
+      if (rule.max && currentSelected >= rule.max) {
+        alert(`Máximo ${rule.max} opciones`);
+        return;
+      }
+      btn.classList.remove('bg-gray-800');
+      btn.classList.add('bg-yellow-600', 'text-black', 'selected');
+
+      // Auto-advance if max reached
+      if (rule.max && (currentSelected + 1) >= rule.max) {
+        setTimeout(() => {
+          window.nextWizardStepInline();
+        }, 400);
+      }
+    }
+  }
+};
+
+window.nextWizardStepInline = function () {
+  const seatIndex = window.CURRENT_SEAT;
+  const content = document.getElementById(`inline-menu-content-${seatIndex}`);
+  const selectedBtns = content.querySelectorAll('.selected');
+  const values = Array.from(selectedBtns).map(b => b.innerText);
+
+  const rule = WIZARD_STATE.rules[WIZARD_STATE.currentStep];
+  if (values.length === 0 && !(rule.title || '').toLowerCase().includes('extra')) {
+    if (!confirm('¿No seleccionar nada?')) return;
+  }
+
+  WIZARD_STATE.selections.push(values.join(', '));
+  WIZARD_STATE.currentStep++;
+
+  if (WIZARD_STATE.currentStep < WIZARD_STATE.rules.length) {
+    renderWizardInline();
+  } else {
+    // Show Notes Step instead of auto adding
+    renderWizardNotes(seatIndex);
+  }
+};
+
+window.renderWizardNotes = function (seatIndex) {
+  const content = document.getElementById(`inline-menu-content-${seatIndex}`);
+  const title = document.getElementById(`inline-menu-title-${seatIndex}`);
+
+  title.innerText = `📝 Notas`;
+
+  content.innerHTML = `
+                <div class="p-4 animate-fade-in">
+                  <h4 class="text-yellow-400 font-bold text-lg mb-4">¿Alguna indicación especial?</h4>
+                  <textarea id="wizard-notes-input" class="w-full h-24 p-3 rounded-lg bg-gray-700 border-2 border-gray-600 text-white mb-4 focus:border-yellow-500 outline-none" placeholder="Ej: Sin hielo, Salsa aparte, Bien cocido..."></textarea>
+
+                  <button onclick="finishWizardWithNotes(${seatIndex})" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2">
+                    ✅ AGREGAR A COMANDA
+                  </button>
+                </div>
+                `;
+};
+
+window.finishWizardWithNotes = function (seatIndex) {
+  const notesInput = document.getElementById('wizard-notes-input');
+  const notes = notesInput ? notesInput.value.trim() : '';
+  let finalItem = `${WIZARD_STATE.itemName}`;
+
+  // Add selections if any
+  const specs = WIZARD_STATE.selections.filter(s => s && s.length > 0).join(' + ');
+  if (specs) finalItem += ` (${specs})`;
+
+  // Add notes
+  if (notes) finalItem += ` 📝 ${notes}`;
+
+  addItemToSeatOrder(finalItem);
+
+  // Close menu
+  if (typeof window.closeInlineMenu === 'function') {
+    window.closeInlineMenu(seatIndex);
+  }
+};
+
+window.closeMenuModal = function () { }; // Disable old modal close logic
+window.showCategoryItems = showCategoryItems; // Re-export if needed
+
+// Helper for renderMenuByType to be reusable
+window.renderMenuByType = function (type) {
+  // Use existing renderMenuByType logic if available or reimplement simply here
+  const menu = window.db.getMenu();
+  const items = type === 'bebida' ? menu.bebidas : menu.alimentos; // Simplified logic, can be improved
+
+  const byCategory = {};
+  items.forEach(item => {
+    if (!byCategory[item.category]) byCategory[item.category] = [];
+    byCategory[item.category].push(item);
+  });
+
+  let html = '';
+  Object.keys(byCategory).forEach(category => {
+    html += `
+      <div class="mb-6">
+        <h3 class="text-yellow-400 font-bold text-lg mb-3 uppercase">${category}</h3>
+        <div class="grid grid-cols-2 gap-3">
+          ${byCategory[category].map(item => `
+            <button 
+              onclick="window.selectMenuItem('${item.name}')" 
+              class="p-4 bg-gray-800 border-2 ${item.available ? 'border-gray-600 hover:border-yellow-500 hover:bg-gray-700' : 'border-red-500 opacity-50'} rounded-lg font-semibold transition ${!item.available ? 'line-through' : ''}"
+              ${!item.available ? 'disabled' : ''}>
+              ${item.name}
+              ${!item.available ? '<div class="text-xs text-red-500 mt-1">86</div>' : ''}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  });
+  return html;
+}
+
+
+
+
+// === GAME TRACKING SYSTEM ===
+window.SELECTED_GAME_DATA = null;
+
+function handleReasonChange(selectElement, customerId, customerFavoriteTeam) {
+  const reason = selectElement.value;
+  const gameFlow = document.getElementById('game-selection-flow');
+
+  if (reason === 'Partido') {
+    gameFlow.classList.remove('hidden');
+    loadTodaysGames(customerId, customerFavoriteTeam);
+  } else {
+    gameFlow.classList.add('hidden');
+    // Reset hidden fields
+    document.getElementById('w-selected-game').value = '';
+    document.getElementById('w-watched-team').value = '';
+    document.getElementById('w-league').value = '';
+  }
+}
+
+function loadTodaysGames(customerId, customerFavoriteTeam) {
+  const gamesContainer = document.getElementById('games-container');
+  const dailyInfo = window.db.getDailyInfo();
+  const allGames = dailyInfo.games || [];
+
+  // FILTER FOR TODAY (YYYY-MM-DD)
+  const today = new Date().toLocaleDateString('en-CA');
+  const games = allGames.filter(g => g.date === today);
+
+  if (games.length === 0) {
+    gamesContainer.innerHTML = `
+      <div class="text-center text-gray-400 py-4">
+        <p class="mb-2">📭 No hay partidos registrados para hoy</p>
+        <p class="text-xs">Use el botón de abajo para solicitar registro al gerente</p>
+      </div>
+    `;
+    return;
+  }
+
+  // FILTER & SORT GAMES
+  // 1. Filter for Favorite Team (if provided) logic is handled during render, but let's sort first.
+
+  games.sort((a, b) => {
+    // 1. Time (HH:MM)
+    const timeA = a.time || '23:59';
+    const timeB = b.time || '23:59';
+    if (timeA !== timeB) return timeA.localeCompare(timeB);
+    // 2. League
+    return (a.league || '').localeCompare(b.league || '');
+  });
+
+  let html = '';
+  let lastTime = '';
+
+  games.forEach((game, index) => {
+    const isFavoriteTeamPlaying = customerFavoriteTeam &&
+      (game.homeTeam.toLowerCase().includes(customerFavoriteTeam.toLowerCase()) ||
+        game.awayTeam.toLowerCase().includes(customerFavoriteTeam.toLowerCase()));
+
+    // Time Header
+    if (game.time !== lastTime) {
+      html += `<div class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-4 mb-2 pl-1 border-b border-gray-700 pb-1">⏰ ${game.time}</div>`;
+      lastTime = game.time;
+    }
+
+    html += `
+                <button onclick="handleGameSelection(${index}, '${customerId}', '${customerFavoriteTeam}')"
+                  class="w-full p-3 bg-gray-800 border-2 ${isFavoriteTeamPlaying ? 'border-yellow-500 ring-2 ring-yellow-500/50' : 'border-gray-600'} hover:border-blue-400 rounded-lg text-left transition group mb-2">
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                      <div class="font-bold text-white group-hover:text-blue-300 transition text-sm">
+                        <span class="text-blue-400 font-normal text-xs">[${game.league}]</span> ${game.awayTeam} vs ${game.homeTeam}
+                      </div>
+                    </div>
+                    ${isFavoriteTeamPlaying ? '<span class="text-xl">⭐</span>' : ''}
+                  </div>
+                </button>
+                `;
+  });
+
+  gamesContainer.innerHTML = html;
+}
+
+function handleGameSelection(gameIndex, customerId, customerFavoriteTeam) {
+  const dailyInfo = window.db.getDailyInfo();
+  const game = dailyInfo.games[gameIndex];
+
+  if (!game) return;
+
+  // Store selected game
+  window.SELECTED_GAME_DATA = game;
+  document.getElementById('w-selected-game').value = `${game.awayTeam} @ ${game.homeTeam}`;
+  document.getElementById('w-league').value = game.league;
+
+  // Show game in confirmation
+  document.getElementById('selected-game-display').textContent = `${game.awayTeam} @ ${game.homeTeam}`;
+
+  // Check if customer's favorite team is playing
+  const isFavoriteTeamPlaying = customerFavoriteTeam &&
+    (game.homeTeam.toLowerCase().includes(customerFavoriteTeam.toLowerCase()) ||
+      game.awayTeam.toLowerCase().includes(customerFavoriteTeam.toLowerCase()));
+
+  // Hide game list, show favorite team check
+  document.getElementById('game-list-section').classList.add('hidden');
+  document.getElementById('favorite-team-check').classList.remove('hidden');
+
+  // If favorite team is playing, pre-highlight it
+  if (isFavoriteTeamPlaying) {
+    showToast(`⭐ ¡Su equipo favorito (${customerFavoriteTeam}) está jugando!`, 'success');
+  }
+}
+
+function handleFavoriteTeamResponse(isWatchingFavorite, customerId) {
+  const favoriteCheck = document.getElementById('favorite-team-check');
+  const teamSelection = document.getElementById('team-selection');
+
+  if (isWatchingFavorite) {
+    // Show team selection buttons
+    const game = window.SELECTED_GAME_DATA;
+    const teamButtons = document.getElementById('team-buttons-container');
+
+    teamButtons.innerHTML = `
+                <button onclick="selectWatchedTeam('${game.homeTeam}', '${customerId}')"
+                  class="p-4 bg-gray-800 border-2 border-gray-600 hover:border-green-400 rounded-lg font-bold transition">
+                  🏠 ${game.homeTeam}
+                </button>
+                <button onclick="selectWatchedTeam('${game.awayTeam}', '${customerId}')"
+                  class="p-4 bg-gray-800 border-2 border-gray-600 hover:border-green-400 rounded-lg font-bold transition">
+                  ✈️ ${game.awayTeam}
+                </button>
+                `;
+
+    favoriteCheck.classList.add('hidden');
+    teamSelection.classList.remove('hidden');
+  } else {
+    // Just watching the game, not their favorite team
+    document.getElementById('w-watched-team').value = '';
+    favoriteCheck.classList.add('hidden');
+    showToast('✅ Partido registrado', 'success');
+  }
+}
+
+function selectWatchedTeam(teamName, customerId) {
+  document.getElementById('w-watched-team').value = teamName;
+  document.getElementById('team-selection').classList.add('hidden');
+
+  // Update customer's followed teams
+  const customer = window.db.getCustomerById(customerId);
+  if (customer) {
+    if (!customer.followedTeams) customer.followedTeams = [];
+    if (!customer.followedTeams.includes(teamName)) {
+      customer.followedTeams.push(teamName);
+      window.db.updateCustomer(customerId, { followedTeams: customer.followedTeams });
+    }
+  }
+
+  showToast(`⭐ Registrado: Vino a ver a ${teamName}`, 'success');
+}
+
+function requestManagerGameRegistration(visitId, customerId) {
+  const manualGame = prompt('📝 Describe el partido que no está en la lista:\n\nEjemplo: Cowboys vs Eagles (NFL)');
+
+  if (!manualGame || !manualGame.trim()) return;
+
+  // Create a pending game registration request
+  const request = {
+    id: 'req_' + Date.now(),
+    visitId: visitId,
+    customerId: customerId,
+    requestedGame: manualGame.trim(),
+    requestedBy: window.CURRENT_USER?.name || 'Mesero',
+    timestamp: new Date().toISOString(),
+    status: 'pending'
+  };
+
+  // Store in pending requests (you can add this to your Store class)
+  let pendingRequests = JSON.parse(localStorage.getItem('pendingGameRequests') || '[]');
+  pendingRequests.push(request);
+  localStorage.setItem('pendingGameRequests', JSON.stringify(pendingRequests));
+
+  showToast('📨 Solicitud enviada al gerente. Puedes continuar con la orden.', 'success');
+
+  // Temporarily store the manual game info
+  document.getElementById('w-selected-game').value = manualGame.trim();
+  document.getElementById('w-league').value = 'Pendiente';
+  document.getElementById('game-list-section').classList.add('hidden');
+}
+
+function toggleSportField(select) {
+  const sportDiv = document.getElementById('sport-options');
+  if (!sportDiv) return; // Safety check
+
+  if (select.value === 'Evento Deportivo') {
+    sportDiv.classList.remove('hidden');
+  } else {
+    sportDiv.classList.add('hidden');
+  }
+}
+
+// === BÚSQUEDA DE PLATILLOS CON AUTOCOMPLETADO ===
+// --- LEGACY SEARCH CODE REMOVED ---
+
+function saveConsumption(visitId) {
+  const amount = document.getElementById('w-ticket').value;
+  const folio = document.getElementById('w-folio').value;
+
+  if (!amount) {
+    alert('⚠️ Ingresa el total del ticket para cerrar la mesa');
+    return;
+  }
+
+  if (!folio) {
+    if (!confirm('¿Cerrar sin número de folio/cuenta?\n(Recomendado ingresarlo para el reporte)')) {
+      return;
+    }
+  }
+
+  if (!confirm(`¿Cerrar mesa y liberar?\n\nFolio: ${folio || 'Sin folio'}\nTotal: $${amount}`)) {
+    return;
+  }
+
+  try {
+    // Save all remaining data before closing
+    const reason = document.getElementById('w-reason').value;
+    const team = document.getElementById('w-team').value;
+    const league = document.getElementById('w-league').value;
+
+    // LOGIC UPDATE: Get Food/Drink from HOST (Seat 0) primarily
+    let entry = '', food = '', drink = '';
+
+    if (window.SEAT_ORDERS && window.SEAT_ORDERS[0]) {
+      const host = window.SEAT_ORDERS[0];
+      const entryArr = Array.isArray(host.entrada) ? host.entrada : (host.entrada ? [host.entrada] : []);
+      const platilloArr = Array.isArray(host.platillo) ? host.platillo : (host.platillo ? [host.platillo] : []);
+      const drinkArr = Array.isArray(host.bebida) ? host.bebida : (host.bebida ? [host.bebida] : []);
+
+      entry = entryArr.join(', ');
+      food = platilloArr.join(', ');
+      drink = drinkArr.join(', ');
+    } else {
+      // Fallback to hidden inputs
+      entry = document.getElementById('w-entry').value;
+      food = document.getElementById('w-food').value;
+      drink = document.getElementById('w-drink').value;
+    }
+
+    const comandero = document.getElementById('w-comandero').value;
+
+    // Update with all final data
+    window.db.updateVisitDetails(visitId, {
+      reason,
+      team,
+      league,
+      entry,
+      food,
+      drink,
+      comandero,
+      folio,
+      totalAmount: amount
+    });
+
+    // Close the visit
+    window.db.closeVisit(visitId, amount);
+
+    alert(`✅ MESA CERRADA EXITOSAMENTE\n\nFolio: ${folio || 'N/A'}\nTotal: $${amount}\n\nDatos de visita guardados en la BD.`);
+    navigateTo('waiter-dashboard');
+  } catch (error) {
+    console.error('Error cerrando mesa:', error);
+    alert('Error al cerrar mesa. Revisa consola (F12).');
+  }
+}
+
+function markProspect(visitId) {
+  if (confirm('¿Marcar este cliente como PROSPECTO?\n\n(Se guardará para seguimiento del gerente)')) {
+    window.db.markProspect(visitId);
+    alert("⭐ Cliente marcado como PROSPECTO.\n\nPuedes continuar atendiendo normalmente.");
+  }
+}
+
+// === DAILY INFO MODAL FOR WAITERS ===
+function openDailyInfoModal() {
+  const dailyInfo = window.db.getDailyInfo();
+  const activePromos = window.db.getActivePromos();
+  const activeDynamic = window.db.getActiveDynamic();
+
+  // Create modal
+  const modal = document.createElement('div');
+  modal.id = 'daily-info-modal';
+  modal.className = 'fixed inset-0 bg-black/90 z-50 overflow-y-auto p-4';
+  modal.onclick = (e) => { if (e.target === modal) closeDailyInfoModal(); };
+
+  modal.innerHTML = `
+                <div class="max-w-4xl mx-auto mt-8 mb-20">
+                  <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-black text-yellow-400">📢 Información del Día</h2>
+                    <button onclick="closeDailyInfoModal()" class="text-white bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-bold">
+                      ✕ Cerrar
+                    </button>
+                  </div>
+
+                  <!--TABS -->
+                  <div class="flex gap-2 mb-6 border-b-2 border-gray-700 overflow-x-auto">
+                    <button onclick="switchDailyTab('games')" id="dailytab-games" class="daily-tab active px-4 py-3 font-bold whitespace-nowrap">
+                      🏈 Partidos (${(dailyInfo.games || []).length})
+                    </button>
+                    <button onclick="switchDailyTab('promos')" id="dailytab-promos" class="daily-tab px-4 py-3 font-bold whitespace-nowrap">
+                      🎁 Promociones (${activePromos.length})
+                    </button>
+                    <button onclick="switchDailyTab('dynamics')" id="dailytab-dynamics" class="daily-tab px-4 py-3 font-bold whitespace-nowrap">
+                      🎯 Dinámicas
+                    </button>
+                    <button onclick="switchDailyTab('products86')" id="dailytab-products86" class="daily-tab px-4 py-3 font-bold whitespace-nowrap">
+                      ⚠️ Productos (${(dailyInfo.products?.outOfStock86 || []).length})
+                    </button>
+                  </div>
+
+                  <!--TAB CONTENT: GAMES-- >
+                  <div id="dailycontent-games" class="daily-tab-content active">
+                    <div class="card bg-blue-900/20 border-2 border-blue-500">
+                      <h3 class="text-xl font-bold mb-4 text-blue-300">🏈 Partidos de Hoy</h3>
+                      ${(dailyInfo.games || []).length === 0 ? '<p class="text-gray-400 italic">Sin partidos programados para hoy.</p>' : `
+            <div class="space-y-3">
+              ${(dailyInfo.games || []).map(game => `
+                <div class="bg-black/50 p-4 rounded-lg border border-blue-400">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <div class="text-sm text-blue-300 font-bold">${game.sport || ''} - ${game.league}</div>
+                      <div class="text-xl font-bold text-white mt-1">${game.teams}</div>
+                    </div>
+                    <div class="text-right">
+                      <div class="text-2xl font-black text-yellow-400">${game.time}</div>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+                    </div>
+                  </div>
+
+                  <!--TAB CONTENT: PROMOS-- >
+                  <div id="dailycontent-promos" class="daily-tab-content hidden">
+                    <div class="card bg-green-900/20 border-2 border-green-500">
+                      <h3 class="text-xl font-bold mb-4 text-green-300">🎁 Promociones Activas</h3>
+                      ${activePromos.length === 0 ? '<p class="text-gray-400 italic">Sin promociones activas.</p>' : `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${activePromos.map(promo => `
+                <div class="bg-black/50 p-4 rounded-lg border border-green-400 hover:bg-black/70 transition">
+                  <div class="text-xl font-bold text-yellow-400 mb-2">${promo.title}</div>
+                  <div class="text-gray-300">${promo.description}</div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+                    </div>
+                  </div>
+
+                  <!--TAB CONTENT: DYNAMICS-- >
+                  <div id="dailycontent-dynamics" class="daily-tab-content hidden">
+                    <div class="card bg-purple-900/20 border-2 border-purple-500">
+                      <h3 class="text-xl font-bold mb-4 text-purple-300">🎯 Dinámica Activa</h3>
+                      ${!activeDynamic ? '<p class="text-gray-400 italic">Sin dinámicas activas hoy.</p>' : `
+            <div class="bg-black/50 p-4 rounded-lg border border-purple-400 mb-6">
+              <div class="text-2xl font-black text-yellow-400 mb-2">${activeDynamic.title}</div>
+              <div class="text-lg text-gray-300 mb-3">${activeDynamic.description}</div>
+            </div>
+            
+            <h4 class="text-lg font-bold mb-3 text-purple-300">🏆 Tabla de Posiciones</h4>
+            ${(activeDynamic.scores || []).length === 0 ? '<p class="text-gray-400 italic text-sm">Aún no hay puntuaciones.</p>' : `
+              <div class="space-y-2">
+                ${activeDynamic.scores.map((entry, idx) => {
+    const medals = ['🥇', '🥈', '🥉'];
+    const medal = medals[idx] || (idx + 1) + '.';
+    const bgColors = ['bg-yellow-600/30', 'bg-gray-500/30', 'bg-orange-600/30'];
+    const bgColor = bgColors[idx] || 'bg-gray-800/30';
+    return `
+                    <div class="${bgColor} p-3 rounded-lg border ${idx === 0 ? 'border-yellow-400' : 'border-gray-600'} flex justify-between items-center">
+                      <div class="flex items-center gap-3">
+                        <span class="text-2xl">${medal}</span>
+                        <div class="font-bold text-lg">${entry.waiterName}</div>
+                      </div>
+                      <div class="text-3xl font-black text-yellow-400">${entry.score}</div>
+                    </div>
+                  `;
+  }).join('')}
+              </div>
+            `}
+          `}
+                    </div>
+                  </div>
+
+                  <!--TAB CONTENT: PRODUCTS86-- >
+                  <div id="dailycontent-products86" class="daily-tab-content hidden">
+                    <div class="card bg-red-900/20 border-2 border-red-500">
+                      <h3 class="text-xl font-bold mb-4 text-red-300">⚠️ Productos Agotados (86)</h3>
+                      <p class="text-sm text-gray-400 mb-4">NO ofrezcas estos productos a los clientes. Sin stock hoy.</p>
+                      ${(dailyInfo.products?.outOfStock86 || []).length === 0 ? '<p class="text-green-400 font-bold">¡Todo disponible hoy! 🎉</p>' : `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              ${(dailyInfo.products?.outOfStock86 || []).map(product => `
+                <div class="bg-black/50 p-3 rounded-lg border border-red-400 flex items-center gap-3">
