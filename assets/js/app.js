@@ -3959,7 +3959,11 @@ function handleReasonChange(selectElement, customerId, customerFavoriteTeam) {
 function loadTodaysGames(customerId, customerFavoriteTeam) {
   const gamesContainer = document.getElementById('games-container');
   const dailyInfo = window.db.getDailyInfo();
-  const games = dailyInfo.games || [];
+  const allGames = dailyInfo.games || [];
+
+  // FILTER FOR TODAY (YYYY-MM-DD)
+  const today = new Date().toLocaleDateString('en-CA');
+  const games = allGames.filter(g => g.date === today);
 
   if (games.length === 0) {
     gamesContainer.innerHTML = `
