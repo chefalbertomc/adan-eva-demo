@@ -7442,3 +7442,37 @@ function switchDailyTab(tabName) {
   document.getElementById(`dailycontent-${tabName}`).classList.remove('hidden');
   document.getElementById(`dailytab-${tabName}`).classList.add('active');
 }
+
+// --- RESTORED HOSTESS FUNCTIONS ---
+
+function switchHostessTab(tabName) {
+  // Hide all tab content
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+
+  // Remove active from all bottom nav items
+  document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+
+  // Show selected tab content
+  const contentEl = document.getElementById(`content-${tabName}`);
+  if (contentEl) contentEl.classList.remove('hidden');
+
+  // Activate bottom nav item
+  const tabEl = document.getElementById(`tab-${tabName}`);
+  if (tabEl) tabEl.classList.add('active');
+}
+window.switchHostessTab = switchHostessTab;
+
+function filterTablesByWaiter() {
+  const filterValue = document.getElementById('filter-waiter').value;
+  const tableCards = document.querySelectorAll('.table-card');
+
+  tableCards.forEach(card => {
+    const waiterName = card.getAttribute('data-waiter');
+    if (filterValue === 'all' || waiterName === filterValue) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+window.filterTablesByWaiter = filterTablesByWaiter;
