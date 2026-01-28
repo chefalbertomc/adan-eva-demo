@@ -4568,7 +4568,8 @@ window.renderHostessDashboard = function () {
 
   // FETCH DATA
   const waitlist = window.db.getWaitlist();
-  const activeVisits = window.db.getVisits().filter(v => v.status === 'seated');
+  // Fix: Show both 'seated' and 'active' visits
+  const activeVisits = window.db.getVisits().filter(v => ['seated', 'active'].includes(v.status));
   const reservations = window.db.getReservations ? window.db.getReservations() : [];
 
   // Calculate stats
@@ -7424,20 +7425,20 @@ function openDailyInfoModal() {
                 </div >
                 `;
 
-                document.body.appendChild(modal);
+  document.body.appendChild(modal);
 }
 
-                function closeDailyInfoModal() {
+function closeDailyInfoModal() {
   const modal = document.getElementById('daily-info-modal');
-                if (modal) modal.remove();
+  if (modal) modal.remove();
 }
 
-                function switchDailyTab(tabName) {
-                  // Hide all content
-                  document.querySelectorAll('.daily-tab-content').forEach(el => el.classList.add('hidden'));
+function switchDailyTab(tabName) {
+  // Hide all content
+  document.querySelectorAll('.daily-tab-content').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('.daily-tab').forEach(el => el.classList.remove('active'));
 
-                // Show selected
-                document.getElementById(`dailycontent-${tabName}`).classList.remove('hidden');
-                document.getElementById(`dailytab-${tabName}`).classList.add('active');
+  // Show selected
+  document.getElementById(`dailycontent-${tabName}`).classList.remove('hidden');
+  document.getElementById(`dailytab-${tabName}`).classList.add('active');
 }

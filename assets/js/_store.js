@@ -335,7 +335,7 @@ const GENERATE_DATA = () => {
     // NO HISTORICAL VISITS FOR NOW TO AVOID CONFUSION, OR MINIMAL STATIC ONES
     const visits = [];
 
-    console.log('✅ Generated 20 STATIC customers for consistent testing.');
+    // console.log('✅ Generated 20 STATIC customers for consistent testing.');
     return { customers, visits };
 };
 
@@ -727,14 +727,14 @@ class Store {
                 const localIdx = this.data.visits.findIndex(v => v.id === visitData.id);
 
                 if (change.type === "added") {
-                    console.log(`🔥 SYNC ADD: Visit ${visitData.id} | Table ${visitData.table} | Branch ${visitData.branchId} | Status ${visitData.status}`);
+                    // console.log(`🔥 SYNC ADD: Visit ${visitData.id} | Table ${visitData.table} | Branch ${visitData.branchId} | Status ${visitData.status}`);
                     if (localIdx === -1) {
                         this.data.visits.push(visitData);
                         changes = true;
                     }
                 }
                 if (change.type === "modified") {
-                    console.log(`🔥 SYNC MOD: Visit ${visitData.id} | Status ${visitData.status}`);
+                    // console.log(`🔥 SYNC MOD: Visit ${visitData.id} | Status ${visitData.status}`);
                     if (localIdx !== -1) {
                         this.data.visits[localIdx] = visitData; // Update local
                         changes = true;
@@ -787,11 +787,11 @@ class Store {
         // 'daily' was incorrectly forcing all game dates to TODAY
         const dailyRef = doc(db, "config", "allGames");
         onSnapshot(dailyRef, (docSnap) => {
-            console.log("☁️ FIREBASE SNAPSHOT: config/allGames", docSnap.exists() ? "EXISTS" : "DOES NOT EXIST", docSnap.metadata.fromCache ? "(CACHE)" : "(SERVER)");
+            // console.log("☁️ FIREBASE SNAPSHOT: config/allGames", docSnap.exists() ? "EXISTS" : "DOES NOT EXIST", docSnap.metadata.fromCache ? "(CACHE)" : "(SERVER)");
 
             if (docSnap.exists()) {
                 const remoteDaily = docSnap.data();
-                console.log("📦 REMOTE DATA:", JSON.stringify(remoteDaily));
+                // console.log("📦 REMOTE DATA:", JSON.stringify(remoteDaily));
 
                 // 2A. REQUESTS (keep using dailyInfo for requests)
                 const localReqs = JSON.stringify(this.getDailyInfo().gameRequests || []);
@@ -817,7 +817,7 @@ class Store {
                 const localGames = JSON.stringify(this.getDailyInfo().games || []);
                 const remoteGames = JSON.stringify(remoteDaily.games || []);
 
-                console.log(`🎮 Comparing Games:\nLocal: ${this.getDailyInfo().games?.length} items\nRemote: ${remoteDaily.games?.length} items`);
+                // console.log(`🎮 Comparing Games:\nLocal: ${this.getDailyInfo().games?.length} items\nRemote: ${remoteDaily.games?.length} items`);
 
                 if (localGames !== remoteGames) {
                     console.log("☁️ UPDATE: Games detected! Overwriting local data.");
@@ -837,7 +837,7 @@ class Store {
                         window.renderHostessDashboard();
                     }
                 } else {
-                    console.log("🎮 Games are identical. No update needed.");
+                    // console.log("🎮 Games are identical. No update needed.");
                 }
 
                 // DISPATCH GLOBAL UPDATE EVENT
@@ -867,7 +867,7 @@ class Store {
                 }
             });
             if (changed) {
-                console.log("☁️ Clientes sincronizados");
+                // console.log("☁️ Clientes sincronizados");
                 this._save();
             }
         });
@@ -2272,14 +2272,7 @@ class Store {
     } deleteGame(index) {
         const info = this.getDailyInfo();
         info.games.splice(index, 1);
-        this._save();
-
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, setDoc } = window.FB;
-            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
-                .catch(e => console.error('🔥 Sync delete game error', e));
-        }
+        this.updateDailyGames(info.games);
     }
 
     // === PROMOS ===
@@ -2591,44 +2584,9 @@ class Store {
 
 
     // === GAME REQUESTS ===
-    addGameRequest(gameName) {
-        const info = this.getDailyInfo();
-        if (!info.gameRequests) info.gameRequests = [];
 
-        // Avoid duplicates
-        if (info.gameRequests.find(r => r.name === gameName)) return false;
 
-        const req = {
-            id: 'req' + Date.now(),
-            name: gameName,
-            createdAt: new Date().toISOString()
-        };
-        info.gameRequests.push(req);
-        this._save();
 
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, setDoc } = window.FB;
-            setDoc(doc(window.dbFirestore, 'config', 'daily'), { gameRequests: info.gameRequests }, { merge: true })
-                .catch(e => console.error('🔥 Sync remote request error', e));
-        }
-        return req;
-    }
-
-    removeGameRequest(reqId) {
-        const info = this.getDailyInfo();
-        if (info.gameRequests) {
-            info.gameRequests = info.gameRequests.filter(r => r.id !== reqId);
-            this._save();
-
-            // SYNC FIREBASE
-            if (window.dbFirestore && window.FB) {
-                const { doc, setDoc } = window.FB;
-                setDoc(doc(window.dbFirestore, 'config', 'daily'), { gameRequests: info.gameRequests }, { merge: true })
-                    .catch(e => console.error('🔥 Sync remote request error', e));
-            }
-        }
-    }
 }
 
 
