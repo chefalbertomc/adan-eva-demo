@@ -1347,6 +1347,13 @@ class Store {
         });
     }
 
+    getVisits() {
+        return this.data.visits.map(v => ({
+            ...v,
+            customer: this.data.customers.find(c => c.id === v.customerId)
+        }));
+    }
+
     getVisitsByDate(dateStr) {
         // dateStr YYYY-MM-DD
         return this.data.visits.filter(v => {

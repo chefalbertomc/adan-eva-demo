@@ -6258,17 +6258,7 @@ function closeMenuModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-// ==========================================
-// SISTEMA DE MODIFICADORES (WIZARD)
-// ==========================================
-
-let WIZARD_STATE = {
-  itemName: '',
-  rules: [],
-  currentStep: 0,
-  selections: [],
-  btnElement: null
-};
+// WIZARD_STATE already declared earlier in the file
 
 function getModifierRules(itemName) {
   const menu = window.db.getMenu();
@@ -6493,18 +6483,7 @@ window.switchSeat = switchSeat;
 
 // === INLINE MENU SYSTEM (RESTORATION COMPLETE) ===
 
-const FOOD_CATEGORIES_ORDER = [
-  'Para Compartir', 'Samplers', 'Alitas', 'Boneless', 'Platillos',
-  'Burgers', 'Sandwiches', 'Ensaladas', 'Kids', 'Postres',
-  'Salsas', 'Aderezos', 'Sazonadores'
-];
-
-const DRINK_CATEGORIES_ORDER = [
-  'Cerveza Barril', 'Cerveza Botella',
-  'Tequila', 'Whiskey', 'Ron', 'Vodka', 'Mezcal', 'Ginebra', 'Brandy',
-  'Digestivos', 'Coctelería',
-  'Refrescos', 'Refrescos Refill', 'Refrescos de Lata', 'Limonadas', 'Cafetería', 'Café'
-];
+// FOOD_CATEGORIES_ORDER and DRINK_CATEGORIES_ORDER already declared earlier
 
 window.openMenuFor = function (seatIndex, type) {
   // 1. Close others
