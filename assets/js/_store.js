@@ -2169,7 +2169,41 @@ class Store {
         }
 
         // AUTO-RESOLVE REQUESTS (Moved after object creation)
+        const info = this.getDailyInfo();
+        const pendingRequests = info.gameRequests || [];
 
+        // Match logic
+        const gameFullName = newGame.match || `${newGame.homeTeam} vs ${newGame.awayTeam}`;
+        const normalizedGameName = gameFullName.trim().toLowerCase();
+
+        const matchedReqs = pendingRequests.filter(r => {
+            const reqName = (r.gameName || r.name || '').trim().toLowerCase();
+            // 1. Direct Match
+            if (reqName === normalizedGameName) return true;
+            // 2. Partial Match
+            if (normalizedGameName.includes(reqName) && reqName.length > 4) return true;
+            return false;
+        });
+
+        if (matchedReqs.length > 0) {
+            console.log(`✅ Auto-resolving ${matchedReqs.length} pending requests for "${gameFullName}"`);
+            info.gameRequests = pendingRequests.filter(r => !matchedReqs.includes(r));
+        } else {
+            if (!info.gameRequests) info.gameRequests = []; // Ensure array exists
+        }
+
+        if (!info.games) info.games = [];
+        info.games.push(newGame);
+        this._save();
+
+        this.updateDailyGames(info.games);
+
+        // SYNC: Also update requests in Firestore since we modified them
+        if (window.dbFirestore && window.FB && matchedReqs.length > 0) {
+            const { doc, setDoc } = window.FB;
+            const docRef = doc(window.dbFirestore, 'config', 'allGames');
+            setDoc(docRef, { gameRequests: info.gameRequests }, { merge: true })
+        }
 
         return newGame;
     }
