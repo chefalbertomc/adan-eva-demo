@@ -469,32 +469,33 @@ function renderHostessDashboard() {
           </div>
         </div>
         
-        ${activeVisits.length === 0 ? `
+        ${(() => {
+      if (activeVisits.length === 0) return `
           <div class="text-center py-12">
             <div class="text-6xl mb-4">🍽️</div>
             <p class="text-xl text-secondary">No hay mesas ocupadas</p>
             <p class="text-sm text-secondary mt-2">Las mesas aparecerán aquí cuando hagas check-in</p>
           </div>
-        ` : `
+        `; else return `
           <div id="tables-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
             ${activeVisits.map(v => {
-    const waiterName = window.db.data.users.find(u => u.id === v.waiterId)?.name || v.waiterId;
-    const waiters = window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id));
+        const waiterName = window.db.data.users.find(u => u.id === v.waiterId)?.name || v.waiterId;
+        const waiters = window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id));
 
-    // Calcular tiempo transcurrido
-    const startTime = new Date(v.date);
-    const now = new Date();
-    const diffMs = now - startTime;
-    const diffMins = Math.floor(diffMs / 60000);
-    const hours = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
-    const timeElapsed = hours > 0 ? (hours + 'h ' + mins + 'm') : (mins + ' min');
-    const timeColor = diffMins > 120 ? '#EF4444' : diffMins > 60 ? '#F59E0B' : '#22C55E'; // Rojo >2h, Amarillo >1h, Verde <1h
+        // Calcular tiempo transcurrido
+        const startTime = new Date(v.date);
+        const now = new Date();
+        const diffMs = now - startTime;
+        const diffMins = Math.floor(diffMs / 60000);
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+        const timeElapsed = hours > 0 ? (hours + 'h ' + mins + 'm') : (mins + ' min');
+        const timeColor = diffMins > 120 ? '#EF4444' : diffMins > 60 ? '#F59E0B' : '#22C55E'; // Rojo >2h, Amarillo >1h, Verde <1h
 
-    const customer = window.db.data.customers.find(c => c.id === v.customerId);
-    const customerName = customer ? `${customer.firstName} ${customer.lastName}` : 'Cliente';
+        const customer = window.db.data.customers.find(c => c.id === v.customerId);
+        const customerName = customer ? `${customer.firstName} ${customer.lastName}` : 'Cliente';
 
-    return `
+        return `
               <div class="table-card relative bg-zinc-900/90 border-2 border-green-500/30 p-6 rounded-xl shadow-2xl" data-waiter-id="${v.waiterId}" style="background: linear-gradient(145deg, #111 0%, #0a0a0a 100%);">
                 <!-- Header: Mesa y Cliente -->
                 <div class="flex justify-between items-start mb-6 border-b border-gray-800 pb-4">
@@ -590,30 +591,30 @@ function renderHostessDashboard() {
                                        class="w-full bg-black text-yellow-400 border border-yellow-600 rounded-lg p-3 text-base font-bold h-12">
                                   <option value="">-- ¿A quién apoya? --</option>
                                   ${(() => {
-        if (!v.selectedGame) return '<option value="" disabled>Selecciona un partido primero</option>';
+            if (!v.selectedGame) return '<option value="" disabled>Selecciona un partido primero</option>';
 
-        // 1. Try to find official game object
-        const game = window.db.getMatches().find(m => (m.match || (m.homeTeam + ' vs ' + m.awayTeam)) === v.selectedGame);
-        if (game && game.homeTeam && game.awayTeam) {
-          return `
+            // 1. Try to find official game object
+            const game = window.db.getMatches().find(m => (m.match || (m.homeTeam + ' vs ' + m.awayTeam)) === v.selectedGame);
+            if (game && game.homeTeam && game.awayTeam) {
+              return `
                                               <option value="${game.homeTeam}" ${customer.team === game.homeTeam ? 'selected' : ''}>${game.homeTeam}</option>
                                               <option value="${game.awayTeam}" ${customer.team === game.awayTeam ? 'selected' : ''}>${game.awayTeam}</option>
                                           `;
-        }
+            }
 
-        // 2. Fallback: Parse string "Team A vs Team B"
-        if (v.selectedGame.includes(' vs ')) {
-          const parts = v.selectedGame.split(' vs ');
-          if (parts.length === 2) {
-            return `
+            // 2. Fallback: Parse string "Team A vs Team B"
+            if (v.selectedGame.includes(' vs ')) {
+              const parts = v.selectedGame.split(' vs ');
+              if (parts.length === 2) {
+                return `
                                                   <option value="${parts[0].trim()}" ${customer.team === parts[0].trim() ? 'selected' : ''}>${parts[0].trim()}</option>
                                                   <option value="${parts[1].trim()}" ${customer.team === parts[1].trim() ? 'selected' : ''}>${parts[1].trim()}</option>
                                               `;
-          }
-        }
+              }
+            }
 
-        return '<option disabled>Equipos no identificados</option>';
-      })()}
+            return '<option disabled>Equipos no identificados</option>';
+          })()}
                                </select>
                             </div>
                          </div>
@@ -715,12 +716,14 @@ function renderHostessDashboard() {
                 </div>
             </div>
         `;
-  }).join('')}
+      }).join('')}
       </div>
-        ` }
+      `;
+    })()}
       </div>
     </div>
   `;
+  appContainer.appendChild(div);
 }
 
 function toggleCerrarMesa() {
