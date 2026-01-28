@@ -714,9 +714,6 @@ function renderHostessDashboard() {
                    </form>
                     
                     <div class="grid grid-cols-2 gap-4 mb-6">
-// ------ HOSTESS DASHBOARD (TABBED UI) ------
-window.renderHostessDashboard = function () {
-  const appContainer = document.getElementById('app');
   appContainer.innerHTML = '';
   
   // FETCH DATA
@@ -6568,4 +6565,330 @@ window.renderHostessDashboard = function () {
                   </div>
                 </div>
                 `).join('');
+}
+
+// ------ HOSTESS DASHBOARD (TABBED UI) ------
+window.renderHostessDashboard = function () {
+    const appContainer = document.getElementById('app');
+    appContainer.innerHTML = '';
+
+    // FETCH DATA
+    const waitlist = window.db.getWaitlist();
+    const activeVisits = window.db.getVisits().filter(v => v.status === 'seated');
+    const reservations = window.db.getReservations ? window.db.getReservations() : [];
+
+    // Calculate stats
+    const totalCapacity = 40;
+    const currentCount = activeVisits.reduce((sum, v) => sum + parseInt(v.pax || 0), 0);
+
+    const div = document.createElement('div');
+    div.innerHTML = `
+    <!-- Header -->
+    <header class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md">
+      <div>
+        <h1 class="text-2xl font-black text-yellow-500 italic tracking-tighter">RECEPCIÓN</h1>
+        <div class="text-[10px] text-gray-400 font-mono tracking-widest">${STATE.branch ? STATE.branch.name.toUpperCase() : 'JURIQUILLA'}</div>
+      </div>
+      <button onclick="handleLogout()" class="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded border border-gray-700">CERRAR SESIÓN</button>
+    </header>
+
+    <!-- Stat Bar -->
+    <div class="grid grid-cols-3 gap-2 p-2">
+       <div onclick="switchHostessTab('checkin')" class="bg-gray-900 border border-gray-800 p-2 rounded text-center cursor-pointer hover:bg-gray-800">
+          <div class="text-lg font-black text-white">📋</div>
+          <div class="text-[10px] text-gray-500 font-bold uppercase">Check-In</div>
+       </div>
+       <div onclick="switchHostessTab('tables')" class="bg-gray-900 border border-gray-800 p-2 rounded text-center cursor-pointer hover:bg-gray-800">
+          <div class="text-lg font-black text-yellow-500">${activeVisits.length}</div>
+          <div class="text-[10px] text-gray-500 font-bold uppercase">Mesas</div>
+       </div>
+       <div onclick="switchHostessTab('waitlist')" class="bg-gray-900 border border-gray-800 p-2 rounded text-center cursor-pointer hover:bg-gray-800">
+          <div class="text-lg font-black text-blue-500">${waitlist.length}</div>
+          <div class="text-[10px] text-gray-500 font-bold uppercase">Espera</div>
+       </div>
+    </div>
+    
+    <!-- Tab Content: Check-In (Default) -->
+    <div id="content-checkin" class="tab-content">
+       <div class="card bg-gray-900/50 border border-yellow-500/30">
+        <h2 class="text-xl font-black text-white mb-6 flex items-center gap-2">
+            📋 NUEVO CHECK-IN
+        </h2>
+
+        <!-- Step 1: Customer Info -->
+        <div class="space-y-4 mb-6">
+            <label class="text-xs text-gray-500 mb-1 block uppercase font-bold tracking-widest">Paso 1: Datos del Cliente</label>
+            
+             <!-- Search Bar (New Client Flow) -->
+             <div class="relative">
+                <input type="text" id="customer-search" 
+                       class="w-full bg-black border border-gray-700 rounded-lg p-4 text-white text-lg font-bold focus:border-yellow-500 outline-none" 
+                       placeholder="🔍 Buscar Cliente (Nombre/Tel)" onkeyup="searchCustomer(this.value)">
+                
+                <div id="search-results" class="hidden absolute top-full left-0 right-0 bg-gray-900 border border-gray-700 rounded-lg mt-1 z-50 max-h-60 overflow-y-auto shadow-2xl"></div>
+             </div>
+
+             <div class="grid grid-cols-2 gap-4">
+                <input type="text" id="h-firstname" placeholder="NOMBRE" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
+                <input type="text" id="h-lastname" placeholder="APELLIDO PATERNO" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
+             </div>
+             <input type="text" id="h-lastname2" placeholder="APELLIDO MATERNO (Opcional)" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide w-full">
+             
+             <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm font-bold uppercase">PERSONAS:</span>
+                    <div class="flex items-center gap-4">
+                        <button onclick="adjustPax(-1)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600">-</button>
+                        <span id="h-pax" class="text-2xl font-black text-white">2</span>
+                        <button onclick="adjustPax(1)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600">+</button>
+                    </div>
+                </div>
+             </div>
+        </div>
+
+        <!-- Step 2: Assign Table -->
+        <div class="space-y-4">
+            <label class="text-xs text-gray-500 mb-1 block uppercase font-bold tracking-widest">Paso 2: Asignación</label>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                     <label class="text-[10px] text-gray-500 mb-1 block uppercase">Mesa #</label>
+                     <input type="number" id="h-table" class="w-full bg-gray-900 text-white border border-gray-700 rounded p-4 text-center font-bold text-xl focus:border-green-500 outline-none" placeholder="#">
+                </div>
+                <div>
+                     <label class="text-[10px] text-gray-500 mb-1 block uppercase">Mesero</label>
+                     <select id="h-waiter" class="w-full bg-gray-900 text-white border border-gray-700 rounded p-4 font-bold text-sm h-[62px]">
+                        <option value="">Auto-Asignar</option>
+                        ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}">${w.name}</option>`).join('')}
+                     </select>
+                </div>
+            </div>
+            
+            <button onclick="processHostessCheckIn()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-5 rounded-xl uppercase tracking-widest text-lg shadow-lg transform active:scale-95 transition mt-4">
+                ✅ INGRESAR MESA
+            </button>
+            
+            <button onclick="addToWaitlist()" class="w-full bg-gray-800 border-2 border-gray-700 text-white font-bold py-3 rounded-lg uppercase tracking-widest text-sm hover:border-blue-500 transition mt-2">
+                ⏱️ Agregar a Lista de Espera
+            </button>
+        </div>
+       </div>
+    </div>
+
+    <!-- Tab Content: Tables (Active Visits) -->
+    <div id="content-tables" class="tab-content hidden">
+      <div class="card">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-white italic tracking-tighter">MESAS HABILITADAS</h2>
+            
+            <div class="text-right">
+              <div class="text-yellow-500 font-bold text-xl leading-none">${currentCount} / ${totalCapacity}</div>
+              <div class="text-[10px] text-gray-400 uppercase tracking-widest">Ocupación</div>
+            </div>
+        </div>
+        
+        <!-- Filter -->
+        <div class="mb-4">
+          <select id="filter-waiter" onchange="filterTablesByWaiter()" class="w-full bg-gray-800 border-2 border-gray-700 rounded-lg p-3 text-white font-bold">
+            <option value="all">👁️ Ver Todas</option>
+            ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}">Mesero: ${w.name}</option>`).join('')}
+          </select>
+        </div>
+
+        ${activeVisits.length === 0 ? `
+          <div class="text-center py-12 text-gray-500">
+             <div class="text-6xl mb-4">🍽️</div>
+             <p>No hay mesas activas</p>
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${activeVisits.map(v => {
+        const waiterName = window.db.data.users.find(w => w.id === v.waiterId)?.name || 'Sin Asignar';
+        const timeSeated = new Date(v.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `
+              <div class="table-card bg-gray-900 border-l-4 border-green-500 rounded-r-xl p-4 shadow-lg relative animate-fade-in" data-waiter-id="${v.waiterId}">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="text-3xl font-black text-white shadow-text">#${v.table}</span>
+                        <div class="text-xs text-gray-400 font-mono mt-1">🕒 ${timeSeated}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="bg-gray-800 px-2 py-1 rounded text-xs text-gray-300 border border-gray-700 mb-1 inline-block">
+                           👤 ${waiterName.split(' ')[0]}
+                        </div>
+                        <div class="text-xl font-bold text-white">${v.pax} <span class="text-sm font-normal text-gray-500">pax</span></div>
+                    </div>
+                </div>
+                
+                <div class="border-t border-gray-800 pt-3 mt-2">
+                    <div class="font-bold text-white text-lg truncate mb-1">${v.customerName}</div>
+                    ${v.vip ? `<div class="inline-block bg-yellow-600/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded border border-yellow-600/50 mb-2 font-bold tracking-wider">VIP ${v.vip.toUpperCase()}</div>` : ''}
+                    
+                    <button onclick="document.getElementById('edit-visit-${v.id}').classList.toggle('hidden')" class="w-full text-xs bg-gray-800 hover:bg-gray-700 text-gray-400 py-2 rounded mt-2 border border-gray-700 transition">
+                       ⚡ GESTIONAR
+                    </button>
+                    
+                    <!-- Hidden Editor -->
+                    <div id="edit-visit-${v.id}" class="hidden mt-3 space-y-2 bg-black/20 p-2 rounded border border-gray-800">
+                        <!-- Cambio Mesa -->
+                        <div class="bg-black/40 p-3 rounded-lg border border-gray-800">
+                            <div class="text-[10px] text-gray-500 uppercase font-bold mb-2">Cambiar Mesa</div>
+                            <div class="flex gap-2">
+                               <input type="number" id="new-table-${v.id}" placeholder="#" class="bg-gray-900 text-white border border-gray-700 rounded p-3 w-full text-center font-bold text-lg" min="1">
+                               <button onclick="doChangeTable('${v.id}')" class="bg-blue-600 text-white rounded px-4 font-bold hover:bg-blue-500 text-xl">✓</button>
+                            </div>
+                        </div>
+                        <!-- Cambio Mesero -->
+                         <div class="bg-black/40 p-3 rounded-lg border border-gray-800">
+                            <div class="text-[10px] text-gray-500 uppercase font-bold mb-2">Cambiar Mesero</div>
+                            <div class="flex gap-2">
+                               <select id="new-waiter-${v.id}" class="bg-gray-900 text-white border border-gray-700 rounded p-3 w-full text-sm font-bold truncate">
+                                  ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}" ${w.id === v.waiterId ? 'selected' : ''}>${w.name}</option>`).join('')}
+                               </select>
+                               <button onclick="doChangeWaiter('${v.id}')" class="bg-blue-600 text-white rounded px-4 font-bold hover:bg-blue-500 text-xl">✓</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="doReleaseTable('${v.id}')" class="w-full bg-red-900/20 hover:bg-red-900/40 border-2 border-red-900/50 text-red-500 font-black py-5 rounded-xl uppercase tracking-widest text-base transition-colors flex items-center justify-center gap-3">
+                        🔓 Finalizar Visita
+                    </button>
+                </div>
+                
+                <div id="table-status-${v.id}" class="hidden mt-2 p-3 rounded text-center text-lg font-bold animate-pulse text-yellow-400"></div>
+              </div>
+            `}).join('')}
+          </div>
+        `}
+      </div>
+    </div>
+
+    <!-- Tab Content: Waitlist - TAB SEPARADO -->
+    <div id="content-waitlist" class="tab-content hidden">
+      <div class="card">
+        <h3 class="text-xl mb-4">Cola de Espera (${waitlist.length})</h3>
+        ${waitlist.length === 0 ? `
+          <div class="text-center py-12">
+            <div class="text-6xl mb-4">⏱️</div>
+            <p class="text-xl text-secondary">No hay clientes en espera</p>
+            <p class="text-sm text-secondary mt-2">Usa "Agregar a Lista de Espera" desde Check-In</p>
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${waitlist.map((entry, idx) => `
+              <div class="bg-yellow-900/20 border-2 border-yellow-500 p-4 rounded-lg hover:bg-yellow-900/30 transition">
+                <div class="flex items-start gap-3 mb-3">
+                  <span class="bg-yellow-500 text-black w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold flex-shrink-0">
+                    ${idx + 1}
+                  </span>
+                  <div class="flex-1">
+                    <div class="font-bold text-xl mb-1">${entry.customerName}</div>
+                    <div class="text-base text-gray-300">${entry.pax} personas</div>
+                    <div class="text-sm text-gray-400">${entry.phone || 'Sin teléfono'}</div>
+                    <div class="text-xs text-gray-500 mt-1">🕐 ${new Date(entry.addedAt).toLocaleTimeString()}</div>
+                  </div>
+                </div>
+                <!-- ASIGNACIÓN INLINE -->
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                  <input type="number" id="wl-table-${entry.id}" placeholder="Mesa #" 
+                         class="p-2 text-xl bg-gray-900 rounded font-bold text-center border border-green-600" 
+                         style="min-width: 80px;" min="1">
+                  <select id="wl-waiter-${entry.id}" class="p-2 text-sm bg-gray-900 rounded font-bold border border-green-600">
+                    <option value="">Mesero</option>
+                    ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w =>
+            `<option value="${w.id}">${w.name}</option>`
+        ).join('')}
+                  </select>
+                </div>
+                <!-- BOTONES DE ACCIÓN -->
+                <div class="flex gap-2">
+                  <button onclick="doAssignFromWaitlist('${entry.id}')" 
+                          class="btn-primary flex-1 text-base py-3 font-bold">
+                    ✅ ASIGNAR
+                  </button>
+                  <button onclick="removeFromWaitlist('${entry.id}')" 
+                          class="btn-secondary text-sm px-3 py-2 bg-red-900 hover:bg-red-800 whitespace-nowrap">
+                    ❌
+                  </button>
+                </div>
+                <!-- STATUS MESSAGE -->
+                <div id="wl-status-${entry.id}" class="hidden mt-2 p-2 rounded text-center text-sm font-bold"></div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </div>
+    </div>
+
+    <!-- Tab Content: Reservations - SOLO LECTURA -->
+    <div id="content-reservations" class="tab-content hidden">
+      <div class="card">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl">Reservaciones de Hoy</h3>
+          
+          <button onclick="window.showReservationModal()" class="bg-blue-600 text-white px-3 py-1 rounded shadow-lg text-sm font-bold cursor-pointer hover:bg-blue-500 active:scale-95 transition">
+             🎟️ Reservar
+          </button>
+        </div>
+        
+        ${reservations.length === 0 ? `
+          <div class="text-center py-12">
+            <div class="text-6xl mb-4">📅</div>
+            <p class="text-xl text-secondary">Sin reservaciones para hoy</p>
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${reservations.map(r => `
+              <div class="card p-4 border-l-4 ${r.status === 'confirmed' ? 'border-green-500 bg-green-900/10' : r.status === 'cancelled' ? 'border-red-500 bg-red-900/10' : 'border-blue-500 bg-blue-900/10'}">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="text-2xl font-bold text-yellow-400">${r.time}</div>
+                  <span class="text-xs px-3 py-1 rounded font-bold ${r.status === 'confirmed' ? 'bg-green-600 text-white' :
+                r.status === 'cancelled' ? 'bg-red-600 text-white' :
+                    'bg-blue-600 text-white'
+            }">
+                    ${r.status.toUpperCase()}
+                  </span>
+                </div>
+                <div class="text-lg font-bold">${r.customerName}</div>
+                <div class="text-sm text-secondary">${r.pax} personas</div>
+                <div class="text-sm text-secondary">${r.phone || 'Sin tel'}</div>
+                ${r.notes ? `<div class="text-sm italic mt-2 p-2 bg-white/5 rounded">"${r.notes}"</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <nav class="bottom-nav">
+      <button onclick="switchHostessTab('checkin')" id="tab-checkin" class="bottom-nav-item active" style="position: relative;">
+        <span class="bottom-nav-icon">📋</span>
+        <span class="bottom-nav-label">Check-In</span>
+      </button>
+      <button onclick="switchHostessTab('tables')" id="tab-tables" class="bottom-nav-item" style="position: relative;">
+        <span class="bottom-nav-icon">🍽️</span>
+        <span class="bottom-nav-label">Mesas</span>
+        ${activeVisits.length > 0 ? `<span class="bottom-nav-badge">${activeVisits.length}</span>` : ''}
+      </button>
+      <button onclick="switchHostessTab('waitlist')" id="tab-waitlist" class="bottom-nav-item" style="position: relative;">
+        <span class="bottom-nav-icon">⏱️</span>
+        <span class="bottom-nav-label">Espera</span>
+        ${waitlist.length > 0 ? `<span class="bottom-nav-badge">${waitlist.length}</span>` : ''}
+      </button>
+      <button onclick="switchHostessTab('reservations')" id="tab-reservations" class="bottom-nav-item" style="position: relative;">
+        <span class="bottom-nav-icon">📅</span>
+        <span class="bottom-nav-label">Reservas</span>
+        ${reservations.length > 0 ? `<span class="bottom-nav-badge">${reservations.length}</span>` : ''}
+      </button>
+    </nav>
+    
+    <!-- DuckOS Footer -->
+    <div class="dashboard-footer">
+      Powered by <span style="color: #F97316;">DuckOS</span> | Bar & Restaurant Solutions
+    </div>
+  `;
+
+    // Add class for bottom nav padding
+    div.className = 'p-4 max-w-6xl mx-auto has-bottom-nav';
+    appContainer.appendChild(div);
 }
