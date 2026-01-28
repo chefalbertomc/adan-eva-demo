@@ -7402,12 +7402,7 @@ function openDailyInfoModal() {
                   <!--TAB CONTENT: PRODUCTS86-- >
                   <div id="dailycontent-products86" class="daily-tab-content hidden">
                     <div class="card bg-red-900/20 border-2 border-red-500">
-                      <h3 class="text-xl font-bold mb-4 text-red-300">⚠️ Productos Agotados (86)</h3>
-                      <p class="text-sm text-gray-400 mb-4">NO ofrezcas estos productos a los clientes. Sin stock hoy.</p>
-                      ${(dailyInfo.products?.outOfStock86 || []).length === 0 ? '<p class="text-green-400 font-bold">¡Todo disponible hoy! 🎉</p>' : `
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              ${(dailyInfo.products?.outOfStock86 || []).map(product => `
-                <div class="bg-black/50 p-3 rounded-lg border border-red-400 flex items-center gap-3">
+// Resto de openDailyInfoModal
                   <div class="text-3xl">🚫</div>
                   <div>
                     <div class="font-bold text-white">${product.name}</div>
@@ -7439,3 +7434,8 @@ function openDailyInfoModal() {
                 document.getElementById(`dailycontent - ${tabName} `).classList.remove('hidden');
                 document.getElementById(`dailytab - ${tabName} `).classList.add('active');
 }
+
+
+                // ------ DIGITAL ORDER INTERFACE (Comandero Digital) ------
+                let CURRENT_ORDER_CART = [];
+                let CURRENT_ORDER_VISIT = null;
