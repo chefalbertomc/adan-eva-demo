@@ -717,6 +717,8 @@ function renderHostessDashboard() {
         `;
   }).join('')}
       </div>
+        ` }
+      </div>
     </div>
   `;
 }
