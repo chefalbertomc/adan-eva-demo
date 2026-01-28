@@ -488,7 +488,7 @@ function renderHostessDashboard() {
     const diffMins = Math.floor(diffMs / 60000);
     const hours = Math.floor(diffMins / 60);
     const mins = diffMins % 60;
-    const timeElapsed = hours > 0 ? `${hours}h ${mins}m` : `${mins} min`;
+    const timeElapsed = hours > 0 ? (hours + 'h ' + mins + 'm') : (mins + ' min');
     const timeColor = diffMins > 120 ? '#EF4444' : diffMins > 60 ? '#F59E0B' : '#22C55E'; // Rojo >2h, Amarillo >1h, Verde <1h
 
     const customer = window.db.data.customers.find(c => c.id === v.customerId);
