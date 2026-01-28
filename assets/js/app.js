@@ -7408,3 +7408,34 @@ function openDailyInfoModal() {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               ${(dailyInfo.products?.outOfStock86 || []).map(product => `
                 <div class="bg-black/50 p-3 rounded-lg border border-red-400 flex items-center gap-3">
+                  <div class="text-3xl">🚫</div>
+                  <div>
+                    <div class="font-bold text-white">${product.name}</div>
+                    <div class="text-xs text-gray-400">${product.category}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+                    </div>
+                  </div>
+                </div >
+                `;
+
+                document.body.appendChild(modal);
+}
+
+                function closeDailyInfoModal() {
+  const modal = document.getElementById('daily-info-modal');
+                if (modal) modal.remove();
+}
+
+                function switchDailyTab(tabName) {
+                  // Hide all content
+                  document.querySelectorAll('.daily-tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.daily-tab').forEach(el => el.classList.remove('active'));
+
+                // Show selected
+                document.getElementById(`dailycontent - ${tabName} `).classList.remove('hidden');
+                document.getElementById(`dailytab - ${tabName} `).classList.add('active');
+}
