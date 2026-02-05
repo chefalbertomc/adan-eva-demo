@@ -8,6 +8,23 @@ let STATE = {
 const appContainer = document.getElementById('app');
 
 // Database of Standard Team Names for Autocomplete
+
+// HELPER: Confirm Release Table
+window.confirmAndRelease = function (visitId) {
+  console.log('🛑 Requesting release for visit:', visitId);
+  // Simple direct confirm
+  if (confirm('¿CONFIRMAR: Finalizar visita y liberar mesa?')) {
+    try {
+      window.db.releaseTable(visitId);
+      // Optional: force refresh if needed, but the listener should handle it
+      if (window.showToast) window.showToast('✅ Mesa liberada correctamente', 'success');
+    } catch (e) {
+      console.error(e);
+      alert('Error al liberar mesa: ' + e.message);
+    }
+  }
+};
+
 // AUTO-REFRESH LISTENER
 window.addEventListener('db-daily-update', (event) => {
   console.log(`⚡ DB UPDATE EVENT RECEIVED: ${event.detail.type}`);
@@ -207,7 +224,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v19.4 (ESPN Full Suite + F1/UFC)
+        v19.5 (Hotfix: Finalizar Visita / Liberar Mesa Test)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -637,6 +654,10 @@ function renderHostessDashboard() {
 
                 <!-- Gestión (Cambio Mesa/Mesero y Liberar) - OCULTO POR DEFECTO -->
                 <div id="management-${v.id}" class="hidden border-t-2 border-dashed border-gray-800 pt-6 mt-6 animate-fade-in">
+                    <button onclick="window.confirmAndRelease('${v.id}')" 
+                            class="w-full bg-red-900/50 hover:bg-red-800 text-red-200 border border-red-700/50 font-bold py-3 rounded-lg mb-4 uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(220,38,38,0.3)]">
+                        🆓 FINALIZAR VISITA / LIBERAR MESA
+                    </button>
                     <label class="text-xs text-gray-500 mb-4 block uppercase font-bold tracking-widest text-center">GESTIÓN OPERATIVA</label>
                     
                    <form id="inline-add-game-form" class="bg-gray-800/50 p-4 rounded-lg border border-gray-700 space-y-3 hidden">
