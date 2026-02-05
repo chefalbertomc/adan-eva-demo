@@ -224,7 +224,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v19.5 (Hotfix: Finalizar Visita / Liberar Mesa Test)
+        v19.6 (Fix: Botón 🆓 en todas las vistas)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -4765,8 +4765,8 @@ window.renderHostessDashboard = function () {
                         </div>
                     </div>
 
-                    <button onclick="doReleaseTable('${v.id}')" class="w-full bg-red-900/20 hover:bg-red-900/40 border-2 border-red-900/50 text-red-500 font-black py-5 rounded-xl uppercase tracking-widest text-base transition-colors flex items-center justify-center gap-3">
-                        🔓 Finalizar Visita
+                    <button onclick="window.confirmAndRelease('${v.id}')" class="w-full bg-red-900/50 hover:bg-red-800 text-red-200 border border-red-700/50 font-black py-5 rounded-xl uppercase tracking-widest text-base transition-all flex items-center justify-center gap-3 shadow-lg">
+                        🆓 FINALIZAR VISITA / LIBERAR MESA
                     </button>
                 </div>
                 
