@@ -6910,3 +6910,55 @@ function renderHostessDashboard() {
                     div.className = 'p-4 max-w-6xl mx-auto has-bottom-nav';
                     appContainer.appendChild(div);
 }
+
+// ==========================================
+// INITIALIZATION
+// ==========================================
+window.initApp = async function () {
+  console.log('🚀 Initializing App...');
+  
+  // 1. Initialize DB
+  if (!window.db) {
+    console.error('❌ Database not found!');
+    appContainer.innerHTML = '<div class="text-white p-10">Error critic: Base de datos no encontrada.</div>';
+    return;
+  }
+
+  // 2. Auth Listener
+  window.db.auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      console.log('👤 User Authenticated:', user.uid);
+      // Check existing user in local DB or fetch
+      const dbUser = window.db.data.users.find(u => u.id === user.uid);
+      if (dbUser) {
+        STATE.user = dbUser;
+        STATE.branch = window.db.data.branches.find(b => b.id === dbUser.branchId);
+        console.log('🏢 Branch:', STATE.branch);
+        
+        // Render Dashboard based on Role
+        if (STATE.user.role === 'hostess') {
+             // START LISTENER FOR VISITS
+             window.db.subscribeToVisits((visits) => {
+                if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
+             });
+             renderHostessDashboard();
+        } else if (STATE.user.role === 'manager' || STATE.user.role === 'admin') {
+             if (typeof renderManagerDashboard === 'function') renderManagerDashboard('home');
+        } else if (STATE.user.role === 'waiter') {
+             if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard();
+        } else {
+             appContainer.innerHTML = '<div class="text-white">Rol desconocido</div>';
+        }
+      } else {
+        console.error('User not found in local DB data');
+        if (typeof renderLogin === 'function') renderLogin();
+      }
+    } else {
+      console.log('👤 No User. Rendering Login.');
+      if (typeof renderLogin === 'function') renderLogin();
+    }
+  });
+};
+
+// Start
+document.addEventListener('DOMContentLoaded', window.initApp);
