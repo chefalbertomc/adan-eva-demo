@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.13 (Hostess Fix + Manager Phone Auto)
+        v22.14 (Manager: Unified UI with Hostess)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6330,8 +6330,9 @@ function renderManagerReservationsTab(container) {
   const listContainer = container.querySelector('#manager-reservations-list');
 
   const branchId = STATE.branch?.id;
-  // Show ALL future reservations for the tab
-  const reservations = (window.db.getReservations && branchId)
+  // Show ALL future reservations for the tab (or filter by date if we added that feature)
+  // For now, Manager sees all, but let's sort by date/time
+  let reservations = (window.db.getReservations && branchId)
     ? window.db.getReservations(branchId)
     : [];
 
@@ -6343,30 +6344,82 @@ function renderManagerReservationsTab(container) {
             </div>
       `;
   } else {
-    // Render list (kept same logic as before but compacted for brevity in replacement)
-    listContainer.innerHTML = reservations.map(r => `
-      <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${r.vip === 'diamond' ? 'border-blue-400 bg-blue-900/10' : r.vip === 'blazin' ? 'border-orange-500 bg-orange-900/10' : 'border-gray-600'} flex justify-between items-center animate-fade-in text-white shadow-lg relative group">
-                  <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-1">
-                      <span class="font-black text-xl uppercase tracking-tight">${r.customerName}</span>
-                      ${r.vip === 'diamond' ? '<span class="bg-blue-900 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500">DIAMOND</span>' : r.vip === 'blazin' ? '<span class="bg-orange-900 text-orange-300 text-[10px] font-bold px-2 py-0.5 rounded border border-orange-500">BLAZIN</span>' : ''}
-                    </div>
+    // Sort: Date then Time
+    reservations.sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.time.localeCompare(b.time);
+    });
 
-                    <div class="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-2">
-                       <div class="flex items-center gap-1"><span class="text-white">📅</span> ${r.date} ${r.time}</div>
-                       <div class="flex items-center gap-1"><span class="text-white">👥</span> ${r.pax} pax</div>
-                       ${r.phone ? `<div class="flex items-center gap-1 text-blue-300"><span class="text-white">📞</span> ${r.phone}</div>` : ''}
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTimeVal = currentHours * 60 + currentMinutes;
+    const todayStr = new Date().toLocaleDateString('en-CA');
+
+    listContainer.innerHTML = reservations.map(r => {
+      // Traffic Light Logic (Same as Hostess)
+      const [resH, resM] = r.time.split(':').map(Number);
+      const resTimeVal = resH * 60 + resM;
+      const diff = currentTimeVal - resTimeVal;
+
+      let statusColor = 'border-green-500';
+      let statusIcon = '🟢';
+      let statusText = 'A Tiempo';
+
+      // Only apply traffic light if looking at TODAY's reservations
+      // If it's a future date, it's always green/scheduled
+      // If it's a past date, it's probably expired/red
+
+      if (r.date === todayStr) {
+        if (diff > 30) {
+          statusColor = 'border-red-600';
+          statusIcon = '🔴';
+          statusText = 'Vencida (>30min)';
+        } else if (diff > 0) {
+          statusColor = 'border-yellow-500';
+          statusIcon = '🟡';
+          statusText = 'Retraso Permitido';
+        }
+      } else if (r.date < todayStr) {
+        statusColor = 'border-red-900';
+        statusIcon = '⚫';
+        statusText = 'Fecha Pasada';
+      }
+
+      return `
+      <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${statusColor} shadow-lg relative animate-fade-in group">
+                  <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-black text-xl uppercase tracking-tight text-white">${r.customerName}</span>
+                            ${r.vip === 'diamond' ? '<span class="bg-blue-900 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500">DIAMOND</span>' : r.vip === 'blazin' ? '<span class="bg-orange-900 text-orange-300 text-[10px] font-bold px-2 py-0.5 rounded border border-orange-500">BLAZIN</span>' : ''}
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-2">
+                        <div class="flex items-center gap-1"><span class="text-white">📅</span> ${r.date} ${r.time}</div>
+                        <div class="flex items-center gap-1"><span class="text-white">👥</span> ${r.pax} pax</div>
+                        ${r.phone ? `<div class="flex items-center gap-1 text-blue-300"><span class="text-white">📞</span> ${r.phone}</div>` : ''}
+                        </div>
                     </div>
                     
-                    <div class="text-sm text-gray-500 italic truncate max-w-[300px] mb-1">${r.game || r.reason || 'Sin motivo'}</div>
-                    ${r.notes ? `<div class="text-xs text-yellow-500 bg-yellow-900/20 p-1 rounded inline-block border border-yellow-700/50">📝 ${r.notes}</div>` : ''}
+                     <div class="text-right">
+                        <div class="text-xs font-bold text-gray-400 mb-1">${statusIcon} ${statusText}</div>
+                        
+                        <!-- MANAGER EXCLUSIVE: DELETE BUTTON -->
+                        <button onclick="window.deleteReservation('${r.id}')" class="bg-red-900/20 text-red-500 p-2 rounded hover:bg-red-900/40 transition mt-1" title="Eliminar Reservación">
+                            🗑️
+                        </button>
+                    </div>
                   </div>
 
-                  <button onclick="window.deleteReservation('${r.id}')" class="bg-red-900/20 text-red-500 p-2 rounded hover:bg-red-900/40 transition">
-                    🗑️
-                  </button>
+                  <div class="text-sm text-gray-500 italic truncate max-w-[300px] mb-2">${r.game || r.reason || 'Sin motivo'}</div>
+                  ${r.notes ? `<div class="bg-black/30 p-2 rounded text-xs text-yellow-200 mb-3 border border-yellow-900/30">📝 ${r.notes}</div>` : ''}
+                  
+                   <button onclick="checkInReservation('${r.id}')" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-2 rounded-lg shadow-md uppercase tracking-wide text-sm flex items-center justify-center gap-2 mt-2">
+                        ✅ Check-In / Asignar Mesa
+                   </button>
       </div>
-    `).join('');
+    `}).join('');
   }
 };
 
