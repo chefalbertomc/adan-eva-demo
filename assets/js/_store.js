@@ -2205,12 +2205,15 @@ class Store {
 
         this.updateDailyGames(info.games);
 
-        // SYNC: Also update requests in Firestore since we modified them
+        // SYNC: DISABLED - Was causing Firebase errors with undefined values
+        // TODO: Re-enable after proper Firebase integration (Phase 1)
+        /*
         if (window.dbFirestore && window.FB && matchedReqs.length > 0) {
             const { doc, setDoc } = window.FB;
             const docRef = doc(window.dbFirestore, 'config', 'allGames');
             setDoc(docRef, { gameRequests: info.gameRequests }, { merge: true })
         }
+        */
 
         return newGame;
     }
