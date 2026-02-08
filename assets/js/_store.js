@@ -1211,12 +1211,29 @@ class Store {
 
         this._save();
 
-        // SYNC TO FIREBASE
+        // SYNC TO FIREBASE (WITH VERBOSE LOGGING)
+        console.log('📤 Attempting to sync visit to Firebase...', {
+            hasFirestore: !!window.dbFirestore,
+            hasFB: !!window.FB,
+            visitId: visit.id
+        });
+
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
+            console.log('✅ Firebase available, calling setDoc...');
             setDoc(doc(window.dbFirestore, 'visits', visit.id), visit)
-                .then(() => console.log('🔥 Visit synced to cloud'))
-                .catch(e => console.error('🔥 Sync error', e));
+                .then(() => {
+                    console.log('🔥✅ Visit synced to cloud successfully!', visit.id);
+                })
+                .catch(e => {
+                    console.error('🔥❌ Sync error:', e);
+                    console.error('Visit data:', visit);
+                });
+        } else {
+            console.warn('⚠️ Firebase NOT available for sync!', {
+                dbFirestore: window.dbFirestore,
+                FB: window.FB
+            });
         }
 
         return visit;
