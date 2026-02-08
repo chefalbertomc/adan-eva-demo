@@ -6570,7 +6570,7 @@ function renderManagerReservationsTab(container) {
                   ${r.notes ? `<div class="bg-black/30 p-2 rounded text-xs text-yellow-200 mb-3 border border-yellow-900/30">📝 ${r.notes}</div>` : ''}
                   
                   <!-- MANAGER CHECK-IN BUTTON -->
-                  <button onclick="managerCheckInReservation('${r.id}')" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-black shadow-lg transform active:scale-95 transition mb-2">
+                  <button onclick="showManagerCheckInForm('${r.id}')" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-black shadow-lg transform active:scale-95 transition mb-2">
                     ✅ ASIGNAR MESA
                   </button>
 
