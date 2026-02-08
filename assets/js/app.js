@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.23 (Debug: Verbose Sync Logging)
+        v22.24 (Fix: Manager Reservation Errors)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -7047,17 +7047,6 @@ window.submitManagerReservation = function () {
     } else {
       window.location.reload();
     }
-
-    alert(`✅ Mesa Asignada: ${fullName}`);
-
-    // Reset Form
-    document.getElementById('h-firstname').value = '';
-    document.getElementById('h-lastname').value = '';
-    document.getElementById('h-lastname2').value = '';
-    document.querySelectorAll('.table-btn.selected').forEach(b => b.classList.remove('selected', 'bg-yellow-500', 'text-black'));
-
-    // Refresh Dashboard
-    renderHostessDashboard();
   } else {
     alert("Error de DB");
   }

@@ -1178,6 +1178,13 @@ class Store {
         return customer;
     }
 
+    getCustomers(branchId = null) {
+        if (branchId) {
+            return this.data.customers.filter(c => c.branchId === branchId);
+        }
+        return this.data.customers;
+    }
+
     updateCustomer(customerId, updates) {
         const idx = this.data.customers.findIndex(c => c.id === customerId);
         if (idx !== -1) {
