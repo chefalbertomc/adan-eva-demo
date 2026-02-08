@@ -4355,13 +4355,14 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
   const div = document.createElement('div');
   div.className = 'bg-gray-900 min-h-screen pb-24'; // Padding for bottom nav
 
-  // AUTO-REPAIR: Ensure config/allGames exists (Fix for 0 matches)
+  // AUTO-REPAIR: DISABLED - Was causing Firebase errors with undefined values
+  // TODO: Re-enable after proper Firebase integration (Phase 1)
+  /*
   if (window.dbFirestore && window.FB) {
     const { doc, getDoc, setDoc } = window.FB;
     const gamesRef = doc(window.dbFirestore, 'config', 'allGames');
     getDoc(gamesRef).then(snap => {
       if (!snap.exists()) {
-
         const info = window.db.getDailyInfo();
         setDoc(gamesRef, JSON.parse(JSON.stringify(info)))
           .then(() => console.log("✅ REPAIR SUCCESS: config/allGames created!"))
@@ -4371,6 +4372,7 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
       }
     });
   }
+  */
 
   // HEADER FIXED
   div.innerHTML = `
