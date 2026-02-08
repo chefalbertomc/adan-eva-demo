@@ -970,6 +970,7 @@ class Store {
 
             if (changes) {
                 console.log("☁️ Reservaciones sincronizadas. Total:", dailyInfo.reservations.length);
+                console.log("📊 Reservaciones activas:", dailyInfo.reservations.filter(r => r.status !== 'completed' && r.status !== 'cancelled').length);
                 this._save();
 
                 // Refresh UI if necessary

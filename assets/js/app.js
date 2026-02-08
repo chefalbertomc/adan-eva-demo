@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.36 (Fix: Firebase Sync on Close)
+        v22.37 (Fix: Reservation Disappear on Assign)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6898,7 +6898,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.36';
+const CURRENT_VERSION = '22.37';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
@@ -7421,6 +7421,13 @@ window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
     // Update reservation status to completed
     window.db.updateReservation(pendingRes.id, { status: 'completed', completedAt: new Date().toISOString() });
     console.log('✅ Reservation marked as completed:', pendingRes.id);
+
+    // Refresh reservation list immediately
+    if (window.renderHostessReservationList) {
+      setTimeout(() => {
+        window.renderHostessReservationList();
+      }, 100);
+    }
   }
 
   // 7. Clear Form
