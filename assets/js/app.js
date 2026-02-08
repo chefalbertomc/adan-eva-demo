@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.40 (Fix: Table Reopen + Better Scroll)
+        v22.41 (Fix: Delete Button + Manager Scroll)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -4571,7 +4571,7 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
                   </div>
                 </header>
 
-                <main id="manager-content" class="p-3 animate-fade-in"></main>
+                <main id="manager-content" class="p-3 pb-24 animate-fade-in"></main>
 
                 <!-- BOTTOM NAVIGATION - GERENTE -->
                 <nav class="bottom-nav">
@@ -6249,6 +6249,24 @@ window.submitReservation = function () {
   document.getElementById('reservation-modal').classList.add('hidden');
 };
 
+// Delete Reservation (Manager Only)
+window.deleteReservation = function (resId) {
+  if (!confirm('¿Eliminar esta reservación?')) return;
+
+  if (window.db.removeReservation) {
+    window.db.removeReservation(resId);
+
+    // Refresh Manager reservations view
+    if (window.renderManagerDashboard && document.getElementById('manager-reservations-list')) {
+      window.renderManagerDashboard('reservations');
+    }
+
+    alert('✅ Reservación eliminada');
+  } else {
+    alert('❌ Error al eliminar');
+  }
+};
+
 // ==========================================
 // MANAGER RESERVATIONS TAB (FULL CRUD)
 // ==========================================
@@ -6362,10 +6380,10 @@ function renderManagerReservationsTab(container) {
           </div>
       </div>
 
-      <!-- SCROLLABLE WRAPPER FOR RESERVATIONS LIST -->
-      <div class="overflow-y-auto pb-24" style="max-height: calc(100vh - 200px);">
-        <div id="manager-reservations-list" class="space-y-4">
-          <!-- List injected via renderManagerReservations() logic but customized for full page -->
+      <!-- RESERVATIONS LIST (Hostess-style format with proper scroll) -->
+      <div class="card">
+        <div id="manager-reservations-list" class="space-y-3">
+          <!-- Injected via renderManagerReservations() logic but customized for full page -->
         </div>
       </div>
     `;
@@ -6901,7 +6919,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.40';
+const CURRENT_VERSION = '22.41';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
