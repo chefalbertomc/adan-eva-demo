@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.18 (Fix: Login & Sync Error)
+        v22.19 (Fix: Hostess Check-In Error)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -7208,4 +7208,104 @@ window.switchHostessTab = function (tabName) {
   if (tabName === 'reservations') {
     renderHostessReservationList();
   }
+};
+
+// ==========================================
+// HOSTESS CHECK-IN PROCESS (FIX: ADDED MISSING FUNCTION)
+// ==========================================
+window.processHostessCheckIn = function (tableNumber, waiterId) {
+  // 1. Validate Inputs
+  if (!tableNumber || !waiterId) {
+    alert("Por favor selecciona una Mesa y un Mesero.");
+    return;
+  }
+
+  const branchId = STATE.branch?.id;
+  // Check if table is occupied
+  if (window.db.isTableOccupied(tableNumber, branchId)) {
+    alert(`❌ La Mesa ${tableNumber} ya está ocupada.`);
+    return;
+  }
+
+  // 2. Gather Data from Hostess Form (populated by checkInReservation or manually)
+  const firstName = document.getElementById('h-firstname').value;
+  const lastName = document.getElementById('h-lastname').value;
+  const pax = parseInt(document.getElementById('h-pax').innerText) || 2;
+  // Try to find if we are checking in a specific reservation ID (hidden field or state?)
+  // For now, we search by name or create new customer on the fly
+
+  if (!firstName) {
+    alert("Falta el nombre del cliente.");
+    return;
+  }
+
+  // 3. Find or Create Customer
+  const fullName = `${firstName} ${lastName}`.trim();
+  let customer = window.db.data.customers.find(c =>
+    (c.firstName + ' ' + c.lastName).toLowerCase() === fullName.toLowerCase()
+  );
+
+  if (!customer) {
+    customer = window.db.createCustomer({
+      firstName,
+      lastName,
+      phone: '',
+      email: '',
+      branchId
+    });
+  }
+
+  // 4. Create Visit
+  const visitData = {
+    branchId,
+    table: tableNumber,
+    waiterId, // "W1", "W2", etc.
+    customerId: customer.id,
+    pax,
+    startTime: new Date().toISOString(),
+    date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
+    orders: [],
+    totalAmount: 0
+  };
+
+  const newVisit = window.db.createVisit(visitData);
+
+  // 5. If this came from a Reservation, MARK IT AS COMPLETED/CHECKED-IN
+  // Constraint: We don't have the reservation ID explicitly stored in the DOM yet.
+  // IMPROVEMENT: We should store it when clicking "Check-In".
+  // For now, let's try to match by name/date/time strict, or just leave it.
+  // Ideally we update checkInReservation to store the ID in a hidden field.
+
+  // Attempt to find pending reservation for this customer today
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const pendingRes = window.db.data.reservations.find(r =>
+    r.customerName === fullName &&
+    r.date === todayStr &&
+    r.status !== 'completed' &&
+    r.status !== 'cancelled'
+  );
+
+  if (pendingRes) {
+    // Mark as completed/checked-in
+    pendingRes.status = 'completed';
+    // Sync update
+    if (window.dbFirestore && window.FB) {
+      const { doc, updateDoc } = window.FB;
+      updateDoc(doc(window.dbFirestore, 'reservations', pendingRes.id), { status: 'completed' })
+        .catch(e => console.error('🔥 Sync update res status error', e));
+    }
+    window.db._save();
+  }
+
+  // 6. Success Feedback & Reset
+  alert(`✅ Mesa ${tableNumber} asignada a ${firstName} (${customer.id.substring(0, 4)}...)`);
+
+  // Clear Form
+  document.getElementById('h-firstname').value = '';
+  document.getElementById('h-lastname').value = '';
+  document.getElementById('customer-search').value = '';
+
+  // Switch to Dashboard (Tables View)
+  switchHostessTab('tables');
+  renderHostessDashboard(); // Refresh tables
 };
