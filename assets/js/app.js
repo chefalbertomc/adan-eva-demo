@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.37 (Fix: Reservation Disappear on Assign)
+        v22.38 (Fix: Manager Reservations Scroll)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6362,7 +6362,7 @@ function renderManagerReservationsTab(container) {
           </div>
       </div>
 
-      <div id="manager-reservations-list" class="space-y-4 pb-24">
+      <div id="manager-reservations-list" class="space-y-4 pb-24 overflow-y-auto" style="max-height: calc(100vh - 280px);">
         <!-- List injected via renderManagerReservations() logic but customized for full page -->
       </div>
     `;
@@ -6898,7 +6898,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.37';
+const CURRENT_VERSION = '22.38';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
