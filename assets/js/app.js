@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v21.0 (Firebase Fix + Cache Bust)
+        v21.3 (Hostess Reservations View + Alerts)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -356,7 +356,7 @@ function renderHostessDashboard() {
     </header>
 
     <!--Stat Bar-->
-    <div class="grid grid-cols-3 gap-2 p-2">
+    <div class="grid grid-cols-4 gap-2 p-2">
        <div onclick="switchHostessTab('checkin')" class="bg-gray-900 border border-gray-800 p-2 rounded text-center cursor-pointer hover:bg-gray-800">
           <div class="text-lg font-black text-white">📋</div>
           <div class="text-[10px] text-gray-500 font-bold uppercase">Check-In</div>
@@ -368,6 +368,10 @@ function renderHostessDashboard() {
        <div onclick="switchHostessTab('waitlist')" class="bg-gray-900 border border-gray-800 p-2 rounded text-center cursor-pointer hover:bg-gray-800">
           <div class="text-lg font-black text-blue-500">${waitlist.length}</div>
           <div class="text-[10px] text-gray-500 font-bold uppercase">Espera</div>
+       </div>
+       <div onclick="switchHostessTab('reservations')" class="bg-gray-900 border border-gray-800 p-2 rounded text-center cursor-pointer hover:bg-gray-800">
+          <div class="text-lg font-black text-purple-500">${reservations.length}</div>
+          <div class="text-[10px] text-gray-500 font-bold uppercase">Reservas</div>
        </div>
     </div>
     
@@ -581,43 +585,96 @@ function renderHostessDashboard() {
           </div>
         `}
             </div>
-            <!-- Tab Content: Reservations - SOLO LECTURA -->
+            <!-- Tab Content: Reservations (WITH ALERTS AND ASSIGNMENT) -->
             <div id="content-reservations" class="tab-content hidden">
               <div class="card">
                 <div class="flex justify-between items-center mb-6">
-                  <h3 class="text-xl">Reservaciones de Hoy</h3>
-                  <!-- MOVED TO MANAGER: <button onclick="window.showReservationModal()" ...> -->
-                  <div class="text-sm bg-blue-900/30 px-3 py-1 rounded text-blue-300">
-                    📌 Solo Lectura
-                  </div>
+                  <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    📅 Reservaciones de Hoy
+                    <span class="bg-gray-800 text-xs px-2 py-0.5 rounded text-gray-400 font-normal">Solo Lectura</span>
+                  </h3>
+                  <!-- Timer for refresh/alerts -->
+                  <div id="res-timer" class="text-xs text-gray-500 font-mono">Actualizado: Justo ahora</div>
                 </div>
 
                 ${reservations.length === 0 ? `
-          <div class="text-center py-12">
-            <div class="text-6xl mb-4">📅</div>
-            <p class="text-xl text-secondary">Sin reservaciones para hoy</p>
-          </div>
-        ` : `
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${reservations.map(r => `
-              <div class="card p-4 border-l-4 ${r.status === 'confirmed' ? 'border-green-500 bg-green-900/10' : r.status === 'cancelled' ? 'border-red-500 bg-red-900/10' : 'border-blue-500 bg-blue-900/10'}">
-                <div class="flex justify-between items-start mb-2">
-                  <div class="text-2xl font-bold text-yellow-400">${r.time}</div>
-                  <span class="text-xs px-3 py-1 rounded font-bold ${r.status === 'confirmed' ? 'bg-green-600 text-white' :
-        r.status === 'cancelled' ? 'bg-red-600 text-white' :
-          'bg-blue-600 text-white'
-      }">
-                    ${r.status.toUpperCase()}
-                  </span>
-                </div>
-                <div class="text-lg font-bold">${r.customerName}</div>
-                <div class="text-sm text-secondary">${r.pax} personas</div>
-                <div class="text-sm text-secondary">${r.phone}</div>
-                ${r.notes ? `<div class="text-sm italic mt-2 p-2 bg-white/5 rounded">"${r.notes}"</div>` : ''}
-              </div>
-            `).join('')}
-          </div>
-        `}
+                  <div class="text-center py-12 opacity-50">
+                    <div class="text-6xl mb-4">📭</div>
+                    <p class="text-xl text-gray-400">No hay reservaciones para hoy</p>
+                  </div>
+                ` : `
+                  <div class="space-y-4">
+                    ${reservations.map(r => {
+      // ALERT LOGIC
+      const now = new Date();
+      const [hours, mins] = r.time.split(':');
+      const resTime = new Date();
+      resTime.setHours(parseInt(hours), parseInt(mins), 0, 0);
+
+      const diffMins = (resTime - now) / 60000;
+      let alertClass = "border-gray-600";
+      let bgClass = "bg-gray-800";
+      let statusBadge = "";
+
+      // Late (> 15 mins past)
+      if (diffMins < -15) {
+        alertClass = "border-red-600 animate-pulse";
+        bgClass = "bg-red-900/20";
+        statusBadge = '<span class="text-red-500 font-bold text-xs uppercase">⚠️ RETRASADO</span>';
+      }
+      // Arriving Soon (< 15 mins before)
+      else if (diffMins <= 15 && diffMins >= 0) {
+        alertClass = "border-yellow-500";
+        bgClass = "bg-yellow-900/20";
+        statusBadge = '<span class="text-yellow-500 font-bold text-xs uppercase">🕒 PRÓXIMO</span>';
+      }
+
+      // VIP Styles
+      if (r.vip === 'diamond') {
+        alertClass = "border-blue-400";
+        bgClass = "bg-blue-900/10";
+      } else if (r.vip === 'blazin') {
+        alertClass = "border-orange-500";
+        bgClass = "bg-orange-900/10";
+      }
+
+      return `
+                      <div class="p-4 rounded-xl border-l-4 ${alertClass} ${bgClass} shadow-lg relative group transition-all hover:bg-gray-800">
+                        <div class="flex justify-between items-start">
+                          <div class="flex-1">
+                             <div class="flex items-center gap-2 mb-1">
+                                <span class="text-2xl font-black text-white">${r.time}</span>
+                                ${statusBadge}
+                                ${r.vip === 'diamond' ? '<span class="bg-blue-900 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500">DIAMOND</span>' : r.vip === 'blazin' ? '<span class="bg-orange-900 text-orange-300 text-[10px] font-bold px-2 py-0.5 rounded border border-orange-500">BLAZIN</span>' : ''}
+                             </div>
+                             <div class="font-bold text-white text-lg leading-tight mb-1">${r.customerName}</div>
+                             <div class="text-sm text-gray-400 flex items-center gap-3">
+                                <span>👥 ${r.pax} pax</span>
+                                <span>📞 ${r.phone || 'N/A'}</span>
+                             </div>
+                             ${r.notes ? `<div class="mt-2 text-xs text-gray-400 italic bg-black/20 p-2 rounded border border-gray-700/50">📝 "${r.notes}"</div>` : ''}
+                             ${r.game ? `<div class="mt-2 text-xs text-blue-300 font-bold flex items-center gap-1">📺 PARTIDO: ${r.game}</div>` : ''}
+                          </div>
+
+                          <!-- ACTIONS -->
+                          <div class="flex flex-col gap-2">
+                             <button onclick="
+                                document.getElementById('h-firstname').value = '${r.customerName.split(' ')[0]}';
+                                document.getElementById('h-lastname').value = '${r.customerName.split(' ').slice(1).join(' ') || ''}';
+                                document.getElementById('h-pax').innerText = '${r.pax}';
+                                switchHostessTab('checkin');
+                                if(window.showToast) window.showToast('✅ Datos cargados. Asigna mesa ahora.', 'success');
+                             " 
+                             class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg text-sm shadow-lg transform active:scale-95 transition flex items-center gap-1">
+                                🛎️ CHECK-IN
+                             </button>
+                          </div>
+                        </div>
+                      </div>
+                      `;
+    }).join('')}
+                  </div>
+                `}
               </div>
             </div>
 
