@@ -6569,6 +6569,33 @@ function renderManagerReservationsTab(container) {
                   <div class="text-sm text-gray-500 italic truncate max-w-[300px] mb-2">${r.game || r.reason || 'Sin motivo'}</div>
                   ${r.notes ? `<div class="bg-black/30 p-2 rounded text-xs text-yellow-200 mb-3 border border-yellow-900/30">📝 ${r.notes}</div>` : ''}
                   
+                  <!-- MANAGER CHECK-IN EXPANDABLE FORM -->
+                  <div id="checkin-form-${r.id}" class="hidden bg-gray-800/50 p-4 rounded-lg border border-yellow-600/30 mb-3">
+                    <p class="text-yellow-500 text-sm font-bold mb-3">✅ ASIGNAR MESA</p>
+                    
+                    <div class="mb-3">
+                      <label class="text-gray-400 text-xs font-bold block mb-1">Número de Mesa:</label>
+                      <input type="number" id="table-input-${r.id}" placeholder="Ej: 5" class="w-full bg-gray-900 text-white border border-gray-600 rounded p-2 focus:border-yellow-500 outline-none text-center text-xl font-bold" min="1">
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="text-gray-400 text-xs font-bold block mb-1">Mesero:</label>
+                      <select id="waiter-select-${r.id}" class="w-full bg-gray-900 text-white border border-gray-600 rounded p-2 focus:border-yellow-500 outline-none">
+                        <option value="">-- Selecciona --</option>
+                        ${window.db.data.users.filter(u => u.role === 'waiter' && u.branchId === branchId).map(w => `<option value="${w.id}">${w.name}</option>`).join('')}
+                      </select>
+                    </div>
+
+                    <div class="flex gap-2">
+                      <button onclick="confirmManagerCheckInInline('${r.id}')" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded font-bold text-sm">
+                        ✅ CONFIRMAR
+                      </button>
+                      <button onclick="cancelManagerCheckIn('${r.id}')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded font-bold text-sm">
+                        ❌ CANCELAR
+                      </button>
+                    </div>
+                  </div>
+
                   <!-- MANAGER CHECK-IN BUTTON -->
                   <button onclick="showManagerCheckInForm('${r.id}')" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-black shadow-lg transform active:scale-95 transition mb-2">
                     ✅ ASIGNAR MESA
