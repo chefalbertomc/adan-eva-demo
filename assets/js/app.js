@@ -4456,46 +4456,6 @@ function renderHostessDashboard() {
 };
 
                 // NEW: Render Reservations
-                function renderManagerReservations(container) {
-  if (!container) return;
-
-                // FETCH RESERVATIONS (Logic: Visits where isReservation = true OR has specific property)
-                // Assuming we use 'visits' collection. If there is a separate 'reservations' collection, we'd need to fetch allowed
-                // For now, let's filter ACTIVE VISITS that might be marked as reservations? 
-                // OR create a mock for now since user asked for the VIEW.
-                // Let's assume we pull from window.db.getReservations() (which we need to create or mock)
-                // If not exists, fallback to filtering visits with specific status
-
-                const visits = window.db.getVisits ? window.db.getVisits() : [];
-  // Mock Logic for demonstration if no explicit reservation flag exists yet
-  const reservations = visits.filter(v => v.type === 'reservation' || v.status === 'reserved');
-
-                if (reservations.length === 0) {
-                  container.innerHTML = '<p class="text-gray-600 text-xs italic">No hay reservaciones activas.</p>';
-                return;
-  }
-
-  container.innerHTML = reservations.map(r => `
-                <div class="bg-gray-800 p-3 rounded-lg border-l-4 ${r.vip ? 'border-yellow-500' : 'border-gray-600'} flex justify-between items-center">
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <span class="font-bold text-white text-base">${r.customerName || 'Cliente'}</span>
-                      ${r.vip === 'diamond' ? '💎' : r.vip === 'blazin' ? '🔥' : ''}
-                    </div>
-                    <div class="text-xs text-gray-400">
-                      ${r.date || 'Hoy'} • ${r.time || '--:--'} • ${r.pax || 2} Pax
-                    </div>
-                    <div class="text-xs text-blue-300 mt-1">
-                      🎯 ${r.reason || 'Visita'} : ${r.game || 'Sin Partido'}
-                    </div>
-                  </div>
-                  ${!r.vip ? `
-            <div class="flex gap-1">
-                <button class="bg-green-900/50 text-green-400 text-[10px] px-2 py-1 rounded border border-green-800">APROBAR</button>
-            </div>` : ''}
-                </div>
-                `).join('');
-}
 
                 // --- MANAGER TABS IMPLEMENTATION ---
 
@@ -6564,3 +6524,38 @@ window.initApp = async function () {
 
 // Start
 document.addEventListener('DOMContentLoaded', window.initApp);
+
+// NEW: Render Reservations (Actually GAME REQUESTS for now)
+function renderManagerReservations(container) {
+  if (!container) return;
+
+  // Use the same data source as the badge count: gameRequests
+  const requests = window.db.getDailyInfo().gameRequests || [];
+
+  if (requests.length === 0) {
+    container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
+    return;
+  }
+
+  container.innerHTML = requests.map((r, index) => `
+    <div class="bg-gray-800 p-3 rounded-lg border-l-4 border-blue-500 mb-2 flex justify-between items-center animate-fade-in">
+      <div>
+        <div class="flex items-center gap-2">
+           <span class="text-blue-400 font-bold text-[10px] uppercase tracking-wider">SOLICITUD DE PARTIDO</span>
+           <span class="text-xs text-gray-500">• ${r.time}</span>
+        </div>
+        <div class="font-bold text-white text-base">
+           ${r.gameName}
+        </div>
+        <div class="text-xs text-secondary mt-1">
+           Mesa ${r.tableName} (${r.waiterName})
+        </div>
+      </div>
+      <div>
+         <button onclick="window.db.removeGameRequest('${r.id}')" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 p-2 rounded-full transition-colors">
+            ✕
+         </button>
+      </div>
+    </div>
+  `).join('');
+}
