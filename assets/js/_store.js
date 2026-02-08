@@ -915,6 +915,63 @@ class Store {
                 }
             }
         });
+
+
+        // 5. SYNC RESERVATIONS (NEW)
+        const resRef = collection(db, "reservations");
+        onSnapshot(resRef, (snapshot) => {
+            let changes = false;
+            // Ensure array exists
+            if (!this.data.reservations) this.data.reservations = [];
+
+            snapshot.docChanges().forEach((change) => {
+                const resData = change.doc.data();
+                const idx = this.data.reservations.findIndex(r => r.id === resData.id);
+
+                if (change.type === "added") {
+                    if (idx === -1) {
+                        this.data.reservations.push(resData);
+                        changes = true;
+                    }
+                }
+                if (change.type === "modified") {
+                    if (idx !== -1) {
+                        this.data.reservations[idx] = resData;
+                        changes = true;
+                    } else {
+                        // Should verify if we should add it? Yes.
+                        this.data.reservations.push(resData);
+                        changes = true;
+                    }
+                }
+                if (change.type === "removed") {
+                    if (idx !== -1) {
+                        this.data.reservations.splice(idx, 1);
+                        changes = true;
+                    }
+                }
+            });
+
+            if (changes) {
+                console.log("☁️ Reservaciones sincronizadas. Total:", this.data.reservations.length);
+                this._save();
+
+                // Refresh UI if necessary
+                setTimeout(() => {
+                    const activeTag = document.activeElement ? document.activeElement.tagName : '';
+                    if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+
+                    if (window.renderManagerDashboard && document.getElementById('manager-reservations-list')) {
+                        console.log('🔄 Refreshing Manager Reservations (Auto)');
+                        window.renderManagerDashboard('reservations');
+                    }
+                    if (window.renderHostessReservationList && document.getElementById('hostess-reservations-list')) {
+                        console.log('🔄 Refreshing Hostess Reservations (Auto)');
+                        window.renderHostessReservationList();
+                    }
+                }, 100);
+            }
+        });
     }
 
     _syncMenuCatalog() {
@@ -1463,10 +1520,21 @@ class Store {
             table: data.table || null,
             status: 'pending', // pending, confirmed, cancelled, completed
             notes: data.notes || '',
+            reason: data.reason || '',
+            game: data.game || '',
+            vip: data.vip || '',
             createdAt: new Date().toISOString()
         };
         this.data.reservations.push(reservation);
         this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'reservations', reservation.id), reservation)
+                .catch(e => console.error('🔥 Sync add reservation error', e));
+        }
+
         return reservation;
     }
 
@@ -1488,6 +1556,13 @@ class Store {
         if (r) {
             r.status = 'confirmed';
             this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'reservations', id), { status: 'confirmed' })
+                    .catch(e => console.error('🔥 Sync confirm reservation error', e));
+            }
         }
     }
 
@@ -1496,7 +1571,36 @@ class Store {
         if (r) {
             r.status = 'cancelled';
             this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'reservations', id), { status: 'cancelled' })
+                    .catch(e => console.error('🔥 Sync cancel reservation error', e));
+            }
         }
+    }
+
+    deleteReservation(id) {
+        const idx = this.data.reservations.findIndex(x => x.id === id);
+        if (idx !== -1) {
+            // Remove local
+            this.data.reservations.splice(idx, 1);
+            this._save();
+
+            // SYNC FIREBASE (Delete)
+            if (window.dbFirestore && window.FB) {
+                const { doc, deleteDoc } = window.FB;
+                deleteDoc(doc(window.dbFirestore, 'reservations', id))
+                    .then(() => console.log('🗑️ Reservation deleted from Cloud'))
+                    .catch(e => console.error('🔥 Sync delete reservation error', e));
+            }
+
+            // Refresh Manager UI if active
+            if (window.renderManagerDashboard) window.renderManagerDashboard('reservations');
+            return true;
+        }
+        return false;
     }
 
     // ===== CLIENT CLASSIFICATION =====
@@ -2606,3 +2710,8 @@ class Store {
 
 const db = new Store();
 window.db = db; // Expose to global for ease
+window.deleteReservation = (id) => {
+    if (confirm('¿Seguro que deseas eliminar esta reservación permanentemente?')) {
+        return db.deleteReservation(id);
+    }
+};
