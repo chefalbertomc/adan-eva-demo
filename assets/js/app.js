@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.8 (Manager: Auth Gate Real Password)
+        v22.9 (Hostess: Reservations Tab + Check-In)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6638,7 +6638,19 @@ window.renderHostessDashboard = function () {
         </div>
       </div>
 
-      <!-- Tab Content: Reservations - SOLO LECTURA -->
+      <!-- Tab Content: Reservations -->
+      <div id="content-reservations" class="tab-content hidden">
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">Reservaciones</h3>
+                <input type="date" id="hostess-date-filter" class="bg-gray-800 text-white border border-gray-700 rounded p-2 text-sm font-bold" value="${new Date().toLocaleDateString('en-CA')}" onchange="renderHostessReservationList(this.value)">
+            </div>
+            
+            <div id="hostess-reservations-list" class="space-y-3">
+                <!-- Injected via renderHostessReservationList -->
+            </div>
+        </div>
+      </div>
 
       <!-- BOTTOM NAVIGATION BAR -->
       <nav class="bottom-nav">
