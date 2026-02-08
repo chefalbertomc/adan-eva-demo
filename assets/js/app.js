@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.27 (Fix: Hostess UI Padding)
+        v22.28 (Fix: Reservations Display + Scroll)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -376,7 +376,7 @@ function renderHostessDashboard() {
     </div>
     
     <!--Tab Content: Check - In(Default)-- >
-      <div id="content-checkin" class="tab-content">
+      <div id="content-checkin" class="tab-content pb-24">
         <div class="card bg-gray-900/50 border border-yellow-500/30">
           <h2 class="text-xl font-black text-white mb-6 flex items-center gap-2">
             📋 NUEVO CHECK-IN
@@ -6677,7 +6677,7 @@ window.renderHostessDashboard = function () {
       </div>
 
       <!-- Tab Content: Tables (Active Visits) -->
-      <div id="content-tables" class="tab-content hidden">
+      <div id="content-tables" class="tab-content hidden pb-24">
         <div class="card">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-black text-white italic tracking-tighter">MESAS HABILITADAS</h2>
@@ -6823,7 +6823,7 @@ window.renderHostessDashboard = function () {
       </div>
 
       <!-- Tab Content: Reservations -->
-      <div id="content-reservations" class="tab-content hidden">
+      <div id="content-reservations" class="tab-content hidden pb-24">
         <div class="card">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-white">Reservaciones</h3>
@@ -7068,12 +7068,10 @@ window.renderHostessReservationList = function (dateFilter) {
   }
 
   const branchId = STATE.branch?.id;
-  // Get reservations for specific date (Filtering done by DB if supported, else manual)
-  let reservations = (window.db.getReservations && branchId)
-    ? window.db.getReservations(branchId)
-    : [];
+  // Get ALL reservations (don't filter by branch yet, reservations don't have branchId)
+  let reservations = window.db.getReservations ? window.db.getReservations() : [];
 
-  // Manual Filter if DB doesn't support date arg or returns all
+  // Manual Filter by date
   if (reservations.length > 0) {
     reservations = reservations.filter(r => r.date === dateFilter);
   }
