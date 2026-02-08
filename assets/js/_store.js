@@ -1999,6 +1999,8 @@ class Store {
 
         // SYNC FIREBASE - CRITICAL FIX: Use 'allGames' collection instead of 'daily'
         // 'daily' collection was forcing all dates to TODAY (2026-01-27)
+        // SYNC FIREBASE - DISABLED (Phase 1 pending)
+        /*
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
             const dataToSync = { games: info.games };
@@ -2012,6 +2014,7 @@ class Store {
                 })
                 .catch(e => console.error('🔥 Sync update games error', e));
         }
+        */
     }
 
     // Request a game to be added (Hostess -> Manager)
@@ -2044,6 +2047,8 @@ class Store {
         this._save();
 
         // Sync to Firebase (Use allGames)
+        // Sync to Firebase (Use allGames) - DISABLED
+        /*
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
             const docRef = doc(window.dbFirestore, 'config', 'allGames');
@@ -2055,6 +2060,7 @@ class Store {
                     if (typeof alert === 'function') alert(`✅ Solicitud enviada al Gerente: "${gameName}"`);
                 }).catch(e => console.error('🔥 Error sending game request:', e));
         }
+        */
     }
 
     // NEW: Remove Game Request (Manager -> Dismiss)
@@ -2067,6 +2073,8 @@ class Store {
         this.updateDailyGames(info.games); // Reuse sync logic or direct update
 
         // Manual Sync for Requests to be sure
+        // Manual Sync for Requests to be sure - DISABLED
+        /*
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
             const docRef = doc(window.dbFirestore, 'config', 'allGames');
@@ -2074,6 +2082,7 @@ class Store {
                 .then(() => console.log('🗑️ Request removed:', reqId))
                 .catch(e => console.error('Error removing req:', e));
         }
+        */
     }
 
     // --- RESERVATIONS SYSTEM ---
@@ -2104,6 +2113,8 @@ class Store {
         this.updateDailyGames(info.games); // Trigger sync
 
         // Also direct sync specifically for reservations if we want speed
+        // Also direct sync specifically for reservations - DISABLED
+        /*
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
             const docRef = doc(window.dbFirestore, 'config', 'allGames');
@@ -2113,6 +2124,7 @@ class Store {
                     if (typeof showToast === 'function') showToast('Reservación Guardada', 'success');
                 });
         }
+        */
         return newRes;
     }
 
@@ -2124,11 +2136,14 @@ class Store {
         this._save();
 
         // Sync
+        // Sync - DISABLED
+        /*
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
             const docRef = doc(window.dbFirestore, 'config', 'allGames');
             setDoc(docRef, { reservations: info.reservations }, { merge: true });
         }
+        */
     }
 
     addGame(arg1) {
