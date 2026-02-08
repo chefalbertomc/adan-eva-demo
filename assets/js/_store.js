@@ -1999,11 +1999,12 @@ class Store {
 
         // SYNC FIREBASE - CRITICAL FIX: Use 'allGames' collection instead of 'daily'
         // 'daily' collection was forcing all dates to TODAY (2026-01-27)
-        // SYNC FIREBASE - DISABLED (Phase 1 pending)
-        /*
+        // SYNC FIREBASE - RE-ENABLED (Sanitized)
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
-            const dataToSync = { games: info.games };
+            // CRITICAL: Sanitize data to remove 'undefined' values which crash Firebase
+            const cleanGames = JSON.parse(JSON.stringify(info.games));
+            const dataToSync = { games: cleanGames };
 
             console.log('🔥 SYNCING to Firebase (allGames collection):', JSON.stringify(dataToSync.games.slice(-3), null, 2));
 
@@ -2014,7 +2015,6 @@ class Store {
                 })
                 .catch(e => console.error('🔥 Sync update games error', e));
         }
-        */
     }
 
     // Request a game to be added (Hostess -> Manager)
@@ -2047,20 +2047,21 @@ class Store {
         this._save();
 
         // Sync to Firebase (Use allGames)
-        // Sync to Firebase (Use allGames) - DISABLED
-        /*
+        // Sync to Firebase (Use allGames) - RE-ENABLED (Sanitized)
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
             const docRef = doc(window.dbFirestore, 'config', 'allGames');
 
+            // CRITICAL: Sanitize
+            const cleanRequests = JSON.parse(JSON.stringify(info.gameRequests));
+
             // Use setDoc with merge 
-            setDoc(docRef, { gameRequests: info.gameRequests }, { merge: true })
+            setDoc(docRef, { gameRequests: cleanRequests }, { merge: true })
                 .then(() => {
                     console.log('📨 Game Request sent to Manager:', gameName);
                     if (typeof alert === 'function') alert(`✅ Solicitud enviada al Gerente: "${gameName}"`);
                 }).catch(e => console.error('🔥 Error sending game request:', e));
         }
-        */
     }
 
     // NEW: Remove Game Request (Manager -> Dismiss)
@@ -2073,16 +2074,15 @@ class Store {
         this.updateDailyGames(info.games); // Reuse sync logic or direct update
 
         // Manual Sync for Requests to be sure
-        // Manual Sync for Requests to be sure - DISABLED
-        /*
+        // Manual Sync for Requests to be sure - RE-ENABLED (Sanitized)
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
             const docRef = doc(window.dbFirestore, 'config', 'allGames');
-            setDoc(docRef, { gameRequests: info.gameRequests }, { merge: true })
+            const cleanRequests = JSON.parse(JSON.stringify(info.gameRequests));
+            setDoc(docRef, { gameRequests: cleanRequests }, { merge: true })
                 .then(() => console.log('🗑️ Request removed:', reqId))
                 .catch(e => console.error('Error removing req:', e));
         }
-        */
     }
 
     // --- RESERVATIONS SYSTEM ---
@@ -2113,18 +2113,17 @@ class Store {
         this.updateDailyGames(info.games); // Trigger sync
 
         // Also direct sync specifically for reservations if we want speed
-        // Also direct sync specifically for reservations - DISABLED
-        /*
+        // Also direct sync specifically for reservations - RE-ENABLED (Sanitized)
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
             const docRef = doc(window.dbFirestore, 'config', 'allGames');
-            setDoc(docRef, { reservations: info.reservations }, { merge: true })
+            const cleanReservations = JSON.parse(JSON.stringify(info.reservations));
+            setDoc(docRef, { reservations: cleanReservations }, { merge: true })
                 .then(() => {
                     console.log('🎟️ Reservation synced:', newRes.customerName);
                     if (typeof showToast === 'function') showToast('Reservación Guardada', 'success');
                 });
         }
-        */
         return newRes;
     }
 
@@ -2136,14 +2135,13 @@ class Store {
         this._save();
 
         // Sync
-        // Sync - DISABLED
-        /*
+        // Sync - RE-ENABLED (Sanitized)
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
             const docRef = doc(window.dbFirestore, 'config', 'allGames');
-            setDoc(docRef, { reservations: info.reservations }, { merge: true });
+            const cleanReservations = JSON.parse(JSON.stringify(info.reservations));
+            setDoc(docRef, { reservations: cleanReservations }, { merge: true });
         }
-        */
     }
 
     addGame(arg1) {
@@ -2220,15 +2218,13 @@ class Store {
 
         this.updateDailyGames(info.games);
 
-        // SYNC: DISABLED - Was causing Firebase errors with undefined values
-        // TODO: Re-enable after proper Firebase integration (Phase 1)
-        /*
+        // SYNC: RE-ENABLED (Sanitized)
         if (window.dbFirestore && window.FB && matchedReqs.length > 0) {
             const { doc, setDoc } = window.FB;
             const docRef = doc(window.dbFirestore, 'config', 'allGames');
-            setDoc(docRef, { gameRequests: info.gameRequests }, { merge: true })
+            const cleanRequests = JSON.parse(JSON.stringify(info.gameRequests));
+            setDoc(docRef, { gameRequests: cleanRequests }, { merge: true })
         }
-        */
 
         return newGame;
     }
