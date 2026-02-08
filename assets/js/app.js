@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.21 (Fix: Hostess CheckIn Logic)
+        v22.22 (Fix: Syntax Error)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -7318,4 +7318,3 @@ window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
   switchHostessTab('tables');
   renderHostessDashboard();
 };
-```
