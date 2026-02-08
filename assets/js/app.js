@@ -223,11 +223,14 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.30 (Add: Cache Clear Button)
+        v22.31 (Emergency Cache Fix)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
-               🔄 RECARGAR
+                🔄 Recargar
+            </button>
+            <button onclick="emergencyCacheClear()" style="background: #d97706; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
+                🧹 Limpiar Caché
             </button>
             <button onclick="localStorage.removeItem('ADANYEVA_DATA_V3'); window.location.reload(true);" style="background: #ef4444; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
                ⚠️ BORRAR DATOS Y RESYNC
@@ -6876,7 +6879,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.30';
+const CURRENT_VERSION = '22.31';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
@@ -6898,6 +6901,39 @@ if (storedVersion && storedVersion !== CURRENT_VERSION) {
 if (!storedVersion) {
   localStorage.setItem('app_version', CURRENT_VERSION);
 }
+
+// ==========================================
+// EMERGENCY CACHE CLEAR (AVAILABLE IMMEDIATELY)
+// ==========================================
+window.emergencyCacheClear = function () {
+  console.log('🚨 EMERGENCY CACHE CLEAR');
+
+  // Save auth
+  const authData = localStorage.getItem('adanEvaAuth');
+
+  // Nuclear option: clear everything
+  localStorage.clear();
+  sessionStorage.clear();
+
+  // Restore auth
+  if (authData) {
+    localStorage.setItem('adanEvaAuth', authData);
+  }
+  localStorage.setItem('app_version', '22.31');
+
+  // Clear IndexedDB
+  if (window.indexedDB) {
+    indexedDB.databases().then(dbs => {
+      dbs.forEach(db => {
+        indexedDB.deleteDatabase(db.name);
+        console.log('🗑️ Deleted:', db.name);
+      });
+    }).catch(e => console.warn('IndexedDB error:', e));
+  }
+
+  alert('✅ Caché eliminado completamente.\n\nRecargando...');
+  setTimeout(() => window.location.reload(true), 500);
+};
 
 // ==========================================
 // INITIALIZATION
