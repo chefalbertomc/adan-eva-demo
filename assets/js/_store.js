@@ -2295,511 +2295,498 @@ class Store {
         return this.createReservation(data);
     }
 
-    // SYNC TO FIREBASE - Use 'reservations' collection (NOT config/allGames)
-    if(window.dbFirestore && window.FB) {
-    const { doc, setDoc } = window.FB;
-    setDoc(doc(window.dbFirestore, 'reservations', newRes.id), newRes)
-        .then(() => {
-            console.log('🎟️ Reservation synced to cloud:', newRes.customerName);
-        })
-        .catch(e => console.error('🔥 Reservation sync error:', e));
-}
-
-return newRes;
-    }
-
-updateReservation(resId, updates) {
-    // Target the global reservations array (System A)
-    const idx = this.data.reservations.findIndex(r => r.id === resId);
-    if (idx === -1) {
-        console.warn('⚠️ updateReservation: Reservation not found:', resId);
-        return false;
-    }
-
-    // Update local
-    Object.assign(this.data.reservations[idx], updates);
-    this._save();
-
-    // SYNC TO FIREBASE
-    if (window.dbFirestore && window.FB) {
-        const { doc, updateDoc } = window.FB;
-        updateDoc(doc(window.dbFirestore, 'reservations', resId), updates)
-            .then(() => {
-                console.log('🔄 Reservation updated in cloud:', resId);
-            })
-            .catch(e => console.error('🔥 Reservation update error:', e));
-    }
-
-    return true;
-}
-
-removeReservation(resId) {
-    const info = this.getDailyInfo();
-    if (!info.reservations) return;
-
-    info.reservations = info.reservations.filter(r => r.id !== resId);
-    this._save();
-
-    // SYNC TO FIREBASE - Delete from reservations collection
-    if (window.dbFirestore && window.FB) {
-        const { doc, deleteDoc } = window.FB;
-        deleteDoc(doc(window.dbFirestore, 'reservations', resId))
-            .then(() => console.log('🗑️ Reservation deleted from cloud'))
-            .catch(e => console.error('🔥 Reservation delete error:', e));
-    }
-}
-
-addGame(arg1) {
-    // Advanced Signature: addGame({ date, time, sport, league, homeTeam, awayTeam, match, tvs, audio })
-    let gameData = arg1;
-
-    console.log('🎯 addGame received gameData:', gameData);
-    console.log('📅 gameData.date:', gameData.date);
-
-    // CRITICAL FIX: Don't use toLocaleDateString - it causes timezone bugs
-    // Ensure date is treated as LOCAL, not UTC.
-    // Appending T12:00:00 ensures it falls in the middle of the day for any American/European timezone
-    let finalDate = gameData.date;
-    if (finalDate && finalDate.length === 10) {
-        // Keep it as is, it's already YYYY-MM-DD
-    } else if (!finalDate) {
-        // Only if no date provided, create today's date manually
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        finalDate = `${year}-${month}-${day}`;
-    }
-
-    // Validation / Defaults
-    const newGame = {
-        id: 'game_' + Date.now(),
-        date: finalDate, // Now strictly YYYY-MM-DD
-        time: gameData.time || '12:00',
-        sport: gameData.sport || 'Futbol',
-        league: gameData.league || 'Amistoso',
-        homeTeam: gameData.homeTeam || 'Local',
-        awayTeam: gameData.awayTeam || 'Visitante',
-        match: gameData.match,
-        tvs: gameData.tvs || '',
-        audio: gameData.audio || { salon: false, terraza: false }
-    };
-
-    console.log('💾 Final newGame.date:', newGame.date);
-
-    // LEARNING PHASE
-    if (window.KNOWN_TEAMS) {
-        this.learnTeams(newGame.homeTeam);
-        this.learnTeams(newGame.awayTeam);
-    }
-
-    // AUTO-RESOLVE REQUESTS (Moved after object creation)
-    const info = this.getDailyInfo();
-    const pendingRequests = info.gameRequests || [];
-
-    // Match logic
-    const gameFullName = newGame.match || `${newGame.homeTeam} vs ${newGame.awayTeam}`;
-    const normalizedGameName = gameFullName.trim().toLowerCase();
-
-    const matchedReqs = pendingRequests.filter(r => {
-        const reqName = (r.gameName || r.name || '').trim().toLowerCase();
-        // 1. Direct Match
-        if (reqName === normalizedGameName) return true;
-        // 2. Partial Match
-        if (normalizedGameName.includes(reqName) && reqName.length > 4) return true;
-        return false;
-    });
-
-    if (matchedReqs.length > 0) {
-        console.log(`✅ Auto-resolving ${matchedReqs.length} pending requests for "${gameFullName}"`);
-        info.gameRequests = pendingRequests.filter(r => !matchedReqs.includes(r));
-    } else {
-        if (!info.gameRequests) info.gameRequests = []; // Ensure array exists
-    }
-
-    if (!info.games) info.games = [];
-    info.games.push(newGame);
-    this._save();
-
-    this.updateDailyGames(info.games);
-
-    // SYNC: RE-ENABLED (Sanitized)
-    if (window.dbFirestore && window.FB && matchedReqs.length > 0) {
-        const { doc, setDoc } = window.FB;
-        const docRef = doc(window.dbFirestore, 'config', 'allGames');
-        const cleanRequests = JSON.parse(JSON.stringify(info.gameRequests));
-        setDoc(docRef, { gameRequests: cleanRequests }, { merge: true })
-    }
-
-    return newGame;
-}
-
-// New Helpers for Game Management
-updateGameTVs(gameId, tvString) {
-    const game = (this.data.dailyInfo.games || []).find(g => g.id === gameId);
-    if (game) {
-        game.tvs = tvString;
-        this.updateDailyGames(this.data.dailyInfo.games);
-    }
-}
-
-setGameAudio(gameId, zone, state) {
-    // Zone: 'salon' | 'terraza'
-    // State: true | false
-    const games = this.data.dailyInfo.games || [];
-    const game = games.find(g => g.id === gameId);
-
-    if (game) {
-        // Logic: If turning ON, turn OFF for all others in that zone (Exclusive Audio)
-        if (state === true) {
-            games.forEach(g => {
-                if (g.audio) g.audio[zone] = false;
-            });
+    updateReservation(resId, updates) {
+        // Target the global reservations array (System A)
+        const idx = this.data.reservations.findIndex(r => r.id === resId);
+        if (idx === -1) {
+            console.warn('⚠️ updateReservation: Reservation not found:', resId);
+            return false;
         }
 
-        // Now set target
-        if (!game.audio) game.audio = { salon: false, terraza: false };
-        game.audio[zone] = state;
+        // Update local
+        Object.assign(this.data.reservations[idx], updates);
+        this._save();
 
-        this.updateDailyGames(games);
-    }
-}
-
-learnTeams(teamName) {
-    if (!teamName || teamName === 'Local' || teamName === 'Visitante' || !window.KNOWN_TEAMS) return;
-
-    // Normalize check
-    const normalized = teamName.trim();
-
-    if (!window.KNOWN_TEAMS.includes(normalized)) {
-        console.log(`🧠 Learning new team: ${normalized}`);
-        window.KNOWN_TEAMS.push(normalized);
-        window.KNOWN_TEAMS.sort();
-
-        // Update UI
-        if (typeof window.updateTeamDatalist === 'function') window.updateTeamDatalist();
-
-        // Sync to Cloud
+        // SYNC TO FIREBASE
         if (window.dbFirestore && window.FB) {
-            const { doc, setDoc, arrayUnion } = window.FB;
-            const configRef = doc(window.dbFirestore, 'config', 'teams');
-            setDoc(configRef, {
-                list: arrayUnion(normalized)
-            }, { merge: true }).catch(e => console.error('🔥 Error learning team:', e));
+            const { doc, updateDoc } = window.FB;
+            updateDoc(doc(window.dbFirestore, 'reservations', resId), updates)
+                .then(() => {
+                    console.log('🔄 Reservation updated in cloud:', resId);
+                })
+                .catch(e => console.error('🔥 Reservation update error:', e));
+        }
+
+        return true;
+    }
+
+    removeReservation(resId) {
+        const info = this.getDailyInfo();
+        if (!info.reservations) return;
+
+        info.reservations = info.reservations.filter(r => r.id !== resId);
+        this._save();
+
+        // SYNC TO FIREBASE - Delete from reservations collection
+        if (window.dbFirestore && window.FB) {
+            const { doc, deleteDoc } = window.FB;
+            deleteDoc(doc(window.dbFirestore, 'reservations', resId))
+                .then(() => console.log('🗑️ Reservation deleted from cloud'))
+                .catch(e => console.error('🔥 Reservation delete error:', e));
         }
     }
-} deleteGame(index) {
-    const info = this.getDailyInfo();
-    info.games.splice(index, 1);
-    this.updateDailyGames(info.games);
-}
 
-// === PROMOS ===
-addPromoToCatalog(title, description) {
-    const info = this.getDailyInfo();
-    if (!info.promoCatalog) info.promoCatalog = [];
-    const id = 'pc' + Date.now();
-    info.promoCatalog.push({ id, title, description, createdAt: new Date().toISOString() });
-    this._save();
-    return id;
-}
+    addGame(arg1) {
+        // Advanced Signature: addGame({ date, time, sport, league, homeTeam, awayTeam, match, tvs, audio })
+        let gameData = arg1;
 
-deletePromoFromCatalog(promoId) {
-    const info = this.getDailyInfo();
-    info.promoCatalog = (info.promoCatalog || []).filter(p => p.id !== promoId);
-    info.activePromoIds = (info.activePromoIds || []).filter(id => id !== promoId);
-    this._save();
-}
+        console.log('🎯 addGame received gameData:', gameData);
+        console.log('📅 gameData.date:', gameData.date);
 
-togglePromoActive(promoId) {
-    const info = this.getDailyInfo();
-    if (!info.activePromoIds) info.activePromoIds = [];
-    const idx = info.activePromoIds.indexOf(promoId);
-    if (idx >= 0) {
-        info.activePromoIds.splice(idx, 1);
-    } else {
-        info.activePromoIds.push(promoId);
+        // CRITICAL FIX: Don't use toLocaleDateString - it causes timezone bugs
+        // Ensure date is treated as LOCAL, not UTC.
+        // Appending T12:00:00 ensures it falls in the middle of the day for any American/European timezone
+        let finalDate = gameData.date;
+        if (finalDate && finalDate.length === 10) {
+            // Keep it as is, it's already YYYY-MM-DD
+        } else if (!finalDate) {
+            // Only if no date provided, create today's date manually
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            finalDate = `${year}-${month}-${day}`;
+        }
+
+        // Validation / Defaults
+        const newGame = {
+            id: 'game_' + Date.now(),
+            date: finalDate, // Now strictly YYYY-MM-DD
+            time: gameData.time || '12:00',
+            sport: gameData.sport || 'Futbol',
+            league: gameData.league || 'Amistoso',
+            homeTeam: gameData.homeTeam || 'Local',
+            awayTeam: gameData.awayTeam || 'Visitante',
+            match: gameData.match,
+            tvs: gameData.tvs || '',
+            audio: gameData.audio || { salon: false, terraza: false }
+        };
+
+        console.log('💾 Final newGame.date:', newGame.date);
+
+        // LEARNING PHASE
+        if (window.KNOWN_TEAMS) {
+            this.learnTeams(newGame.homeTeam);
+            this.learnTeams(newGame.awayTeam);
+        }
+
+        // AUTO-RESOLVE REQUESTS (Moved after object creation)
+        const info = this.getDailyInfo();
+        const pendingRequests = info.gameRequests || [];
+
+        // Match logic
+        const gameFullName = newGame.match || `${newGame.homeTeam} vs ${newGame.awayTeam}`;
+        const normalizedGameName = gameFullName.trim().toLowerCase();
+
+        const matchedReqs = pendingRequests.filter(r => {
+            const reqName = (r.gameName || r.name || '').trim().toLowerCase();
+            // 1. Direct Match
+            if (reqName === normalizedGameName) return true;
+            // 2. Partial Match
+            if (normalizedGameName.includes(reqName) && reqName.length > 4) return true;
+            return false;
+        });
+
+        if (matchedReqs.length > 0) {
+            console.log(`✅ Auto-resolving ${matchedReqs.length} pending requests for "${gameFullName}"`);
+            info.gameRequests = pendingRequests.filter(r => !matchedReqs.includes(r));
+        } else {
+            if (!info.gameRequests) info.gameRequests = []; // Ensure array exists
+        }
+
+        if (!info.games) info.games = [];
+        info.games.push(newGame);
+        this._save();
+
+        this.updateDailyGames(info.games);
+
+        // SYNC: RE-ENABLED (Sanitized)
+        if (window.dbFirestore && window.FB && matchedReqs.length > 0) {
+            const { doc, setDoc } = window.FB;
+            const docRef = doc(window.dbFirestore, 'config', 'allGames');
+            const cleanRequests = JSON.parse(JSON.stringify(info.gameRequests));
+            setDoc(docRef, { gameRequests: cleanRequests }, { merge: true })
+        }
+
+        return newGame;
     }
-    this._save();
-}
 
-// === DYNAMICS ===
-addDynamicToCatalog(title, description, metric) {
-    const info = this.getDailyInfo();
-    if (!info.dynamicCatalog) info.dynamicCatalog = [];
-    const id = 'dc' + Date.now();
-    info.dynamicCatalog.push({ id, title, description, metric, createdAt: new Date().toISOString() });
-    this._save();
-    return id;
-}
-
-deleteDynamicFromCatalog(dynamicId) {
-    const info = this.getDailyInfo();
-    info.dynamicCatalog = (info.dynamicCatalog || []).filter(d => d.id !== dynamicId);
-    if (info.activeDynamic && info.activeDynamic.catalogId === dynamicId) {
-        info.activeDynamic = null;
+    // New Helpers for Game Management
+    updateGameTVs(gameId, tvString) {
+        const game = (this.data.dailyInfo.games || []).find(g => g.id === gameId);
+        if (game) {
+            game.tvs = tvString;
+            this.updateDailyGames(this.data.dailyInfo.games);
+        }
     }
-    this._save();
-}
 
-activateDynamic(catalogId) {
-    const info = this.getDailyInfo();
-    // Initialize scores with all waiters at 0
-    const waiters = this.getWaiters();
-    info.activeDynamic = {
-        catalogId,
-        date: new Date().toISOString().split('T')[0],
-        scores: waiters.map(w => ({
-            odoo_id: w.odoo_id,
-            waiterName: w.name,
-            score: 0
-        }))
-    };
-    this._save();
-}
+    setGameAudio(gameId, zone, state) {
+        // Zone: 'salon' | 'terraza'
+        // State: true | false
+        const games = this.data.dailyInfo.games || [];
+        const game = games.find(g => g.id === gameId);
 
-deactivateDynamic() {
-    const info = this.getDailyInfo();
-    info.activeDynamic = null;
-    this._save();
-}
+        if (game) {
+            // Logic: If turning ON, turn OFF for all others in that zone (Exclusive Audio)
+            if (state === true) {
+                games.forEach(g => {
+                    if (g.audio) g.audio[zone] = false;
+                });
+            }
 
-updateWaiterScore(odoo_id, newScore) {
-    const info = this.getDailyInfo();
-    if (!info.activeDynamic || !info.activeDynamic.scores) return;
-    const entry = info.activeDynamic.scores.find(s => s.odoo_id === odoo_id);
-    if (entry) {
-        entry.score = parseInt(newScore) || 0;
+            // Now set target
+            if (!game.audio) game.audio = { salon: false, terraza: false };
+            game.audio[zone] = state;
+
+            this.updateDailyGames(games);
+        }
     }
-    // Sort by score descending
-    info.activeDynamic.scores.sort((a, b) => b.score - a.score);
-    this._save();
-}
 
-// === PRODUCTS 86/85/PUSH ===
-addProduct(type, name, category) {
-    // type: 'outOfStock86', 'lowStock85', 'push'
-    // category: 'cocina' or 'meseros'
-    const info = this.getDailyInfo();
-    if (!info.products) info.products = { outOfStock86: [], lowStock85: [], push: [] };
-    if (!info.products[type]) info.products[type] = [];
-    info.products[type].push({
-        id: type + '_' + Date.now(),
-        name,
-        category
-    });
-    this._save();
-}
+    learnTeams(teamName) {
+        if (!teamName || teamName === 'Local' || teamName === 'Visitante' || !window.KNOWN_TEAMS) return;
 
-deleteProduct(type, index) {
-    const info = this.getDailyInfo();
-    if (info.products && info.products[type]) {
-        info.products[type].splice(index, 1);
+        // Normalize check
+        const normalized = teamName.trim();
+
+        if (!window.KNOWN_TEAMS.includes(normalized)) {
+            console.log(`🧠 Learning new team: ${normalized}`);
+            window.KNOWN_TEAMS.push(normalized);
+            window.KNOWN_TEAMS.sort();
+
+            // Update UI
+            if (typeof window.updateTeamDatalist === 'function') window.updateTeamDatalist();
+
+            // Sync to Cloud
+            if (window.dbFirestore && window.FB) {
+                const { doc, setDoc, arrayUnion } = window.FB;
+                const configRef = doc(window.dbFirestore, 'config', 'teams');
+                setDoc(configRef, {
+                    list: arrayUnion(normalized)
+                }, { merge: true }).catch(e => console.error('🔥 Error learning team:', e));
+            }
+        }
+    } deleteGame(index) {
+        const info = this.getDailyInfo();
+        info.games.splice(index, 1);
+        this.updateDailyGames(info.games);
+    }
+
+    // === PROMOS ===
+    addPromoToCatalog(title, description) {
+        const info = this.getDailyInfo();
+        if (!info.promoCatalog) info.promoCatalog = [];
+        const id = 'pc' + Date.now();
+        info.promoCatalog.push({ id, title, description, createdAt: new Date().toISOString() });
+        this._save();
+        return id;
+    }
+
+    deletePromoFromCatalog(promoId) {
+        const info = this.getDailyInfo();
+        info.promoCatalog = (info.promoCatalog || []).filter(p => p.id !== promoId);
+        info.activePromoIds = (info.activePromoIds || []).filter(id => id !== promoId);
         this._save();
     }
-}
 
-// Legacy compatibility
-updateDailyPromos(promos) {
-    // For backward compat - convert to new structure
-    const info = this.getDailyInfo();
-    info.promoCatalog = promos;
-    info.activePromoIds = promos.map(p => p.id);
-    this._save();
-}
-
-updateDailyDynamics(dynamicsData) {
-    const info = this.getDailyInfo();
-    if (dynamicsData && dynamicsData.active) {
-        // Legacy format
-        if (!info.dynamicCatalog) info.dynamicCatalog = [];
-        const existing = info.dynamicCatalog.find(d => d.id === dynamicsData.active.id);
-        if (!existing) {
-            info.dynamicCatalog.push({
-                id: dynamicsData.active.id,
-                title: dynamicsData.active.title,
-                description: dynamicsData.active.description,
-                metric: dynamicsData.active.metric || 'count'
-            });
+    togglePromoActive(promoId) {
+        const info = this.getDailyInfo();
+        if (!info.activePromoIds) info.activePromoIds = [];
+        const idx = info.activePromoIds.indexOf(promoId);
+        if (idx >= 0) {
+            info.activePromoIds.splice(idx, 1);
+        } else {
+            info.activePromoIds.push(promoId);
         }
+        this._save();
+    }
+
+    // === DYNAMICS ===
+    addDynamicToCatalog(title, description, metric) {
+        const info = this.getDailyInfo();
+        if (!info.dynamicCatalog) info.dynamicCatalog = [];
+        const id = 'dc' + Date.now();
+        info.dynamicCatalog.push({ id, title, description, metric, createdAt: new Date().toISOString() });
+        this._save();
+        return id;
+    }
+
+    deleteDynamicFromCatalog(dynamicId) {
+        const info = this.getDailyInfo();
+        info.dynamicCatalog = (info.dynamicCatalog || []).filter(d => d.id !== dynamicId);
+        if (info.activeDynamic && info.activeDynamic.catalogId === dynamicId) {
+            info.activeDynamic = null;
+        }
+        this._save();
+    }
+
+    activateDynamic(catalogId) {
+        const info = this.getDailyInfo();
+        // Initialize scores with all waiters at 0
+        const waiters = this.getWaiters();
         info.activeDynamic = {
-            catalogId: dynamicsData.active.id,
+            catalogId,
             date: new Date().toISOString().split('T')[0],
-            scores: (dynamicsData.leaderboard || []).map(l => ({
-                odoo_id: l.waiterId,
-                waiterName: l.waiterName,
-                score: l.score || 0
+            scores: waiters.map(w => ({
+                odoo_id: w.odoo_id,
+                waiterName: w.name,
+                score: 0
             }))
         };
-    } else {
+        this._save();
+    }
+
+    deactivateDynamic() {
+        const info = this.getDailyInfo();
         info.activeDynamic = null;
-    }
-    this._save();
-}
-
-updateProducts86(products) {
-    // Legacy - maps to outOfStock86
-    const info = this.getDailyInfo();
-    if (!info.products) info.products = { outOfStock86: [], lowStock85: [], push: [] };
-    info.products.outOfStock86 = products.map(p => ({
-        id: p.id,
-        name: p.name,
-        category: p.category === 'Platillos' || p.category === 'cocina' ? 'cocina' : 'meseros'
-    }));
-    this._save();
-}
-
-// === AI SUGGESTIONS (Personalized) ===
-generateAISuggestion(customerId) {
-    const customer = this.data.customers.find(c => c.id === customerId);
-    if (!customer) return 'Cliente nuevo - ofrecer menú completo.';
-
-    const visits = this.data.visits.filter(v => v.customerId === customerId);
-    const classification = this.getCustomerClassification(customerId);
-
-    let suggestions = [];
-
-    // Based on classification
-    if (classification === 'Diamond' || classification === 'VIP') {
-        suggestions.push('Cliente premium - ofrecer platillos especiales o promociones VIP');
+        this._save();
     }
 
-    // Based on visit frequency
-    if (visits.length >= 5) {
-        suggestions.push('Cliente frecuente');
-    } else if (visits.length === 1) {
-        suggestions.push('Segunda visita - impresionar para fidelizar');
+    updateWaiterScore(odoo_id, newScore) {
+        const info = this.getDailyInfo();
+        if (!info.activeDynamic || !info.activeDynamic.scores) return;
+        const entry = info.activeDynamic.scores.find(s => s.odoo_id === odoo_id);
+        if (entry) {
+            entry.score = parseInt(newScore) || 0;
+        }
+        // Sort by score descending
+        info.activeDynamic.scores.sort((a, b) => b.score - a.score);
+        this._save();
     }
 
-    // Based on top drinks
-    if (customer.topDrinks && customer.topDrinks.length > 0) {
-        const topDrink = customer.topDrinks[0];
-        // Check if there's a promo for drinks
-        const dailyInfo = this.getDailyInfo();
-        const drinkPromo = dailyInfo.promos.find(p => p.title.toLowerCase().includes('cerveza') || p.title.toLowerCase().includes('bebida'));
-        if (drinkPromo) {
-            suggestions.push(`Ofrecer "${drinkPromo.title}" - cliente suele pedir ${topDrink}`);
+    // === PRODUCTS 86/85/PUSH ===
+    addProduct(type, name, category) {
+        // type: 'outOfStock86', 'lowStock85', 'push'
+        // category: 'cocina' or 'meseros'
+        const info = this.getDailyInfo();
+        if (!info.products) info.products = { outOfStock86: [], lowStock85: [], push: [] };
+        if (!info.products[type]) info.products[type] = [];
+        info.products[type].push({
+            id: type + '_' + Date.now(),
+            name,
+            category
+        });
+        this._save();
+    }
+
+    deleteProduct(type, index) {
+        const info = this.getDailyInfo();
+        if (info.products && info.products[type]) {
+            info.products[type].splice(index, 1);
+            this._save();
+        }
+    }
+
+    // Legacy compatibility
+    updateDailyPromos(promos) {
+        // For backward compat - convert to new structure
+        const info = this.getDailyInfo();
+        info.promoCatalog = promos;
+        info.activePromoIds = promos.map(p => p.id);
+        this._save();
+    }
+
+    updateDailyDynamics(dynamicsData) {
+        const info = this.getDailyInfo();
+        if (dynamicsData && dynamicsData.active) {
+            // Legacy format
+            if (!info.dynamicCatalog) info.dynamicCatalog = [];
+            const existing = info.dynamicCatalog.find(d => d.id === dynamicsData.active.id);
+            if (!existing) {
+                info.dynamicCatalog.push({
+                    id: dynamicsData.active.id,
+                    title: dynamicsData.active.title,
+                    description: dynamicsData.active.description,
+                    metric: dynamicsData.active.metric || 'count'
+                });
+            }
+            info.activeDynamic = {
+                catalogId: dynamicsData.active.id,
+                date: new Date().toISOString().split('T')[0],
+                scores: (dynamicsData.leaderboard || []).map(l => ({
+                    odoo_id: l.waiterId,
+                    waiterName: l.waiterName,
+                    score: l.score || 0
+                }))
+            };
         } else {
-            suggestions.push(`Cliente prefiere ${topDrink}`);
+            info.activeDynamic = null;
         }
+        this._save();
     }
 
-    // Based on top food
-    if (customer.topFood && customer.topFood.length > 0) {
-        const topFood = customer.topFood[0];
-        suggestions.push(`Suele pedir ${topFood}`);
+    updateProducts86(products) {
+        // Legacy - maps to outOfStock86
+        const info = this.getDailyInfo();
+        if (!info.products) info.products = { outOfStock86: [], lowStock85: [], push: [] };
+        info.products.outOfStock86 = products.map(p => ({
+            id: p.id,
+            name: p.name,
+            category: p.category === 'Platillos' || p.category === 'cocina' ? 'cocina' : 'meseros'
+        }));
+        this._save();
     }
 
-    // Based on team (if there's a game today)
-    if (customer.team) {
-        const dailyInfo = this.getDailyInfo();
-        const game = dailyInfo.games.find(g =>
-            g.homeTeam === customer.team || g.awayTeam === customer.team
-        );
-        if (game) {
-            suggestions.push(`¡Su equipo juega hoy! ${game.homeTeam} vs ${game.awayTeam} a las ${game.time}`);
+    // === AI SUGGESTIONS (Personalized) ===
+    generateAISuggestion(customerId) {
+        const customer = this.data.customers.find(c => c.id === customerId);
+        if (!customer) return 'Cliente nuevo - ofrecer menú completo.';
+
+        const visits = this.data.visits.filter(v => v.customerId === customerId);
+        const classification = this.getCustomerClassification(customerId);
+
+        let suggestions = [];
+
+        // Based on classification
+        if (classification === 'Diamond' || classification === 'VIP') {
+            suggestions.push('Cliente premium - ofrecer platillos especiales o promociones VIP');
         }
+
+        // Based on visit frequency
+        if (visits.length >= 5) {
+            suggestions.push('Cliente frecuente');
+        } else if (visits.length === 1) {
+            suggestions.push('Segunda visita - impresionar para fidelizar');
+        }
+
+        // Based on top drinks
+        if (customer.topDrinks && customer.topDrinks.length > 0) {
+            const topDrink = customer.topDrinks[0];
+            // Check if there's a promo for drinks
+            const dailyInfo = this.getDailyInfo();
+            const drinkPromo = dailyInfo.promos.find(p => p.title.toLowerCase().includes('cerveza') || p.title.toLowerCase().includes('bebida'));
+            if (drinkPromo) {
+                suggestions.push(`Ofrecer "${drinkPromo.title}" - cliente suele pedir ${topDrink}`);
+            } else {
+                suggestions.push(`Cliente prefiere ${topDrink}`);
+            }
+        }
+
+        // Based on top food
+        if (customer.topFood && customer.topFood.length > 0) {
+            const topFood = customer.topFood[0];
+            suggestions.push(`Suele pedir ${topFood}`);
+        }
+
+        // Based on team (if there's a game today)
+        if (customer.team) {
+            const dailyInfo = this.getDailyInfo();
+            const game = dailyInfo.games.find(g =>
+                g.homeTeam === customer.team || g.awayTeam === customer.team
+            );
+            if (game) {
+                suggestions.push(`¡Su equipo juega hoy! ${game.homeTeam} vs ${game.awayTeam} a las ${game.time}`);
+            }
+        }
+
+        // Default if no suggestions
+        if (suggestions.length === 0) {
+            return 'Nuevo cliente - ofrecer promociones del día y menú recomendado.';
+        }
+
+        return suggestions.join('. ');
     }
 
-    // Default if no suggestions
-    if (suggestions.length === 0) {
-        return 'Nuevo cliente - ofrecer promociones del día y menú recomendado.';
-    }
+    // --- INVENTORY / ADMIN METHODS ---
 
-    return suggestions.join('. ');
-}
+    toggleItemAvailability(itemId) {
+        if (!itemId) return false;
 
-// --- INVENTORY / ADMIN METHODS ---
+        // Helper to find and toggle
+        const toggleInList = (list) => {
+            const item = list.find(i => i.id === itemId);
+            if (item) {
+                if (item.available === undefined) item.available = true;
+                item.available = !item.available;
+                return true;
+            }
+            return false;
+        };
 
-toggleItemAvailability(itemId) {
-    if (!itemId) return false;
+        const foundInFood = toggleInList(this.menu.alimentos);
+        const foundInDrinks = !foundInFood && toggleInList(this.menu.bebidas);
 
-    // Helper to find and toggle
-    const toggleInList = (list) => {
-        const item = list.find(i => i.id === itemId);
-        if (item) {
-            if (item.available === undefined) item.available = true;
-            item.available = !item.available;
+        if (foundInFood || foundInDrinks) {
+            this._save();
             return true;
         }
         return false;
-    };
+    }
 
-    const foundInFood = toggleInList(this.menu.alimentos);
-    const foundInDrinks = !foundInFood && toggleInList(this.menu.bebidas);
+    addNewProduct(name, category, price, type) {
+        // type should be 'alimentos' or 'bebidas'
+        if (!this.menu[type]) return false;
 
-    if (foundInFood || foundInDrinks) {
+        const newId = (type === 'alimentos' ? 'A' : 'B') + Date.now().toString().slice(-4);
+
+        const newItem = {
+            id: newId,
+            name: name,
+            category: category,
+            price: parseFloat(price) || 0,
+            available: true
+        };
+
+        this.menu[type].push(newItem);
         this._save();
-        return true;
+        return newItem;
     }
-    return false;
-}
 
-addNewProduct(name, category, price, type) {
-    // type should be 'alimentos' or 'bebidas'
-    if (!this.menu[type]) return false;
+    addGame_DUPLICATE_DO_NOT_USE(gameData) {
+        const info = this.getDailyInfo();
+        const newGame = {
+            id: 'g' + Date.now(),
+            league: gameData.league || 'General',
+            homeTeam: gameData.homeTeam,
+            awayTeam: gameData.awayTeam,
+            time: gameData.time,
+            date: new Date().toISOString().split('T')[0]
+        };
+        info.games.push(newGame);
+        this._save();
 
-    const newId = (type === 'alimentos' ? 'A' : 'B') + Date.now().toString().slice(-4);
-
-    const newItem = {
-        id: newId,
-        name: name,
-        category: category,
-        price: parseFloat(price) || 0,
-        available: true
-    };
-
-    this.menu[type].push(newItem);
-    this._save();
-    return newItem;
-}
-
-addGame_DUPLICATE_DO_NOT_USE(gameData) {
-    const info = this.getDailyInfo();
-    const newGame = {
-        id: 'g' + Date.now(),
-        league: gameData.league || 'General',
-        homeTeam: gameData.homeTeam,
-        awayTeam: gameData.awayTeam,
-        time: gameData.time,
-        date: new Date().toISOString().split('T')[0]
-    };
-    info.games.push(newGame);
-    this._save();
-
-    // SYNC FIREBASE
-    if (window.dbFirestore && window.FB) {
-        const { doc, setDoc } = window.FB;
-        setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
-            .catch(e => console.error('🔥 Sync add game error', e));
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
+                .catch(e => console.error('🔥 Sync add game error', e));
+        }
+        return newGame;
     }
-    return newGame;
-}
 
-removeGame(gameId) {
-    const info = this.getDailyInfo();
-    const oldGames = info.games || [];
-    const newGames = oldGames.filter(g => g.id !== gameId);
+    removeGame(gameId) {
+        const info = this.getDailyInfo();
+        const oldGames = info.games || [];
+        const newGames = oldGames.filter(g => g.id !== gameId);
 
-    // Use centralized updater (handles Firebase sync to allGames)
-    this.updateDailyGames(newGames);
-}
+        // Use centralized updater (handles Firebase sync to allGames)
+        this.updateDailyGames(newGames);
+    }
 
-clearTodayGames() {
-    const today = new Date().toLocaleDateString('en-CA');
-    const info = this.getDailyInfo();
-    const oldGames = info.games || [];
-    const beforeCount = oldGames.length;
+    clearTodayGames() {
+        const today = new Date().toLocaleDateString('en-CA');
+        const info = this.getDailyInfo();
+        const oldGames = info.games || [];
+        const beforeCount = oldGames.length;
 
-    // Keep only games NOT from today
-    const newGames = oldGames.filter(g => g.date !== today);
-    const afterCount = newGames.length;
+        // Keep only games NOT from today
+        const newGames = oldGames.filter(g => g.date !== today);
+        const afterCount = newGames.length;
 
-    console.log(`🗑️ Cleared ${beforeCount - afterCount} games from ${today}`);
+        console.log(`🗑️ Cleared ${beforeCount - afterCount} games from ${today}`);
 
-    // Use centralized updater (handles Firebase sync to allGames)
-    this.updateDailyGames(newGames);
-}
+        // Use centralized updater (handles Firebase sync to allGames)
+        this.updateDailyGames(newGames);
+    }
 
 
     // === GAME REQUESTS ===
