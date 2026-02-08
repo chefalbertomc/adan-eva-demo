@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.3 (Manager: Inline Form - No More Modals)
+        v22.4 (Manager: VIP Gate + Search + Sorted Games)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -825,6 +825,89 @@ function dismissSearchAndContinue() {
   }
 }
 
+// Manager Logic: Customer Search
+function searchCustomerForManager(query) {
+  const resultsDiv = document.getElementById('res-search-results');
+  if (!resultsDiv) return;
+
+  if (query.length < 2) {
+    resultsDiv.classList.add('hidden');
+    return;
+  }
+
+  const matches = window.db.searchCustomers(query);
+  let resultsHtml = '';
+
+  if (matches.length > 0) {
+    resultsHtml = matches.map(c =>
+      `<div onclick="selectManagerCustomer('${c.id}', '${c.firstName} ${c.lastName}', '${c.vip || ''}')" 
+            class="cursor-pointer border-b border-gray-700 p-3 hover:bg-yellow-900/20 transition flex justify-between items-center group">
+               <div>
+                 <div class="font-bold text-white group-hover:text-yellow-500">${c.firstName} ${c.lastName}</div>
+                 <div class="text-xs text-gray-500">ID: ${c.id}</div>
+               </div>
+               ${c.vip ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded border border-yellow-500 text-yellow-500 uppercase">${c.vip}</span>` : ''}
+             </div>`
+    ).join('');
+  } else {
+    resultsHtml = `
+      <div class="p-4 text-center cursor-pointer hover:bg-gray-800" onclick="dismissManagerSearch()">
+         <div class="text-sm font-bold text-green-500">➕ Nuevo Cliente</div>
+         <div class="text-xs text-gray-400">Continuar llenando datos manuales</div>
+      </div>`;
+  }
+
+  // Close button
+  resultsHtml = `
+            <div style="padding: 4px 8px; background: #111; display: flex; justify-content: flex-end; border-bottom: 1px solid #333;">
+              <button onclick="dismissManagerSearch()" class="text-red-500 hover:text-red-400 text-xs font-bold uppercase">Cerrar ✕</button>
+            </div>
+            ` + resultsHtml;
+
+  resultsDiv.innerHTML = resultsHtml;
+  resultsDiv.classList.remove('hidden');
+}
+
+function selectManagerCustomer(id, name, vip) {
+  document.getElementById('res-name').value = name;
+
+  // Auto-select VIP
+  // Reset all first
+  document.querySelectorAll('.res-vip-btn').forEach(b => {
+    b.classList.remove('selected', 'border-orange-500', 'border-blue-400', 'text-orange-500', 'text-blue-400');
+    b.classList.add('border-gray-600', 'text-gray-400');
+  });
+
+  const vipInput = document.getElementById('res-vip');
+  vipInput.value = vip || ''; // Empty if no VIP
+
+  // Highlight appropriate button
+  if (vip === 'blazin') {
+    const btn = document.querySelector(`button[onclick*="'blazin'"]`);
+    if (btn) {
+      btn.classList.add('selected', 'border-orange-500', 'text-orange-500');
+      btn.classList.remove('border-gray-600', 'text-gray-400');
+    }
+  } else if (vip === 'diamond') {
+    const btn = document.querySelector(`button[onclick*="'diamond'"]`);
+    if (btn) {
+      btn.classList.add('selected', 'border-blue-400', 'text-blue-400');
+      btn.classList.remove('border-gray-600', 'text-gray-400');
+    }
+  } else {
+    // Normal / None
+    const btn = document.querySelector(`button[onclick*="selectResVip(this, '')"]`);
+    if (btn) btn.classList.add('selected');
+  }
+
+  dismissManagerSearch();
+}
+
+function dismissManagerSearch() {
+  const resultsDiv = document.getElementById('res-search-results');
+  if (resultsDiv) resultsDiv.classList.add('hidden');
+}
+
 function selectCustomer(id) {
   const c = window.db.data.customers.find(x => x.id === id);
   if (c) {
@@ -1360,10 +1443,11 @@ window.generateGameOptions = function (selected) {
   // Filter: Date must be today or future
   let matches = allMatches.filter(m => m.date >= today);
 
-  // Sort by Date then Time
+  // Sort by Date then Time then League
   matches.sort((a, b) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return a.time.localeCompare(b.time);
+    if (a.time !== b.time) return a.time.localeCompare(b.time);
+    return (a.league || '').localeCompare(b.league || '');
   });
 
   console.log(`Dropdown Filter: Found ${matches.length} upcoming games`);
@@ -6182,7 +6266,16 @@ function renderManagerReservationsTab(container) {
           <div class="space-y-4">
               <div>
                 <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Nombre Cliente</label>
-                <input type="text" id="res-name" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Ej. Juan Pérez">
+                <div class="relative">
+                  <input type="text" id="res-name" 
+                         class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white focus:border-yellow-500 outline-none font-bold placeholder-gray-600" 
+                         placeholder="🔍 Buscar Cliente..." 
+                         autocomplete="off"
+                         onkeyup="searchCustomerForManager(this.value)">
+                  
+                  <!-- Search Results Container -->
+                  <div id="res-search-results" class="hidden absolute top-full left-0 right-0 bg-black border border-yellow-500/50 rounded-b-lg mt-1 z-50 shadow-2xl max-h-60 overflow-y-auto"></div>
+                </div>
               </div>
 
               <div class="grid grid-cols-2 gap-4">
@@ -6197,13 +6290,14 @@ function renderManagerReservationsTab(container) {
               </div>
 
               <div>
-                <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Categoría VIP</label>
-                <div class="flex gap-2">
+                <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Categoría VIP (Auto)</label>
+                <div class="flex gap-2 opacity-80 pointer-events-none"> <!-- Read Only Visual -->
                   <button onclick="selectResVip(this, '')" class="res-vip-btn flex-1 p-2 rounded border border-gray-600 bg-gray-800 text-gray-400 text-sm selected">Normal</button>
                   <button onclick="selectResVip(this, 'blazin')" class="res-vip-btn flex-1 p-2 rounded border border-orange-500/50 bg-gray-800 text-orange-500 text-sm">🔥 Blazin</button>
                   <button onclick="selectResVip(this, 'diamond')" class="res-vip-btn flex-1 p-2 rounded border border-blue-400/50 bg-gray-800 text-blue-400 text-sm">💎 Diamond</button>
                 </div>
                 <input type="hidden" id="res-vip" value="">
+                <p class="text-[10px] text-gray-500 mt-1 italic">* La categoría se asigna automáticamente al buscar el cliente.</p>
               </div>
 
               <div>
@@ -6224,7 +6318,7 @@ function renderManagerReservationsTab(container) {
 
               <div class="flex gap-3 mt-4">
                  <button onclick="toggleReservationForm()" class="flex-1 bg-gray-800 text-gray-400 font-bold py-3 rounded-lg hover:bg-gray-700">CANCELAR</button>
-                 <button onclick="submitReservation()" class="flex-[2] bg-yellow-600 hover:bg-yellow-500 text-black font-black py-3 rounded-lg shadow-lg transform active:scale-95 transition">
+                 <button onclick="submitManagerReservation()" class="flex-[2] bg-yellow-600 hover:bg-yellow-500 text-black font-black py-3 rounded-lg shadow-lg transform active:scale-95 transition">
                     💾 GUARDAR
                  </button>
               </div>
@@ -6706,3 +6800,58 @@ function renderManagerReservations(container) {
       </div>
       `).join('');
 }
+
+// ==========================================
+// MANAGER RESERVATION LOGIC (v22.4)
+// ==========================================
+window.submitManagerReservation = function() {
+    const name = document.getElementById('res-name').value;
+    const pax = document.getElementById('res-pax').value;
+    const time = document.getElementById('res-time').value;
+    const vip = document.getElementById('res-vip').value;
+    const reason = document.getElementById('res-reason').value;
+    const game = document.getElementById('res-game').value;
+
+    if (!name || !time) {
+        alert('Por favor complete nombre y hora.');
+        return;
+    }
+
+    // AUTH GATE FOR NON-VIP
+    if (!vip) {
+        const password = prompt("⚠️ Cliente SIN Categoría VIP.\n\nPara autorizar expcecionalmente esta reservación, ingrese su CONTRASEÑA DE GERENTE:");
+        if (password !== 'admin123') { // Hardcoded for now as requested
+            alert("⛔ CONTRASEÑA INCORRECTA. No se puede crear la reservación.");
+            return;
+        }
+    }
+
+    const data = {
+        id: Date.now().toString(),
+        customerName: name,
+        pax: pax,
+        time: time,
+        vip: vip,
+        reason: reason,
+        game: reason === 'Partido' ? game : '',
+        date: new Date().toLocaleDateString('en-CA'),
+        status: 'active',
+        branchId: STATE.branch ? STATE.branch.id : 'branch-1'
+    };
+
+    if(window.db && window.db.addReservation) {
+        window.db.addReservation(data);
+        alert("✅ Reservación creada exitosamente.");
+        toggleReservationForm();
+        // Refresh by re-rendering tab if possible, or reload
+        const container = document.getElementById('content-reservations');
+        if(container && typeof renderManagerReservationsTab === 'function') {
+            renderManagerReservationsTab(container);
+        } else {
+             window.location.reload(); 
+        }
+    } else {
+        console.error("DB not linked");
+        alert("Error de base de datos");
+    }
+};
