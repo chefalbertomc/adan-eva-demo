@@ -1368,19 +1368,34 @@ class Store {
     // Close visit and set consumption
     closeVisit(visitId, amount) {
         const visit = this.data.visits.find(v => v.id === visitId);
-        if (visit) {
-            visit.status = 'closed';
-            visit.totalAmount = amount;
-            visit.endTime = new Date().toISOString();
-            this._save();
+        if (!visit) return false;
 
-            // SYNC FIREBASE
-            if (window.dbFirestore && window.FB) {
-                const { doc, updateDoc } = window.FB;
-                updateDoc(doc(window.dbFirestore, 'visits', visitId), { status: 'closed', totalAmount: amount, endTime: visit.endTime })
-                    .catch(e => console.error('🔥 Sync close error', e));
-            }
+        // Ensure amount is a valid number (default to 0 if not provided)
+        const validAmount = amount !== undefined && amount !== null && amount !== '' ? parseFloat(amount) : 0;
+
+        visit.status = 'closed';
+        visit.endTime = new Date().toISOString();
+        visit.totalAmount = validAmount;
+
+        this._save();
+
+        // SYNC TO FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, updateDoc } = window.FB;
+
+            // Prepare update data with only valid fields
+            const updateData = {
+                status: 'closed',
+                endTime: visit.endTime,
+                totalAmount: validAmount  // Ensure it's always a number
+            };
+
+            updateDoc(doc(window.dbFirestore, 'visits', visitId), updateData)
+                .then(() => console.log('✅ Visit closed in cloud'))
+                .catch(e => console.error('🔥 Visit close sync error:', e));
         }
+
+        return true;
     }
 
     updateVisit(visitId, updates) {
