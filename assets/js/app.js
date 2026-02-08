@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.29 (Fix: Cache Clear on Update)
+        v22.30 (Add: Cache Clear Button)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6585,13 +6585,15 @@ window.renderHostessDashboard = function () {
 
   const div = document.createElement('div');
   div.innerHTML = `
-                <!-- Header -->
                 <header class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md">
                   <div>
                     <h1 class="text-2xl font-black text-yellow-500 italic tracking-tighter">RECEPCIÓN</h1>
                     <div class="text-[10px] text-gray-400 font-mono tracking-widest">${STATE.branch ? STATE.branch.name.toUpperCase() : 'JURIQUILLA'}</div>
                   </div>
-                  <button onclick="handleLogout()" class="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded border border-gray-700">CERRAR SESIÓN</button>
+                  <div class="flex gap-2">
+                    <button onclick="clearAppCache()" class="text-xs bg-orange-900 text-orange-200 px-3 py-1 rounded border border-orange-700 hover:bg-orange-800">🧹 Limpiar</button>
+                    <button onclick="handleLogout()" class="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded border border-gray-700">CERRAR SESIÓN</button>
+                  </div>
                 </header>
 
                 <!-- Stat Bar -->
@@ -6874,7 +6876,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.29';
+const CURRENT_VERSION = '22.30';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
@@ -7015,6 +7017,51 @@ function renderManagerReservations(container) {
       </div>
       `).join('');
 }
+
+// ==========================================
+// CACHE CLEAR FUNCTION (FOR MOBILE)
+// ==========================================
+window.clearAppCache = function () {
+  if (!confirm('🧹 ¿Limpiar caché y datos locales?\n\nEsto borrará:\n- Datos en caché\n- Configuración local\n\nTu sesión se mantendrá activa.')) {
+    return;
+  }
+
+  console.log('🧹 Clearing app cache...');
+
+  // Save auth data
+  const authData = localStorage.getItem('adanEvaAuth');
+
+  // Clear localStorage
+  localStorage.clear();
+  console.log('✅ localStorage cleared');
+
+  // Restore auth
+  if (authData) {
+    localStorage.setItem('adanEvaAuth', authData);
+    localStorage.setItem('app_version', '22.30');
+  }
+
+  // Clear sessionStorage
+  sessionStorage.clear();
+  console.log('✅ sessionStorage cleared');
+
+  // Clear IndexedDB (Firebase offline data)
+  if (window.indexedDB) {
+    indexedDB.databases().then(databases => {
+      databases.forEach(db => {
+        if (db.name.includes('firestore') || db.name.includes('firebase')) {
+          indexedDB.deleteDatabase(db.name);
+          console.log('✅ Deleted IndexedDB:', db.name);
+        }
+      });
+    }).catch(e => console.warn('IndexedDB clear failed:', e));
+  }
+
+  alert('✅ Caché limpiado.\n\nLa página se recargará ahora.');
+
+  // Force reload
+  window.location.reload(true);
+};
 
 // ==========================================
 // MANAGER RESERVATION LOGIC (v22.4)
