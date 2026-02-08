@@ -7282,7 +7282,6 @@ window.submitManagerReservation = function () {
   }
 
   const data = {
-    id: Date.now().toString(),
     customerName: name,
     pax: pax,
     phone: phone, // NEW
@@ -7292,7 +7291,7 @@ window.submitManagerReservation = function () {
     vip: vip,
     reason: reason,
     game: reason === 'Partido' ? game : '',
-    status: 'active',
+    status: 'pending',
     branchId: STATE.branch ? STATE.branch.id : 'branch-1'
   };
 
