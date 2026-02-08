@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v21.6 (Critical Fix: Syntax Error Resolved)
+        v21.7 (Critical Fix: Syntax Error Resolved Again)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6095,12 +6095,9 @@ window.showReservationModal = function () {
                     </button>
                   </div>
                 </div>
-                `;
-    document.body.appendChild(modal);
-                  </div >
-                </div >
-              </div >
-      `;
+              </div>
+            </div>
+          `;
     document.body.appendChild(modal);
   }
 
@@ -6357,9 +6354,9 @@ window.renderHostessDashboard = function () {
         ` : `
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             ${activeVisits.map(v => {
-                const waiterName = window.db.data.users.find(w => w.id === v.waiterId)?.name || 'Sin Asignar';
-                const timeSeated = new Date(v.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                return `
+    const waiterName = window.db.data.users.find(w => w.id === v.waiterId)?.name || 'Sin Asignar';
+    const timeSeated = new Date(v.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `
               <div class="table-card bg-gray-900 border-l-4 border-green-500 rounded-r-xl p-4 shadow-lg relative animate-fade-in" data-waiter-id="${v.waiterId}">
                 <div class="flex justify-between items-start mb-2">
                     <div>
@@ -6451,8 +6448,8 @@ window.renderHostessDashboard = function () {
                   <select id="wl-waiter-${entry.id}" class="p-2 text-sm bg-gray-900 rounded font-bold border border-green-600">
                     <option value="">Mesero</option>
                     ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w =>
-                `<option value="${w.id}">${w.name}</option>`
-              ).join('')}
+      `<option value="${w.id}">${w.name}</option>`
+    ).join('')}
                   </select>
                 </div>
                 <!-- BOTONES DE ACCIÓN -->
@@ -6498,9 +6495,9 @@ window.renderHostessDashboard = function () {
                 <div class="flex justify-between items-start mb-2">
                   <div class="text-2xl font-bold text-yellow-400">${r.time}</div>
                   <span class="text-xs px-3 py-1 rounded font-bold ${r.status === 'confirmed' ? 'bg-green-600 text-white' :
-                  r.status === 'cancelled' ? 'bg-red-600 text-white' :
-                    'bg-blue-600 text-white'
-                }">
+        r.status === 'cancelled' ? 'bg-red-600 text-white' :
+          'bg-blue-600 text-white'
+      }">
                     ${r.status.toUpperCase()}
                   </span>
                 </div>
@@ -6544,74 +6541,74 @@ window.renderHostessDashboard = function () {
           </div>
           `;
 
-          // Add class for bottom nav padding
-          div.className = 'p-4 max-w-6xl mx-auto has-bottom-nav';
-          appContainer.appendChild(div);
+  // Add class for bottom nav padding
+  div.className = 'p-4 max-w-6xl mx-auto has-bottom-nav';
+  appContainer.appendChild(div);
 }
 
-          // ==========================================
-          // ==========================================
+// ==========================================
+// ==========================================
 
-          // INITIALIZATION
-          // ==========================================
-          window.initApp = async function () {
-            console.log('🚀 Initializing App...');
+// INITIALIZATION
+// ==========================================
+window.initApp = async function () {
+  console.log('🚀 Initializing App...');
 
-          // 1. Initialize DB
-          if (!window.db) {
-            console.error('❌ Database not found!');
-          appContainer.innerHTML = '<div class="text-white p-10">Error critic: Base de datos no encontrada.</div>';
-          return;
+  // 1. Initialize DB
+  if (!window.db) {
+    console.error('❌ Database not found!');
+    appContainer.innerHTML = '<div class="text-white p-10">Error critic: Base de datos no encontrada.</div>';
+    return;
   }
 
   // 2. Auth Listener
   window.db.auth.onAuthStateChanged(async (user) => {
     if (user) {
-            console.log('👤 User Authenticated:', user.uid);
+      console.log('👤 User Authenticated:', user.uid);
       // Check existing user in local DB or fetch
       const dbUser = window.db.data.users.find(u => u.id === user.uid);
-          if (dbUser) {
-            STATE.user = dbUser;
+      if (dbUser) {
+        STATE.user = dbUser;
         STATE.branch = window.db.data.branches.find(b => b.id === dbUser.branchId);
-          console.log('🏢 Branch:', STATE.branch);
+        console.log('🏢 Branch:', STATE.branch);
 
-          // Render Dashboard based on Role
-          if (STATE.user.role === 'hostess') {
-            // START LISTENER FOR VISITS
-            window.db.subscribeToVisits((visits) => {
-              if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
-            });
+        // Render Dashboard based on Role
+        if (STATE.user.role === 'hostess') {
+          // START LISTENER FOR VISITS
+          window.db.subscribeToVisits((visits) => {
+            if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
+          });
           renderHostessDashboard();
         } else if (STATE.user.role === 'manager' || STATE.user.role === 'admin') {
           if (typeof renderManagerDashboard === 'function') renderManagerDashboard('home');
         } else if (STATE.user.role === 'waiter') {
           if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard();
         } else {
-            appContainer.innerHTML = '<div class="text-white">Rol desconocido</div>';
+          appContainer.innerHTML = '<div class="text-white">Rol desconocido</div>';
         }
       } else {
-            console.error('User not found in local DB data');
-          if (typeof renderLogin === 'function') renderLogin();
+        console.error('User not found in local DB data');
+        if (typeof renderLogin === 'function') renderLogin();
       }
     } else {
-            console.log('👤 No User. Rendering Login.');
-          if (typeof renderLogin === 'function') renderLogin();
+      console.log('👤 No User. Rendering Login.');
+      if (typeof renderLogin === 'function') renderLogin();
     }
   });
 };
 
-          // Start
-          document.addEventListener('DOMContentLoaded', window.initApp);
+// Start
+document.addEventListener('DOMContentLoaded', window.initApp);
 
-          // NEW: Render Game Requests
-          function renderManagerGameRequests(container) {
+// NEW: Render Game Requests
+function renderManagerGameRequests(container) {
   if (!container) return;
 
-          const requests = window.db.getDailyInfo().gameRequests || [];
+  const requests = window.db.getDailyInfo().gameRequests || [];
 
-          if (requests.length === 0) {
-            container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
-          return;
+  if (requests.length === 0) {
+    container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
+    return;
   }
 
   container.innerHTML = requests.map((r) => `
@@ -6637,19 +6634,19 @@ window.renderHostessDashboard = function () {
           `).join('');
 }
 
-          // NEW: Render Reservations (Real Data)
-          function renderManagerReservations(container) {
+// NEW: Render Reservations (Real Data)
+function renderManagerReservations(container) {
   if (!container) return;
 
-          const branchId = STATE.branch?.id;
-          const today = new Date().toISOString().split('T')[0];
-          const reservations = (window.db.getReservations && branchId)
-          ? window.db.getReservations(branchId, today)
-          : [];
+  const branchId = STATE.branch?.id;
+  const today = new Date().toISOString().split('T')[0];
+  const reservations = (window.db.getReservations && branchId)
+    ? window.db.getReservations(branchId, today)
+    : [];
 
-          if (reservations.length === 0) {
-            container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay reservaciones para hoy.</p>';
-          return;
+  if (reservations.length === 0) {
+    container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay reservaciones para hoy.</p>';
+    return;
   }
 
   container.innerHTML = reservations.map(r => `
