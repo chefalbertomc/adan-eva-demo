@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.41 (Fix: Delete Button + Manager Scroll)
+        v22.42 (Fix: Remove Check-In from Manager)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6478,18 +6478,12 @@ function renderManagerReservationsTab(container) {
                     
                      <div class="text-right">
                         <div class="text-xs font-bold text-gray-400 mb-1">${statusIcon} ${statusText}</div>
-                        
-                        <!-- MANAGER EXCLUSIVE: DELETE BUTTON -->
-                        <button onclick="window.deleteReservation('${r.id}')" class="bg-red-900/20 text-red-500 p-2 rounded hover:bg-red-900/40 transition mt-1" title="Eliminar Reservación">
-                            🗑️
-                        </button>
                     </div>
                   </div>
 
                   <div class="text-sm text-gray-500 italic truncate max-w-[300px] mb-2">${r.game || r.reason || 'Sin motivo'}</div>
                   ${r.notes ? `<div class="bg-black/30 p-2 rounded text-xs text-yellow-200 mb-3 border border-yellow-900/30">📝 ${r.notes}</div>` : ''}
                   
-                   <button onclick="checkInReservation('${r.id}')" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-2 rounded-lg shadow-md uppercase tracking-wide text-sm flex items-center justify-center gap-2 mt-2">
                         ✅ Check-In / Asignar Mesa
                    </button>
       </div>
@@ -6919,7 +6913,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.41';
+const CURRENT_VERSION = '22.42';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
