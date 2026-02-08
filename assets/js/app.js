@@ -7356,8 +7356,7 @@ window.checkInReservation = function (resId) {
   firstNameInput.value = res.customerName.split(' ')[0] || '';
   lastNameInput.value = res.customerName.split(' ')[1] || '';
 
-  // Fill Pax
-  const paxDisplay = document.getElementById('h-pax');
+  // Fill Pax (already declared above)
   if (paxDisplay) paxDisplay.innerText = res.pax;
 
   // Fill Search Input as visual cue
