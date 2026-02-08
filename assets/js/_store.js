@@ -1635,7 +1635,8 @@ class Store {
     getReservations(branchId, date) {
         let filtered = this.data.reservations.filter(r => r.branchId === branchId);
         if (date) {
-            const dateStr = new Date(date).toISOString().split('T')[0];
+            // Support both ISO date and simple YYYY-MM-DD
+            const dateStr = date.includes('T') ? new Date(date).toISOString().split('T')[0] : date;
             filtered = filtered.filter(r => r.date.startsWith(dateStr));
         }
         return filtered.sort((a, b) => {
@@ -2319,14 +2320,15 @@ class Store {
     }
 
     updateReservation(resId, updates) {
-        const info = this.getDailyInfo();
-        if (!info.reservations) return false;
-
-        const idx = info.reservations.findIndex(r => r.id === resId);
-        if (idx === -1) return false;
+        // Target the global reservations array (System A)
+        const idx = this.data.reservations.findIndex(r => r.id === resId);
+        if (idx === -1) {
+            console.warn('⚠️ updateReservation: Reservation not found:', resId);
+            return false;
+        }
 
         // Update local
-        Object.assign(info.reservations[idx], updates);
+        Object.assign(this.data.reservations[idx], updates);
         this._save();
 
         // SYNC TO FIREBASE

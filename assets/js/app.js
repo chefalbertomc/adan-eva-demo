@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.48 (Fix: Inline Form & Cache Bust)
+        v22.49 (Fix: Unified Reservations & Filters)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6483,16 +6483,14 @@ function renderManagerReservationsTab(container) {
   const listContainer = container.querySelector('#manager-reservations-list');
 
   const branchId = STATE.branch?.id;
-  // Show ALL future reservations for the tab (or filter by date if we added that feature)
-  // For now, Manager sees all, but let's sort by date/time
+
   let reservations = (window.db.getReservations && branchId)
-    ? window.db.getReservations(branchId)
+    ? window.db.getReservations(branchId, currentDate)
     : [];
 
-  // FILTER BY SELECTED DATE from Input
+  // FILTER OUT COMPLETED RESERVATIONS (The fix)
   if (reservations.length > 0) {
-    // Use the input value we captured at the start
-    reservations = reservations.filter(r => r.date === currentDate);
+    reservations = reservations.filter(r => r.status && r.status !== 'completed' && r.status !== 'cancelled');
   }
 
   if (reservations.length === 0) {
@@ -7032,8 +7030,8 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.48';
-console.log("🚀 App Loaded: v22.48");
+const CURRENT_VERSION = '22.49';
+console.log("🚀 App Loaded: v22.49");
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
