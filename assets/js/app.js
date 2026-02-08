@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v21.4 (Sync Restored + Hostess View)
+        v21.5 (UI Fixes: Modal & Hostess)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6036,14 +6036,16 @@ window.showReservationModal = function () {
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'reservation-modal';
-    modal.className = 'fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in hidden';
+    // FIX: High z-index, fixed positioning, overflow handling for mobile
+    modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-fade-in hidden p-4';
     modal.innerHTML = `
-                <div class="bg-gray-900 border border-yellow-500/50 rounded-xl p-6 w-full max-w-md relative shadow-2xl">
-                  <button onclick="document.getElementById('reservation-modal').classList.add('hidden')" class="absolute top-2 right-2 text-gray-500 hover:text-white text-xl">✕</button>
+                <div class="bg-gray-900 border border-yellow-500/50 rounded-xl w-full max-w-md relative shadow-2xl flex flex-col max-h-[90vh]">
+                  <div class="p-6 overflow-y-auto custom-scrollbar">
+                    <button onclick="document.getElementById('reservation-modal').classList.add('hidden')" class="absolute top-2 right-2 text-gray-500 hover:text-white text-xl z-10 w-8 h-8 flex items-center justify-center bg-black/50 rounded-full">✕</button>
 
-                  <h3 class="text-xl font-black text-yellow-500 mb-6 flex items-center gap-2">
-                    🎟️ NUEVA RESERVACIÓN
-                  </h3>
+                    <h3 class="text-xl font-black text-yellow-500 mb-6 flex items-center gap-2 sticky top-0 bg-gray-900/95 py-2 z-10">
+                      🎟️ NUEVA RESERVACIÓN
+                    </h3>
 
                   <div class="space-y-4">
                     <div>
@@ -6094,6 +6096,11 @@ window.showReservationModal = function () {
                   </div>
                 </div>
                 `;
+    document.body.appendChild(modal);
+                  </div >
+                </div >
+              </div >
+      `;
     document.body.appendChild(modal);
   }
 
@@ -6150,16 +6157,16 @@ window.submitReservation = function () {
 // ==========================================
 function renderManagerReservationsTab(container) {
   container.innerHTML = `
-        <div class="flex justify-between items-center mb-6">
+      < div class="flex justify-between items-center mb-6" >
           <h2 class="text-2xl font-black text-white italic tracking-tighter">ADMINISTRAR RESERVACIONES</h2>
           <button onclick="window.showReservationModal()" class="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-black shadow-lg flex items-center gap-2 transform active:scale-95 transition">
             🎟️ CREAR RESERVACIÓN
           </button>
-        </div>
-        
-        <div id="manager-reservations-list" class="space-y-4">
-            <!-- List injected via renderManagerReservations() logic but customized for full page -->
-        </div>
+        </div >
+
+      <div id="manager-reservations-list" class="space-y-4">
+        <!-- List injected via renderManagerReservations() logic but customized for full page -->
+      </div>
     `;
 
   // Re-use the list renderer but point to our new container
@@ -6174,16 +6181,16 @@ function renderManagerReservationsTab(container) {
 
   if (reservations.length === 0) {
     listContainer.innerHTML = `
-            <div class="text-center py-12 opacity-50">
+      < div class="text-center py-12 opacity-50" >
                 <div class="text-6xl mb-4">📭</div>
                 <p class="text-xl text-gray-400">No hay reservaciones activas</p>
-            </div>
-        `;
+            </div >
+      `;
     return;
   }
 
   listContainer.innerHTML = reservations.map(r => `
-                <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${r.vip === 'diamond' ? 'border-blue-400 bg-blue-900/10' : r.vip === 'blazin' ? 'border-orange-500 bg-orange-900/10' : 'border-gray-600'} flex justify-between items-center animate-fade-in text-white shadow-lg relative group">
+      < div class="bg-gray-800 p-4 rounded-xl border-l-4 ${r.vip === 'diamond' ? 'border-blue-400 bg-blue-900/10' : r.vip === 'blazin' ? 'border-orange-500 bg-orange-900/10' : 'border-gray-600'} flex justify-between items-center animate-fade-in text-white shadow-lg relative group" >
 
                   <div class="flex-1">
                     <div class="flex items-center gap-3 mb-1">
@@ -6204,15 +6211,15 @@ function renderManagerReservationsTab(container) {
                     </div>
                   </div>
 
-                  <!-- ACTIONS -->
-                  <div class="flex flex-col gap-2">
-                    <button onclick="if(confirm('¿Borrar reservación de ${r.customerName}?')) { window.db.removeReservation('${r.id}'); renderManagerDashboard('reservations'); }"
-                      class="bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white px-3 py-2 rounded transition border border-red-900/50">
-                      🗑️ Borrar
-                    </button>
-                  </div>
-                </div>
-                `).join('');
+                  <!--ACTIONS -->
+      <div class="flex flex-col gap-2">
+        <button onclick="if(confirm('¿Borrar reservación de ${r.customerName}?')) { window.db.removeReservation('${r.id}'); renderManagerDashboard('reservations'); }"
+          class="bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white px-3 py-2 rounded transition border border-red-900/50">
+          🗑️ Borrar
+        </button>
+      </div>
+                </div >
+      `).join('');
 }
 
 // ------ HOSTESS DASHBOARD (TABBED UI) ------
@@ -6231,7 +6238,7 @@ window.renderHostessDashboard = function () {
 
   const div = document.createElement('div');
   div.innerHTML = `
-                <!-- Header -->
+      < !--Header -->
                 <header class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md">
                   <div>
                     <h1 class="text-2xl font-black text-yellow-500 italic tracking-tighter">RECEPCIÓN</h1>
@@ -6240,7 +6247,7 @@ window.renderHostessDashboard = function () {
                   <button onclick="handleLogout()" class="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded border border-gray-700">CERRAR SESIÓN</button>
                 </header>
 
-                <!-- Stat Bar -->
+                <!--Stat Bar-- >
                 <div class="grid grid-cols-3 gap-2 p-2">
                   <div onclick="switchHostessTab('checkin')" class="bg-gray-900 border border-gray-800 p-2 rounded text-center cursor-pointer hover:bg-gray-800">
                     <div class="text-lg font-black text-white">📋</div>
@@ -6256,93 +6263,93 @@ window.renderHostessDashboard = function () {
                   </div>
                 </div>
 
-                <!-- Tab Content: Check-In (Default) -->
-                <div id="content-checkin" class="tab-content">
-                  <div class="card bg-gray-900/50 border border-yellow-500/30">
-                    <h2 class="text-xl font-black text-white mb-6 flex items-center gap-2">
-                      📋 NUEVO CHECK-IN
-                    </h2>
+                <!--Tab Content: Check - In(Default)-- >
+      <div id="content-checkin" class="tab-content">
+        <div class="card bg-gray-900/50 border border-yellow-500/30">
+          <h2 class="text-xl font-black text-white mb-6 flex items-center gap-2">
+            📋 NUEVO CHECK-IN
+          </h2>
 
-                    <!-- Step 1: Customer Info -->
-                    <div class="space-y-4 mb-6">
-                      <label class="text-xs text-gray-500 mb-1 block uppercase font-bold tracking-widest">Paso 1: Datos del Cliente</label>
+          <!-- Step 1: Customer Info -->
+          <div class="space-y-4 mb-6">
+            <label class="text-xs text-gray-500 mb-1 block uppercase font-bold tracking-widest">Paso 1: Datos del Cliente</label>
 
-                      <!-- Search Bar (New Client Flow) -->
-                      <div class="relative">
-                        <input type="text" id="customer-search"
-                          class="w-full bg-black border border-gray-700 rounded-lg p-4 text-white text-lg font-bold focus:border-yellow-500 outline-none"
-                          placeholder="🔍 Buscar Cliente (Nombre/Tel)" onkeyup="searchCustomer(this.value)">
+            <!-- Search Bar (New Client Flow) -->
+            <div class="relative">
+              <input type="text" id="customer-search"
+                class="w-full bg-black border border-gray-700 rounded-lg p-4 text-white text-lg font-bold focus:border-yellow-500 outline-none"
+                placeholder="🔍 Buscar Cliente (Nombre/Tel)" onkeyup="searchCustomer(this.value)">
 
-                          <div id="search-results" class="hidden absolute top-full left-0 right-0 bg-gray-900 border border-gray-700 rounded-lg mt-1 z-50 max-h-60 overflow-y-auto shadow-2xl"></div>
-                      </div>
+                <div id="search-results" class="hidden absolute top-full left-0 right-0 bg-gray-900 border border-gray-700 rounded-lg mt-1 z-50 max-h-60 overflow-y-auto shadow-2xl"></div>
+            </div>
 
-                      <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="h-firstname" placeholder="NOMBRE" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
-                          <input type="text" id="h-lastname" placeholder="APELLIDO PATERNO" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
-                          </div>
-                          <input type="text" id="h-lastname2" placeholder="APELLIDO MATERNO (Opcional)" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide w-full">
+            <div class="grid grid-cols-2 gap-4">
+              <input type="text" id="h-firstname" placeholder="NOMBRE" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
+                <input type="text" id="h-lastname" placeholder="APELLIDO PATERNO" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
+                </div>
+                <input type="text" id="h-lastname2" placeholder="APELLIDO MATERNO (Opcional)" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide w-full">
 
-                            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                              <div class="flex justify-between items-center">
-                                <span class="text-gray-400 text-sm font-bold uppercase">PERSONAS:</span>
-                                <div class="flex items-center gap-4">
-                                  <button onclick="adjustPax(-1)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600">-</button>
-                                  <span id="h-pax" class="text-2xl font-black text-white">2</span>
-                                  <button onclick="adjustPax(1)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600">+</button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <!-- Step 2: Assign Table -->
-                          <div class="space-y-4">
-                            <label class="text-xs text-gray-500 mb-1 block uppercase font-bold tracking-widest">Paso 2: Asignación</label>
-                            <div class="grid grid-cols-2 gap-4">
-                              <div>
-                                <label class="text-[10px] text-gray-500 mb-1 block uppercase">Mesa #</label>
-                                <input type="number" id="h-table" class="w-full bg-gray-900 text-white border border-gray-700 rounded p-4 text-center font-bold text-xl focus:border-green-500 outline-none" placeholder="#">
-                              </div>
-                              <div>
-                                <label class="text-[10px] text-gray-500 mb-1 block uppercase">Mesero</label>
-                                <select id="h-waiter" class="w-full bg-gray-900 text-white border border-gray-700 rounded p-4 font-bold text-sm h-[62px]">
-                                  <option value="">Auto-Asignar</option>
-                                  ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}">${w.name}</option>`).join('')}
-                                </select>
-                              </div>
-                            </div>
-
-                            <button onclick="processHostessCheckIn()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-5 rounded-xl uppercase tracking-widest text-lg shadow-lg transform active:scale-95 transition mt-4">
-                              ✅ INGRESAR MESA
-                            </button>
-
-                            <button onclick="addToWaitlist()" class="w-full bg-gray-800 border-2 border-gray-700 text-white font-bold py-3 rounded-lg uppercase tracking-widest text-sm hover:border-blue-500 transition mt-2">
-                              ⏱️ Agregar a Lista de Espera
-                            </button>
-                          </div>
+                  <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                    <div class="flex justify-between items-center">
+                      <span class="text-gray-400 text-sm font-bold uppercase">PERSONAS:</span>
+                      <div class="flex items-center gap-4">
+                        <button onclick="adjustPax(-1)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600">-</button>
+                        <span id="h-pax" class="text-2xl font-black text-white">2</span>
+                        <button onclick="adjustPax(1)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600">+</button>
                       </div>
                     </div>
+                  </div>
+                </div>
 
-                    <!-- Tab Content: Tables (Active Visits) -->
-                    <div id="content-tables" class="tab-content hidden">
-                      <div class="card">
-                        <div class="flex justify-between items-center mb-6">
-                          <h2 class="text-2xl font-black text-white italic tracking-tighter">MESAS HABILITADAS</h2>
+                <!-- Step 2: Assign Table -->
+                <div class="space-y-4">
+                  <label class="text-xs text-gray-500 mb-1 block uppercase font-bold tracking-widest">Paso 2: Asignación</label>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="text-[10px] text-gray-500 mb-1 block uppercase">Mesa #</label>
+                      <input type="number" id="h-table" class="w-full bg-gray-900 text-white border border-gray-700 rounded p-4 text-center font-bold text-xl focus:border-green-500 outline-none" placeholder="#">
+                    </div>
+                    <div>
+                      <label class="text-[10px] text-gray-500 mb-1 block uppercase">Mesero</label>
+                      <select id="h-waiter" class="w-full bg-gray-900 text-white border border-gray-700 rounded p-4 font-bold text-sm h-[62px]">
+                        <option value="">Auto-Asignar</option>
+                        ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}">${w.name}</option>`).join('')}
+                      </select>
+                    </div>
+                  </div>
 
-                          <div class="text-right">
-                            <div class="text-yellow-500 font-bold text-xl leading-none">${currentCount} / ${totalCapacity}</div>
-                            <div class="text-[10px] text-gray-400 uppercase tracking-widest">Ocupación</div>
-                          </div>
-                        </div>
+                  <button onclick="processHostessCheckIn()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-5 rounded-xl uppercase tracking-widest text-lg shadow-lg transform active:scale-95 transition mt-4">
+                    ✅ INGRESAR MESA
+                  </button>
 
-                        <!-- Filter -->
-                        <div class="mb-4">
-                          <select id="filter-waiter" onchange="filterTablesByWaiter()" class="w-full bg-gray-800 border-2 border-gray-700 rounded-lg p-3 text-white font-bold">
-                            <option value="all">👁️ Ver Todas</option>
-                            ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}">Mesero: ${w.name}</option>`).join('')}
-                          </select>
-                        </div>
+                  <button onclick="addToWaitlist()" class="w-full bg-gray-800 border-2 border-gray-700 text-white font-bold py-3 rounded-lg uppercase tracking-widest text-sm hover:border-blue-500 transition mt-2">
+                    ⏱️ Agregar a Lista de Espera
+                  </button>
+                </div>
+            </div>
+          </div>
 
-                        ${activeVisits.length === 0 ? `
+          <!-- Tab Content: Tables (Active Visits) -->
+          <div id="content-tables" class="tab-content hidden">
+            <div class="card">
+              <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black text-white italic tracking-tighter">MESAS HABILITADAS</h2>
+
+                <div class="text-right">
+                  <div class="text-yellow-500 font-bold text-xl leading-none">${currentCount} / ${totalCapacity}</div>
+                  <div class="text-[10px] text-gray-400 uppercase tracking-widest">Ocupación</div>
+                </div>
+              </div>
+
+              <!-- Filter -->
+              <div class="mb-4">
+                <select id="filter-waiter" onchange="filterTablesByWaiter()" class="w-full bg-gray-800 border-2 border-gray-700 rounded-lg p-3 text-white font-bold">
+                  <option value="all">👁️ Ver Todas</option>
+                  ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}">Mesero: ${w.name}</option>`).join('')}
+                </select>
+              </div>
+
+              ${activeVisits.length === 0 ? `
           <div class="text-center py-12 text-gray-500">
              <div class="text-6xl mb-4">🍽️</div>
              <p>No hay mesas activas</p>
@@ -6350,9 +6357,9 @@ window.renderHostessDashboard = function () {
         ` : `
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             ${activeVisits.map(v => {
-    const waiterName = window.db.data.users.find(w => w.id === v.waiterId)?.name || 'Sin Asignar';
-    const timeSeated = new Date(v.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    return `
+                const waiterName = window.db.data.users.find(w => w.id === v.waiterId)?.name || 'Sin Asignar';
+                const timeSeated = new Date(v.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return `
               <div class="table-card bg-gray-900 border-l-4 border-green-500 rounded-r-xl p-4 shadow-lg relative animate-fade-in" data-waiter-id="${v.waiterId}">
                 <div class="flex justify-between items-start mb-2">
                     <div>
@@ -6408,14 +6415,14 @@ window.renderHostessDashboard = function () {
             `}).join('')}
           </div>
         `}
-                      </div>
-                    </div>
+            </div>
+          </div>
 
-                    <!-- Tab Content: Waitlist - TAB SEPARADO -->
-                    <div id="content-waitlist" class="tab-content hidden">
-                      <div class="card">
-                        <h3 class="text-xl mb-4">Cola de Espera (${waitlist.length})</h3>
-                        ${waitlist.length === 0 ? `
+          <!-- Tab Content: Waitlist - TAB SEPARADO -->
+          <div id="content-waitlist" class="tab-content hidden">
+            <div class="card">
+              <h3 class="text-xl mb-4">Cola de Espera (${waitlist.length})</h3>
+              ${waitlist.length === 0 ? `
           <div class="text-center py-12">
             <div class="text-6xl mb-4">⏱️</div>
             <p class="text-xl text-secondary">No hay clientes en espera</p>
@@ -6444,8 +6451,8 @@ window.renderHostessDashboard = function () {
                   <select id="wl-waiter-${entry.id}" class="p-2 text-sm bg-gray-900 rounded font-bold border border-green-600">
                     <option value="">Mesero</option>
                     ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w =>
-      `<option value="${w.id}">${w.name}</option>`
-    ).join('')}
+                `<option value="${w.id}">${w.name}</option>`
+              ).join('')}
                   </select>
                 </div>
                 <!-- BOTONES DE ACCIÓN -->
@@ -6465,21 +6472,21 @@ window.renderHostessDashboard = function () {
             `).join('')}
           </div>
         `}
-                      </div>
-                    </div>
+            </div>
+          </div>
 
-                    <!-- Tab Content: Reservations - SOLO LECTURA -->
-                    <div id="content-reservations" class="tab-content hidden">
-                      <div class="card">
-                        <div class="flex justify-between items-center mb-6">
-                          <h3 class="text-xl">Reservaciones de Hoy</h3>
+          <!-- Tab Content: Reservations - SOLO LECTURA -->
+          <div id="content-reservations" class="tab-content hidden">
+            <div class="card">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl">Reservaciones de Hoy</h3>
 
-                          <button onclick="window.showReservationModal()" class="bg-blue-600 text-white px-3 py-1 rounded shadow-lg text-sm font-bold cursor-pointer hover:bg-blue-500 active:scale-95 transition">
-                            🎟️ Reservar
-                          </button>
-                        </div>
+                <button onclick="window.showReservationModal()" class="bg-blue-600 text-white px-3 py-1 rounded shadow-lg text-sm font-bold cursor-pointer hover:bg-blue-500 active:scale-95 transition">
+                  🎟️ Reservar
+                </button>
+              </div>
 
-                        ${reservations.length === 0 ? `
+              ${reservations.length === 0 ? `
           <div class="text-center py-12">
             <div class="text-6xl mb-4">📅</div>
             <p class="text-xl text-secondary">Sin reservaciones para hoy</p>
@@ -6491,9 +6498,9 @@ window.renderHostessDashboard = function () {
                 <div class="flex justify-between items-start mb-2">
                   <div class="text-2xl font-bold text-yellow-400">${r.time}</div>
                   <span class="text-xs px-3 py-1 rounded font-bold ${r.status === 'confirmed' ? 'bg-green-600 text-white' :
-        r.status === 'cancelled' ? 'bg-red-600 text-white' :
-          'bg-blue-600 text-white'
-      }">
+                  r.status === 'cancelled' ? 'bg-red-600 text-white' :
+                    'bg-blue-600 text-white'
+                }">
                     ${r.status.toUpperCase()}
                   </span>
                 </div>
@@ -6505,160 +6512,160 @@ window.renderHostessDashboard = function () {
             `).join('')}
           </div>
         `}
-                      </div>
-                    </div>
+            </div>
+          </div>
 
-                    <!-- BOTTOM NAVIGATION BAR -->
-                    <nav class="bottom-nav">
-                      <button onclick="switchHostessTab('checkin')" id="tab-checkin" class="bottom-nav-item active" style="position: relative;">
-                        <span class="bottom-nav-icon">📋</span>
-                        <span class="bottom-nav-label">Check-In</span>
-                      </button>
-                      <button onclick="switchHostessTab('tables')" id="tab-tables" class="bottom-nav-item" style="position: relative;">
-                        <span class="bottom-nav-icon">🍽️</span>
-                        <span class="bottom-nav-label">Mesas</span>
-                        ${activeVisits.length > 0 ? `<span class="bottom-nav-badge">${activeVisits.length}</span>` : ''}
-                      </button>
-                      <button onclick="switchHostessTab('waitlist')" id="tab-waitlist" class="bottom-nav-item" style="position: relative;">
-                        <span class="bottom-nav-icon">⏱️</span>
-                        <span class="bottom-nav-label">Espera</span>
-                        ${waitlist.length > 0 ? `<span class="bottom-nav-badge">${waitlist.length}</span>` : ''}
-                      </button>
-                      <button onclick="switchHostessTab('reservations')" id="tab-reservations" class="bottom-nav-item" style="position: relative;">
-                        <span class="bottom-nav-icon">📅</span>
-                        <span class="bottom-nav-label">Reservas</span>
-                        ${reservations.length > 0 ? `<span class="bottom-nav-badge">${reservations.length}</span>` : ''}
-                      </button>
-                    </nav>
+          <!-- BOTTOM NAVIGATION BAR -->
+          <nav class="bottom-nav">
+            <button onclick="switchHostessTab('checkin')" id="tab-checkin" class="bottom-nav-item active" style="position: relative;">
+              <span class="bottom-nav-icon">📋</span>
+              <span class="bottom-nav-label">Check-In</span>
+            </button>
+            <button onclick="switchHostessTab('tables')" id="tab-tables" class="bottom-nav-item" style="position: relative;">
+              <span class="bottom-nav-icon">🍽️</span>
+              <span class="bottom-nav-label">Mesas</span>
+              ${activeVisits.length > 0 ? `<span class="bottom-nav-badge">${activeVisits.length}</span>` : ''}
+            </button>
+            <button onclick="switchHostessTab('waitlist')" id="tab-waitlist" class="bottom-nav-item" style="position: relative;">
+              <span class="bottom-nav-icon">⏱️</span>
+              <span class="bottom-nav-label">Espera</span>
+              ${waitlist.length > 0 ? `<span class="bottom-nav-badge">${waitlist.length}</span>` : ''}
+            </button>
+            <button onclick="switchHostessTab('reservations')" id="tab-reservations" class="bottom-nav-item" style="position: relative;">
+              <span class="bottom-nav-icon">📅</span>
+              <span class="bottom-nav-label">Reservas</span>
+              ${reservations.length > 0 ? `<span class="bottom-nav-badge">${reservations.length}</span>` : ''}
+            </button>
+          </nav>
 
-                    <!-- DuckOS Footer -->
-                    <div class="dashboard-footer">
-                      Powered by <span style="color: #F97316;">DuckOS</span> | Bar & Restaurant Solutions
-                    </div>
-                    `;
+          <!-- DuckOS Footer -->
+          <div class="dashboard-footer">
+            Powered by <span style="color: #F97316;">DuckOS</span> | Bar & Restaurant Solutions
+          </div>
+          `;
 
-  // Add class for bottom nav padding
-  div.className = 'p-4 max-w-6xl mx-auto has-bottom-nav';
-  appContainer.appendChild(div);
+          // Add class for bottom nav padding
+          div.className = 'p-4 max-w-6xl mx-auto has-bottom-nav';
+          appContainer.appendChild(div);
 }
 
-// ==========================================
-// ==========================================
+          // ==========================================
+          // ==========================================
 
-// INITIALIZATION
-// ==========================================
-window.initApp = async function () {
-  console.log('🚀 Initializing App...');
+          // INITIALIZATION
+          // ==========================================
+          window.initApp = async function () {
+            console.log('🚀 Initializing App...');
 
-  // 1. Initialize DB
-  if (!window.db) {
-    console.error('❌ Database not found!');
-    appContainer.innerHTML = '<div class="text-white p-10">Error critic: Base de datos no encontrada.</div>';
-    return;
+          // 1. Initialize DB
+          if (!window.db) {
+            console.error('❌ Database not found!');
+          appContainer.innerHTML = '<div class="text-white p-10">Error critic: Base de datos no encontrada.</div>';
+          return;
   }
 
   // 2. Auth Listener
   window.db.auth.onAuthStateChanged(async (user) => {
     if (user) {
-      console.log('👤 User Authenticated:', user.uid);
+            console.log('👤 User Authenticated:', user.uid);
       // Check existing user in local DB or fetch
       const dbUser = window.db.data.users.find(u => u.id === user.uid);
-      if (dbUser) {
-        STATE.user = dbUser;
+          if (dbUser) {
+            STATE.user = dbUser;
         STATE.branch = window.db.data.branches.find(b => b.id === dbUser.branchId);
-        console.log('🏢 Branch:', STATE.branch);
+          console.log('🏢 Branch:', STATE.branch);
 
-        // Render Dashboard based on Role
-        if (STATE.user.role === 'hostess') {
-          // START LISTENER FOR VISITS
-          window.db.subscribeToVisits((visits) => {
-            if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
-          });
+          // Render Dashboard based on Role
+          if (STATE.user.role === 'hostess') {
+            // START LISTENER FOR VISITS
+            window.db.subscribeToVisits((visits) => {
+              if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
+            });
           renderHostessDashboard();
         } else if (STATE.user.role === 'manager' || STATE.user.role === 'admin') {
           if (typeof renderManagerDashboard === 'function') renderManagerDashboard('home');
         } else if (STATE.user.role === 'waiter') {
           if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard();
         } else {
-          appContainer.innerHTML = '<div class="text-white">Rol desconocido</div>';
+            appContainer.innerHTML = '<div class="text-white">Rol desconocido</div>';
         }
       } else {
-        console.error('User not found in local DB data');
-        if (typeof renderLogin === 'function') renderLogin();
+            console.error('User not found in local DB data');
+          if (typeof renderLogin === 'function') renderLogin();
       }
     } else {
-      console.log('👤 No User. Rendering Login.');
-      if (typeof renderLogin === 'function') renderLogin();
+            console.log('👤 No User. Rendering Login.');
+          if (typeof renderLogin === 'function') renderLogin();
     }
   });
 };
 
-// Start
-document.addEventListener('DOMContentLoaded', window.initApp);
+          // Start
+          document.addEventListener('DOMContentLoaded', window.initApp);
 
-// NEW: Render Game Requests
-function renderManagerGameRequests(container) {
+          // NEW: Render Game Requests
+          function renderManagerGameRequests(container) {
   if (!container) return;
 
-  const requests = window.db.getDailyInfo().gameRequests || [];
+          const requests = window.db.getDailyInfo().gameRequests || [];
 
-  if (requests.length === 0) {
-    container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
-    return;
+          if (requests.length === 0) {
+            container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
+          return;
   }
 
   container.innerHTML = requests.map((r) => `
-    <div class="bg-gray-800 p-3 rounded-lg border-l-4 border-blue-500 mb-2 flex justify-between items-center animate-fade-in">
-      <div>
-        <div class="flex items-center gap-2">
-           <span class="text-blue-400 font-bold text-[10px] uppercase tracking-wider">SOLICITUD DE PARTIDO</span>
-           <span class="text-xs text-gray-500">• ${r.time}</span>
-        </div>
-        <div class="font-bold text-white text-base">
-           ${r.gameName}
-        </div>
-        <div class="text-xs text-secondary mt-1">
-           Mesa ${r.tableName} (${r.waiterName})
-        </div>
-      </div>
-      <div>
-         <button onclick="window.db.removeGameRequest('${r.id}')" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 p-2 rounded-full transition-colors">
-            ✕
-         </button>
-      </div>
-    </div>
-  `).join('');
+          <div class="bg-gray-800 p-3 rounded-lg border-l-4 border-blue-500 mb-2 flex justify-between items-center animate-fade-in">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-blue-400 font-bold text-[10px] uppercase tracking-wider">SOLICITUD DE PARTIDO</span>
+                <span class="text-xs text-gray-500">• ${r.time}</span>
+              </div>
+              <div class="font-bold text-white text-base">
+                ${r.gameName}
+              </div>
+              <div class="text-xs text-secondary mt-1">
+                Mesa ${r.tableName} (${r.waiterName})
+              </div>
+            </div>
+            <div>
+              <button onclick="window.db.removeGameRequest('${r.id}')" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 p-2 rounded-full transition-colors">
+                ✕
+              </button>
+            </div>
+          </div>
+          `).join('');
 }
 
-// NEW: Render Reservations (Real Data)
-function renderManagerReservations(container) {
+          // NEW: Render Reservations (Real Data)
+          function renderManagerReservations(container) {
   if (!container) return;
 
-  const branchId = STATE.branch?.id;
-  const today = new Date().toISOString().split('T')[0];
-  const reservations = (window.db.getReservations && branchId)
-    ? window.db.getReservations(branchId, today)
-    : [];
+          const branchId = STATE.branch?.id;
+          const today = new Date().toISOString().split('T')[0];
+          const reservations = (window.db.getReservations && branchId)
+          ? window.db.getReservations(branchId, today)
+          : [];
 
-  if (reservations.length === 0) {
-    container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay reservaciones para hoy.</p>';
-    return;
+          if (reservations.length === 0) {
+            container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay reservaciones para hoy.</p>';
+          return;
   }
 
   container.innerHTML = reservations.map(r => `
-    <div class="bg-gray-800 p-3 rounded-lg border-l-4 ${r.vip ? 'border-yellow-500' : 'border-gray-600'} flex justify-between items-center mb-2">
-      <div>
-        <div class="flex items-center gap-2">
-          <span class="font-bold text-white text-base">${r.customerName || 'Cliente'}</span>
-          ${r.vip === 'diamond' ? '💎' : r.vip === 'blazin' ? '🔥' : ''}
-        </div>
-        <div class="text-xs text-gray-400">
-          ${r.date || 'Hoy'} • ${r.time || '--:--'} • ${r.pax || 2} Pax
-        </div>
-        <div class="text-xs text-blue-300 mt-1">
-          🎯 ${r.notes || '---'}
-        </div>
-      </div>
-    </div>
-  `).join('');
+          <div class="bg-gray-800 p-3 rounded-lg border-l-4 ${r.vip ? 'border-yellow-500' : 'border-gray-600'} flex justify-between items-center mb-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-white text-base">${r.customerName || 'Cliente'}</span>
+                ${r.vip === 'diamond' ? '💎' : r.vip === 'blazin' ? '🔥' : ''}
+              </div>
+              <div class="text-xs text-gray-400">
+                ${r.date || 'Hoy'} • ${r.time || '--:--'} • ${r.pax || 2} Pax
+              </div>
+              <div class="text-xs text-blue-300 mt-1">
+                🎯 ${r.notes || '---'}
+              </div>
+            </div>
+          </div>
+          `).join('');
 }
