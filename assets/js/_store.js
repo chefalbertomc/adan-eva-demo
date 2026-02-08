@@ -972,11 +972,12 @@ class Store {
                     }
                 }, 100);
             }
-        }
+        });
+    }
 
     // ON-DEMAND MIGRATION: Push local reservations to Firebase if they aren't there
     _syncLocalReservationsToFirebase() {
-            if(!this.data.reservations || this.data.reservations.length === 0) return;
+        if (!this.data.reservations || this.data.reservations.length === 0) return;
 
         console.log('🚀 Checking local reservations to sync with cloud...');
 
@@ -986,7 +987,7 @@ class Store {
             const { doc, setDoc } = window.FB;
 
             this.data.reservations.forEach(r => {
-                // We use setDoc which overwrites/creates using the ID. 
+                // We use setDoc which overwrites/creates using the ID.
                 // This ensures that if the Mac has the "master" copy, it pushes it up.
                 // In a perfect world we'd check timestamps, but for this "rescue" we just push.
                 setDoc(doc(window.dbFirestore, 'reservations', r.id), r)
@@ -994,1734 +995,1733 @@ class Store {
                     .catch(e => console.error('🔥 Migration error', e));
             });
         }, 3000); // 3s delay to let connection settle
-    });
-}
-
-_syncMenuCatalog() {
-    // If menuCatalog doesn't exist in stored data, add it from INITIAL_DATA
-    if (!this.data.menuCatalog) {
-        this.data.menuCatalog = INITIAL_DATA.menuCatalog;
-        this._save();
-        console.log('Migrated menuCatalog');
-    }
-}
-
-_syncMenu() {
-    // If menu doesn't exist, init from scratch
-    if (!this.data.menu) {
-        this.data.menu = INITIAL_DATA.menu;
-        this._save();
-        return;
     }
 
-    // Force update: Inject missing categories (Alitas, Boneless) if they don't exist
-    const currentFoods = this.data.menu.alimentos || [];
-    const hasAlitas = currentFoods.some(i => i.category === 'Alitas');
-
-    if (!hasAlitas) {
-        console.log('Injecting missing Alitas/Boneless categories...');
-        const newItems = INITIAL_DATA.menu.alimentos.filter(i =>
-            i.category === 'Alitas' || i.category === 'Boneless'
-        );
-        this.data.menu.alimentos = [...currentFoods, ...newItems];
-        this._save();
-    }
-
-    // Force update: Inject 'Extras Barra' if missing
-    const currentDrinks = this.data.menu.bebidas || [];
-    const hasExtrasBarra = currentDrinks.some(i => i.category === 'Extras Barra');
-
-    if (!hasExtrasBarra) {
-        console.log('Injecting missing Extras Barra...');
-        const newDrinks = INITIAL_DATA.menu.bebidas.filter(i => i.category === 'Extras Barra');
-        this.data.menu.bebidas = [...currentDrinks, ...newDrinks];
-        this._save();
-    }
-}
-
-_syncUsers() {
-    let changed = false;
-    INITIAL_DATA.users.forEach(initUser => {
-        if (!this.data.users.find(u => u.username === initUser.username)) {
-            this.data.users.push(initUser);
-            changed = true;
-            console.log('Migrated user:', initUser.username);
-        }
-    });
-    if (changed) this._save();
-}
-
-_load() {
-    const s = localStorage.getItem(STORE_KEY);
-    if (s) {
-        const parsed = JSON.parse(s);
-        // CRITICAL FIX: If local data has NO games but initialization expects them,
-        // or if structure is old, we might want to merge or reset dailyInfo part.
-        // For now, let's just trust it but verify dailyInfo exists.
-        if (!parsed.dailyInfo) {
-            parsed.dailyInfo = JSON.parse(JSON.stringify(INITIAL_DATA.dailyInfo));
-        }
-        return parsed;
-    }
-    return JSON.parse(JSON.stringify(INITIAL_DATA));
-}
-
-_save() {
-    try {
-        localStorage.setItem(STORE_KEY, JSON.stringify(this.data));
-        this.notifyListeners();
-    } catch (e) {
-        console.error('Error saving data:', e);
-    }
-}
-
-login(username, password) {
-    const user = this.data.users.find(u => u.username === username && u.password === password);
-    return user || null;
-}
-
-getBranches() {
-    return this.data.branches;
-}
-
-// Hostess Methods
-searchCustomers(query) {
-    if (!query || query.length < 2) return [];
-    const q = query.toLowerCase();
-    return this.data.customers.filter(c =>
-        c.firstName.toLowerCase().includes(q) ||
-        c.lastName.toLowerCase().includes(q)
-    );
-}
-
-isTableOccupied(table, branchId) {
-    const isOcc = this.data.visits.some(v => {
-        if (v.branchId !== branchId) return false;
-        if (v.status !== 'active') return false;
-
-        // 1. Exact String Match (Trimmed)
-        if (String(v.table).trim() === String(table).trim()) return true;
-
-        // 2. Numeric Match (Handle "1" vs "01")
-        const vNum = parseInt(v.table);
-        const tNum = parseInt(table);
-        if (!isNaN(vNum) && !isNaN(tNum) && vNum === tNum) return true;
-
-        return false;
-    });
-
-    console.log(`🛡️ Checking Table Occupancy: Input '${table}' @ Branch '${branchId}' -> Result: ${isOcc}`);
-    return isOcc;
-}
-
-// Get available table numbers for a branch based on user position
-getAvailableTables(branchId, userPosition) {
-    const branch = this.data.branches.find(b => b.id === branchId);
-    if (!branch || !branch.tables) {
-        return Array.from({ length: 50 }, (_, i) => i + 1); // Fallback for old data
-    }
-
-    let availableTables = [...branch.tables.regular];
-
-    // BARRA staff can also use BARRA tables
-    if (userPosition === 'BARRA' && branch.tables.barra.length > 0) {
-        availableTables = [...availableTables, ...branch.tables.barra];
-    }
-
-    return availableTables.sort((a, b) => a - b);
-}
-
-// Validate if a table number is valid for a branch and user position
-isValidTable(tableNumber, branchId, userPosition) {
-    const availableTables = this.getAvailableTables(branchId, userPosition);
-    return availableTables.includes(parseInt(tableNumber));
-}
-
-
-createUser(userData) {
-    const id = 'U' + Date.now();
-    const user = { id, ...userData };
-    this.data.users.push(user);
-    this._save();
-    return user;
-}
-
-getCustomerById(id) {
-    return this.data.customers.find(c => c.id === id);
-}
-
-createCustomer(data) {
-    const id = 'C' + Date.now();
-    const customer = { id, ...data, visits: 0, topDrinks: [], topFood: [] };
-    this.data.customers.push(customer);
-    this._save();
-
-    // SYNC FIREBASE
-    if (window.dbFirestore && window.FB) {
-        const { doc, setDoc } = window.FB;
-        setDoc(doc(window.dbFirestore, 'customers', customer.id), customer)
-            .catch(e => console.error('🔥 Customer sync error', e));
-    }
-
-    return customer;
-}
-
-updateCustomer(customerId, updates) {
-    const idx = this.data.customers.findIndex(c => c.id === customerId);
-    if (idx !== -1) {
-        this.data.customers[idx] = { ...this.data.customers[idx], ...updates };
-        this._save();
-
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, updateDoc } = window.FB;
-            updateDoc(doc(window.dbFirestore, 'customers', customerId), updates)
-                .catch(e => console.error('🔥 Sync update customer error', e));
-        }
-        return true;
-    }
-    return false;
-}
-
-createVisit(visitData) {
-    const visit = {
-        id: 'V' + Date.now(),
-        status: 'active',
-        ...visitData
-    };
-    this.data.visits.push(visit);
-
-    // Update customer visit count
-    const cust = this.data.customers.find(c => c.id === visitData.customerId);
-    if (cust) {
-        cust.visits = (cust.visits || 0) + 1;
-    }
-
-    this._save();
-
-    // SYNC TO FIREBASE
-    if (window.dbFirestore && window.FB) {
-        const { doc, setDoc } = window.FB;
-        setDoc(doc(window.dbFirestore, 'visits', visit.id), visit)
-            .then(() => console.log('🔥 Visit synced to cloud'))
-            .catch(e => console.error('🔥 Sync error', e));
-    }
-
-    return visit;
-}
-
-// MENU MANAGEMENT METHODS
-getMenu() {
-    return this.data.menu;
-}
-
-getMenuItemsByCategory(type, category) {
-    // type: 'alimentos' or 'bebidas'
-    if (!this.data.menu || !this.data.menu[type]) return [];
-
-    if (category) {
-        return this.data.menu[type].filter(item => item.category === category);
-    }
-    return this.data.menu[type];
-}
-
-toggleItemAvailability(itemId) {
-    // Toggle 86 status for food or beverage item
-    let item = this.data.menu.alimentos.find(i => i.id === itemId);
-    if (!item) {
-        item = this.data.menu.bebidas.find(i => i.id === itemId);
-    }
-
-    if (item) {
-        item.available = !item.available;
-        this._save();
-        return item;
-    }
-    return null;
-}
-
-createOrder(orderData) {
-    // Create new order for a table
-    const order = {
-        id: 'O' + Date.now(),
-        visitId: orderData.visitId,
-        items: orderData.items, // [{itemId, name, quantity, observations}, ...]
-        timestamp: new Date().toISOString(),
-        status: 'pending' // pending, preparing, delivered
-    };
-    this.data.orders.push(order);
-    this._save();
-    return order;
-}
-
-getOrdersByVisit(visitId) {
-    return this.data.orders.filter(o => o.visitId === visitId);
-}
-
-// New Hostess Management
-getActiveVisitsByBranch(branchId) {
-    return this.data.visits
-        .filter(v => v.branchId === branchId && v.status === 'active')
-        .map(v => ({
-            ...v,
-            customer: this.data.customers.find(c => c.id === v.customerId)
-        }));
-}
-
-updateVisitDetails(visitId, updatedFields) {
-    const visit = this.data.visits.find(v => v.id === visitId);
-    if (visit) {
-        // Merge all updated fields into the visit object
-        Object.assign(visit, updatedFields);
-        console.log('✅ updateVisitDetails called for visit', visitId, 'Updated fields:', updatedFields);
-        this._save();
-
-        // SYNC FIREBASE (CRITICAL FIX)
-        if (window.dbFirestore && window.FB) {
-            const { doc, updateDoc } = window.FB;
-            // Only send the updated fields to save bandwidth
-            updateDoc(doc(window.dbFirestore, 'visits', visitId), updatedFields)
-                .then(() => console.log('☁️ Synced updated details to Firebase'))
-                .catch(e => console.error('🔥 Sync update details error', e));
-        }
-
-        return visit;
-    } else {
-        console.warn('⚠️ updateVisitDetails: Visit not found:', visitId);
-    }
-}
-
-releaseTable(visitId) {
-    const visit = this.data.visits.find(v => v.id === visitId);
-    if (visit) {
-        visit.status = 'closed'; // Force close/release
-        visit.endTime = new Date().toISOString();
-        this._save();
-
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, updateDoc } = window.FB;
-            updateDoc(doc(window.dbFirestore, 'visits', visitId), { status: 'closed', endTime: visit.endTime })
-                .catch(e => console.error('🔥 Sync release error', e));
+    _syncMenuCatalog() {
+        // If menuCatalog doesn't exist in stored data, add it from INITIAL_DATA
+        if (!this.data.menuCatalog) {
+            this.data.menuCatalog = INITIAL_DATA.menuCatalog;
+            this._save();
+            console.log('Migrated menuCatalog');
         }
     }
-}
 
-// Waiter Methods
-getActiveVisits(waiterId) {
-    // Return visits assigned to this waiter that are active
-    return this.data.visits
-        .filter(v => v.waiterId === waiterId && v.status === 'active')
-        .map(v => {
-            const customer = this.data.customers.find(c => c.id === v.customerId);
-            return { ...v, customer };
-        });
-}
-
-// Close visit and set consumption
-closeVisit(visitId, amount) {
-    const visit = this.data.visits.find(v => v.id === visitId);
-    if (visit) {
-        visit.status = 'closed';
-        visit.totalAmount = amount;
-        visit.endTime = new Date().toISOString();
-        this._save();
-
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, updateDoc } = window.FB;
-            updateDoc(doc(window.dbFirestore, 'visits', visitId), { status: 'closed', totalAmount: amount, endTime: visit.endTime })
-                .catch(e => console.error('🔥 Sync close error', e));
-        }
-    }
-}
-
-updateVisit(visitId, updates) {
-    const idx = this.data.visits.findIndex(v => v.id === visitId);
-    if (idx !== -1) {
-        this.data.visits[idx] = { ...this.data.visits[idx], ...updates };
-        this._save();
-
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, updateDoc } = window.FB;
-            updateDoc(doc(window.dbFirestore, 'visits', visitId), updates)
-                .catch(e => console.error('🔥 Sync update error', e));
-        }
-    }
-}
-
-markProspect(visitId) {
-    const visit = this.data.visits.find(v => v.id === visitId);
-    if (visit) {
-        visit.isProspect = true;
-        this._save();
-
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, updateDoc } = window.FB;
-            updateDoc(doc(window.dbFirestore, 'visits', visitId), { isProspect: true })
-                .catch(e => console.error('🔥 Sync mark prospect error', e));
-        }
-    }
-}
-
-// Manager / Admin Methods
-getActiveVisitsGlobal() {
-    return this.data.visits
-        .filter(v => v.status === 'active')
-        .map(v => ({
-            ...v,
-            customer: this.data.customers.find(c => c.id === v.customerId),
-            branchName: this.data.branches.find(b => b.id === v.branchId)?.name
-        }));
-}
-
-getProspects() {
-    // Return visits marked as prospect AND NOT reviewed
-    return this.data.visits
-        .filter(v => v.isProspect && !v.prospectReviewed)
-        .map(v => {
-            const customer = this.data.customers.find(c => c.id === v.customerId);
-            return { ...v, customer };
-        });
-}
-
-markProspectAsReviewed(visitId) {
-    const v = this.data.visits.find(v => v.id === visitId);
-    if (v) {
-        v.prospectReviewed = true;
-        this._save();
-
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, updateDoc } = window.FB;
-            updateDoc(doc(window.dbFirestore, 'visits', visitId), { prospectReviewed: true })
-                .catch(e => console.error('🔥 Sync mark prospect reviewed error', e));
-        }
-    }
-}
-
-getBirthdaysToday() {
-    const today = new Date();
-    const m = (today.getMonth() + 1).toString().padStart(2, '0');
-    const d = today.getDate().toString().padStart(2, '0');
-    // Match MM-DD in birthday string YYYY-MM-DD
-    return this.data.customers.filter(c => c.birthday && c.birthday.endsWith(`${m} -${d} `));
-}
-
-getRetentionAlerts() {
-    // Mock logic: Customers with > 2 visits who haven't visited in 14 days
-    const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
-    const now = Date.now();
-
-    return this.data.customers.filter(c => {
-        if ((c.visits || 0) < 2) return false;
-        // Find last visit
-        const lastVisit = this.data.visits
-            .filter(v => v.customerId === c.id)
-            .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-
-        if (!lastVisit) return false;
-        return (now - new Date(lastVisit.date).getTime()) > TWO_WEEKS;
-    });
-}
-
-getVisits() {
-    return this.data.visits.map(v => ({
-        ...v,
-        customer: this.data.customers.find(c => c.id === v.customerId)
-    }));
-}
-
-getVisitsByDate(dateStr) {
-    // dateStr YYYY-MM-DD
-    return this.data.visits.filter(v => {
-        const vDate = new Date(v.date).toISOString().split('T')[0];
-        return vDate === dateStr;
-    }).map(v => ({
-        ...v,
-        customer: this.data.customers.find(c => c.id === v.customerId)
-    }));
-}
-
-getVisitById(visitId) {
-    const v = this.data.visits.find(v => v.id === visitId);
-    if (!v) return null;
-    const customer = this.data.customers.find(c => c.id === v.customerId);
-    return { ...v, customer };
-}
-
-// Regional Reporting Helpers
-getStatsByBranch(branchId, startDate, endDate) {
-    const visits = this.data.visits.filter(v => {
-        if (v.branchId !== branchId) return false;
-        if (v.status === 'active') return false; // Only count closed for sales? Or both? Let's use closed for sales.
-        const d = new Date(v.date);
-        return d >= startDate && d <= endDate;
-    });
-
-    const totalSales = visits.reduce((acc, v) => acc + Number(v.totalAmount || 0), 0);
-    const traffic = visits.length;
-    return { totalSales, traffic };
-}
-
-getActiveTablesCount(branchId) {
-    return this.data.visits.filter(v => v.branchId === branchId && v.status === 'active').length;
-}
-
-// ===== WAITLIST METHODS =====
-addToWaitlist(data) {
-    const entry = {
-        id: 'W' + Date.now(),
-        branchId: data.branchId,
-        customerName: data.customerName,
-        pax: data.pax,
-        phone: data.phone,
-        addedAt: new Date().toISOString(),
-        estimatedWait: data.estimatedWait || 15,
-        notified: false
-    };
-    this.data.waitlist.push(entry);
-    this._save();
-
-    // SYNC FIREBASE
-    if (window.dbFirestore && window.FB) {
-        const { doc, setDoc } = window.FB;
-        setDoc(doc(window.dbFirestore, 'waitlist', entry.id), entry)
-            .catch(e => console.error('🔥 Sync waitlist add error', e));
-    }
-
-    return entry;
-}
-
-getWaitlist(branchId) {
-    return this.data.waitlist
-        .filter(w => w.branchId === branchId && !w.removed)
-        .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt));
-}
-
-removeFromWaitlist(id) {
-    const idx = this.data.waitlist.findIndex(w => w.id === id);
-    if (idx !== -1) {
-        this.data.waitlist[idx].removed = true;
-        this.data.waitlist[idx].removedAt = new Date().toISOString();
-        this._save();
-
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, updateDoc } = window.FB;
-            updateDoc(doc(window.dbFirestore, 'waitlist', id), {
-                removed: true,
-                removedAt: this.data.waitlist[idx].removedAt
-            }).catch(e => console.error('🔥 Sync waitlist remove error', e));
-        }
-    }
-}
-
-notifyNextInWaitlist(branchId) {
-    const next = this.getWaitlist(branchId)[0];
-    if (next) {
-        next.notified = true;
-        this._save();
-        return next;
-    }
-    return null;
-}
-
-// ===== RESERVATION METHODS =====
-createReservation(data) {
-    const reservation = {
-        id: 'R' + Date.now(),
-        branchId: data.branchId,
-        customerName: data.customerName,
-        customerId: data.customerId || null,
-        phone: data.phone,
-        date: data.date, // ISO string
-        time: data.time, // HH:MM
-        pax: data.pax,
-        table: data.table || null,
-        status: 'pending', // pending, confirmed, cancelled, completed
-        notes: data.notes || '',
-        reason: data.reason || '',
-        game: data.game || '',
-        vip: data.vip || '',
-        createdAt: new Date().toISOString()
-    };
-    this.data.reservations.push(reservation);
-    this._save();
-
-    // SYNC FIREBASE
-    if (window.dbFirestore && window.FB) {
-        const { doc, setDoc } = window.FB;
-        setDoc(doc(window.dbFirestore, 'reservations', reservation.id), reservation)
-            .catch(e => console.error('🔥 Sync add reservation error', e));
-    }
-
-    return reservation;
-}
-
-getReservations(branchId, date) {
-    let filtered = this.data.reservations.filter(r => r.branchId === branchId);
-    if (date) {
-        const dateStr = new Date(date).toISOString().split('T')[0];
-        filtered = filtered.filter(r => r.date.startsWith(dateStr));
-    }
-    return filtered.sort((a, b) => {
-        const aTime = a.date + 'T' + a.time;
-        const bTime = b.date + 'T' + b.time;
-        return new Date(aTime) - new Date(bTime);
-    });
-}
-
-confirmReservation(id) {
-    const r = this.data.reservations.find(x => x.id === id);
-    if (r) {
-        r.status = 'confirmed';
-        this._save();
-
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, updateDoc } = window.FB;
-            updateDoc(doc(window.dbFirestore, 'reservations', id), { status: 'confirmed' })
-                .catch(e => console.error('🔥 Sync confirm reservation error', e));
-        }
-    }
-}
-
-cancelReservation(id) {
-    const r = this.data.reservations.find(x => x.id === id);
-    if (r) {
-        r.status = 'cancelled';
-        this._save();
-
-        // SYNC FIREBASE
-        if (window.dbFirestore && window.FB) {
-            const { doc, updateDoc } = window.FB;
-            updateDoc(doc(window.dbFirestore, 'reservations', id), { status: 'cancelled' })
-                .catch(e => console.error('🔥 Sync cancel reservation error', e));
-        }
-    }
-}
-
-deleteReservation(id) {
-    const idx = this.data.reservations.findIndex(x => x.id === id);
-    if (idx !== -1) {
-        // Remove local
-        this.data.reservations.splice(idx, 1);
-        this._save();
-
-        // SYNC FIREBASE (Delete)
-        if (window.dbFirestore && window.FB) {
-            const { doc, deleteDoc } = window.FB;
-            deleteDoc(doc(window.dbFirestore, 'reservations', id))
-                .then(() => console.log('🗑️ Reservation deleted from Cloud'))
-                .catch(e => console.error('🔥 Sync delete reservation error', e));
-        }
-
-        // Refresh Manager UI if active
-        if (window.renderManagerDashboard) window.renderManagerDashboard('reservations');
-        return true;
-    }
-    return false;
-}
-
-// ===== CLIENT CLASSIFICATION =====
-getCustomerClassification(customerId) {
-    const customer = this.data.customers.find(c => c.id === customerId);
-    if (!customer) return 'none';
-
-    const visits = this.data.visits.filter(v => v.customerId === customerId);
-    if (visits.length === 0) return 'new';
-
-    const now = new Date();
-    const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-    const twoWeeksAgo = new Date(now - 14 * 24 * 60 * 60 * 1000);
-
-    // Weekly visits
-    const visitsThisWeek = visits.filter(v => new Date(v.date) >= oneWeekAgo);
-    const visitsLastTwoWeeks = visits.filter(v => new Date(v.date) >= twoWeeksAgo);
-
-    // Total spending
-    const totalSpending = visits.reduce((sum, v) => sum + Number(v.totalAmount || 0), 0);
-    const avgPerVisit = visits.length > 0 ? totalSpending / visits.length : 0;
-
-    // Weekly spending
-    const weeklySpending = visitsThisWeek.reduce((sum, v) => sum + Number(v.totalAmount || 0), 0);
-
-    // Check branches visited
-    const branchesVisited = new Set(visits.map(v => v.branchId));
-    const multiSucursal = branchesVisited.size > 1;
-
-    // Classification logic
-    // Diamond: >1 visita/semana + >$2,500/semana
-    if (visitsLastTwoWeeks.length >= 2 && weeklySpending > 2500) {
-        return 'diamond';
-    }
-
-    // VIP: >$2,500 por visita + múltiples sucursales
-    if (avgPerVisit > 2500 && multiSucursal) {
-        return 'vip';
-    }
-
-    // Blazin: ≥1 visita/semana
-    if (visitsThisWeek.length >= 1 && visits.length >= 4) {
-        return 'blazin';
-    }
-
-    // New: <= 3 visits
-    if (visits.length <= 3) {
-        return 'new';
-    }
-
-    return 'regular';
-}
-
-getCustomersByClassification(type, branchId = null) {
-    let customers = this.data.customers;
-
-    return customers.filter(c => {
-        const classification = this.getCustomerClassification(c.id);
-        if (classification !== type) return false;
-
-        // Filter by branch if specified
-        if (branchId) {
-            const hasVisitInBranch = this.data.visits.some(v =>
-                v.customerId === c.id && v.branchId === branchId
-            );
-            return hasVisitInBranch;
-        }
-        return true;
-    });
-}
-
-// ===== ADVANCED REPORTING =====
-getTopProducts(type, startDate, endDate, branchId = null) {
-    // type: 'entry', 'food', 'drink'
-    let visits = this.data.visits.filter(v => {
-        const d = new Date(v.date);
-        const inRange = (!startDate || d >= startDate) && (!endDate || d <= endDate);
-        const inBranch = !branchId || v.branchId === branchId;
-        return inRange && inBranch && v.status === 'closed';
-    });
-
-    const productCounts = {};
-    visits.forEach(v => {
-        const customer = this.data.customers.find(c => c.id === v.customerId);
-        if (!customer) return;
-
-        let products = [];
-        if (type === 'entry') products = customer.topFood || []; // Simplified
-        else if (type === 'food') products = customer.topFood || [];
-        else if (type === 'drink') products = customer.topDrinks || [];
-
-        products.forEach(p => {
-            productCounts[p] = (productCounts[p] || 0) + 1;
-        });
-    });
-
-    return Object.entries(productCounts)
-        .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10);
-}
-
-getBirthdaysThisMonth(branchId = null) {
-    const today = new Date();
-    const m = (today.getMonth() + 1).toString().padStart(2, '0');
-
-    let customers = this.data.customers.filter(c => {
-        if (!c.birthday) return false;
-        const match = c.birthday.includes(`-${m}-`);
-        if (!match) return false;
-
-        // Filter by branch if specified
-        if (branchId) {
-            return this.data.visits.some(v => v.customerId === c.id && v.branchId === branchId);
-        }
-        return true;
-    });
-
-    return customers.map(c => {
-        const dayMatch = c.birthday.match(/-(\d{2})\s*$/);
-        const day = dayMatch ? parseInt(dayMatch[1]) : 0;
-        return { ...c, birthdayDay: day };
-    }).sort((a, b) => a.birthdayDay - b.birthdayDay);
-}
-
-getSportAnalytics(branchId = null) {
-    let customers = this.data.customers;
-    if (branchId) {
-        const customerIdsInBranch = new Set(
-            this.data.visits
-                .filter(v => v.branchId === branchId)
-                .map(v => v.customerId)
-        );
-        customers = customers.filter(c => customerIdsInBranch.has(c.id));
-    }
-
-    const teamCounts = {};
-    customers.forEach(c => {
-        const teams = c.teams || (c.team ? [c.team] : []);
-        teams.forEach(t => {
-            teamCounts[t] = (teamCounts[t] || 0) + 1;
-        });
-    });
-
-    return Object.entries(teamCounts)
-        .map(([team, count]) => ({ team, count }))
-        .sort((a, b) => b.count - a.count);
-}
-
-getDemographics(branchId = null) {
-    let customers = this.data.customers;
-    if (branchId) {
-        const customerIdsInBranch = new Set(
-            this.data.visits
-                .filter(v => v.branchId === branchId)
-                .map(v => v.customerId)
-        );
-        customers = customers.filter(c => customerIdsInBranch.has(c.id));
-    }
-
-    const cityCounts = {};
-    const countryCounts = {};
-    const colonyCounts = {};
-
-    customers.forEach(c => {
-        if (c.city) cityCounts[c.city] = (cityCounts[c.city] || 0) + 1;
-        if (c.country) countryCounts[c.country] = (countryCounts[c.country] || 0) + 1;
-        if (c.colony) colonyCounts[c.colony] = (colonyCounts[c.colony] || 0) + 1;
-    });
-
-    return {
-        cities: Object.entries(cityCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
-        countries: Object.entries(countryCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
-        colonies: Object.entries(colonyCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count)
-    };
-}
-
-getAbsentCustomers(thresholdDays = 30, branchId = null) {
-    const threshold = thresholdDays * 24 * 60 * 60 * 1000;
-    const now = Date.now();
-
-    return this.data.customers.filter(c => {
-        if ((c.visits || 0) < 2) return false;
-
-        const customerVisits = this.data.visits.filter(v => {
-            if (v.customerId !== c.id) return false;
-            return !branchId || v.branchId === branchId;
-        });
-
-        if (customerVisits.length === 0) return false;
-
-        const lastVisit = customerVisits
-            .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-
-        return (now - new Date(lastVisit.date).getTime()) > threshold;
-    });
-}
-
-// ===== NEW REPORTING METHODS (Step 2) =====
-
-getCustomersByType(type, startDate, endDate, branchId = null) {
-    // Types: 'diamond', 'blazin', 'new', 'absent', 'couch_card'
-    // Filter by date range? For 'new', yes (joined in date range).
-    // For 'diamond', 'blazin' -> Status within range? Or current status?
-    // Usually reports allow seeing WHO was Diamond in that period, but current status is easier.
-    // Let's filter by: Active in that period + Current Status matches type.
-
-    let customers = this.data.customers;
-
-    // 1. Filter by Activity in Date Range (if provided)
-    if (startDate && endDate) {
-        const activeCustomerIds = new Set(this.data.visits
-            .filter(v => {
-                const d = new Date(v.date);
-                return d >= new Date(startDate) && d <= new Date(endDate);
-            })
-            .map(v => v.customerId));
-
-        customers = customers.filter(c => activeCustomerIds.has(c.id));
-    }
-
-    // 2. Filter by Type
-    return customers.filter(c => {
-        if (type === 'couch_card') return c.couchCard === true;
-
-        const classification = this.getCustomerClassification(c.id);
-        if (type === 'absent') return false; // Handled separately usually, or use getAbsent
-
-        // For 'new', check if first visit is in range?
-        if (type === 'new') {
-            // Simplification: classification 'new' means <= 3 visits total.
-            return classification === 'new';
-        }
-
-        return classification === type;
-    });
-}
-
-getCustomerBranchVisits(startDate, endDate) {
-    // Returns list of customers with visit counts per branch
-    const result = {}; // { custId: { name, phone, juriquilla: 5, paseo: 2 ... } }
-
-    const visits = this.data.visits.filter(v => {
-        const d = new Date(v.date);
-        return (!startDate || d >= new Date(startDate)) && (!endDate || d <= new Date(endDate));
-    });
-
-    visits.forEach(v => {
-        if (!result[v.customerId]) {
-            const c = this.data.customers.find(x => x.id === v.customerId);
-            if (c) {
-                result[v.customerId] = {
-                    name: c.firstName + ' ' + c.lastName,
-                    phone: c.phone || 'N/A',
-                    total: 0,
-                    branches: {}
-                };
-            }
-        }
-
-        if (result[v.customerId]) {
-            const entry = result[v.customerId];
-            entry.total++;
-            entry.branches[v.branchId] = (entry.branches[v.branchId] || 0) + 1;
-        }
-    });
-
-    return Object.values(result).sort((a, b) => b.total - a.total);
-}
-
-getDemographicReport(type, startDate, endDate) {
-    // type: 'city', 'country', 'birthday' (birthday filtered by month in range?)
-
-    // Filter active customers in range
-    const activeVisits = this.data.visits.filter(v => {
-        const d = new Date(v.date);
-        return (!startDate || d >= new Date(startDate)) && (!endDate || d <= new Date(endDate));
-    });
-    const activeCustIds = new Set(activeVisits.map(v => v.customerId));
-    const customers = this.data.customers.filter(c => activeCustIds.has(c.id));
-
-    const counts = {};
-
-    customers.forEach(c => {
-        let key = 'Desconocido';
-        if (type === 'city') key = c.city || 'Desconocido';
-        if (type === 'country') key = c.country || 'Desconocido';
-
-        if (type === 'birthday') {
-            // Group by Month?
-            // User wants "Cumpleaños del mes ... filtrar por periodo"
-            // Just list them?
-            // Let's return the list directly for birthday
+    _syncMenu() {
+        // If menu doesn't exist, init from scratch
+        if (!this.data.menu) {
+            this.data.menu = INITIAL_DATA.menu;
+            this._save();
             return;
         }
 
-        counts[key] = (counts[key] || 0) + 1;
-    });
+        // Force update: Inject missing categories (Alitas, Boneless) if they don't exist
+        const currentFoods = this.data.menu.alimentos || [];
+        const hasAlitas = currentFoods.some(i => i.category === 'Alitas');
 
-    if (type === 'birthday') {
-        // Return customers whose birthday (month-day) falls in selected date range
-        if (!startDate || !endDate) return [];
-
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-
-        return this.data.customers.filter(c => {
-            if (!c.birthday) return false;
-
-            // Parse birthday "YYYY-MM-DD"
-            const parts = c.birthday.split('-');
-            if (parts.length < 3) return false;
-
-            const month = parseInt(parts[1]) - 1; // 0-indexed
-            const day = parseInt(parts[2]);
-
-            // Create date in current year for comparison
-            const currentYear = new Date().getFullYear();
-            const birthdayThisYear = new Date(currentYear, month, day);
-
-            // Create comparable dates (same year) from start/end range
-            const startCompare = new Date(currentYear, start.getMonth(), start.getDate());
-            const endCompare = new Date(currentYear, end.getMonth(), end.getDate());
-
-            // Check if birthday falls within the month-day range
-            return birthdayThisYear >= startCompare && birthdayThisYear <= endCompare;
-        }).map(c => ({ name: c.firstName + ' ' + c.lastName, birthday: c.birthday, phone: c.phone, branch: 'N/A' }));
-    }
-
-    return Object.entries(counts)
-        .map(([label, value]) => ({ label, value }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 10);
-}
-
-getMostVisitedBranch(customerId) {
-    // Calculate which branch this customer visits most
-    const visits = this.data.visits.filter(v => v.customerId === customerId);
-    if (visits.length === 0) return 'N/A';
-
-    const branchCounts = {};
-    visits.forEach(v => {
-        branchCounts[v.branchId] = (branchCounts[v.branchId] || 0) + 1;
-    });
-
-    // Find max
-    let maxBranch = null;
-    let maxCount = 0;
-    Object.entries(branchCounts).forEach(([branchId, count]) => {
-        if (count > maxCount) {
-            maxCount = count;
-            maxBranch = branchId;
+        if (!hasAlitas) {
+            console.log('Injecting missing Alitas/Boneless categories...');
+            const newItems = INITIAL_DATA.menu.alimentos.filter(i =>
+                i.category === 'Alitas' || i.category === 'Boneless'
+            );
+            this.data.menu.alimentos = [...currentFoods, ...newItems];
+            this._save();
         }
-    });
 
-    // Return branch name
-    const branch = this.data.branches.find(b => b.id === maxBranch);
-    return branch ? branch.name : maxBranch || 'N/A';
-}
+        // Force update: Inject 'Extras Barra' if missing
+        const currentDrinks = this.data.menu.bebidas || [];
+        const hasExtrasBarra = currentDrinks.some(i => i.category === 'Extras Barra');
 
-// ===== CAMPAIGN MANAGEMENT =====
-createCampaign(data) {
-    const campaign = {
-        id: 'CAMP' + Date.now(),
-        name: data.name,
-        segment: data.segment, // 'vip', 'loyal', 'new', 'risk', 'all'
-        message: data.message,
-        imageUrl: data.imageUrl || null,
-        branchId: data.branchId || null, // null = all branches
-        customerIds: data.customerIds || [],
-        sentCount: 0,
-        createdAt: new Date().toISOString(),
-        createdBy: data.createdBy
-    };
-    this.data.campaigns.push(campaign);
-    this._save();
-    return campaign;
-}
-
-getCampaigns(branchId = null) {
-    if (!branchId) return this.data.campaigns;
-    return this.data.campaigns.filter(c => !c.branchId || c.branchId === branchId);
-}
-
-trackCampaignSend(customerId, campaignType) {
-    // Track that we sent a message
-    console.log(`Campaign sent to ${customerId}: ${campaignType}`);
-}
-
-// === DAILY INFO METHODS (Enhanced) ===
-getMatches() {
-    // RETURN ALL games regardless of date.
-    // It's better to show yesterday's game than nothing.
-    // The manager is responsible for deleting old games.
-    const games = this.getDailyInfo().games || [];
-    console.log(`Getting matches: found ${games.length} games.`, games);
-    return games;
-}
-
-getDailyInfo() {
-    if (!this.data.dailyInfo) {
-        this.data.dailyInfo = {
-            games: [],
-            gameRequests: [], // New: Requests from Hostess
-            promoCatalog: [],
-            activePromoIds: [],
-            dynamicCatalog: [],
-            activeDynamic: null,
-            products: { outOfStock86: [], lowStock85: [], push: [] }
-        };
-        this._save();
-    }
-    // Ensure products structure exists
-    if (!this.data.dailyInfo.products) {
-        this.data.dailyInfo.products = { outOfStock86: [], lowStock85: [], push: [] };
-        this._save();
-    }
-    // Ensure games array exists
-    if (!this.data.dailyInfo.games) {
-        this.data.dailyInfo.games = [];
-    }
-    // Ensure promo catalog exists
-    if (!this.data.dailyInfo.promoCatalog) {
-        this.data.dailyInfo.promoCatalog = [];
-    }
-    if (!this.data.dailyInfo.activePromoIds) {
-        this.data.dailyInfo.activePromoIds = [];
+        if (!hasExtrasBarra) {
+            console.log('Injecting missing Extras Barra...');
+            const newDrinks = INITIAL_DATA.menu.bebidas.filter(i => i.category === 'Extras Barra');
+            this.data.menu.bebidas = [...currentDrinks, ...newDrinks];
+            this._save();
+        }
     }
 
-    // BACKWARDS COMPATIBILITY: Create aliases for old code that still uses old property names
-    // This prevents errors when legacy code tries to access dailyInfo.promos, dailyInfo.products86, etc.
-    const info = this.data.dailyInfo;
-
-    // Legacy alias: promos -> active promos from catalog
-    if (!info.promos) {
-        Object.defineProperty(info, 'promos', {
-            get: () => (info.promoCatalog || []).filter(p => (info.activePromoIds || []).includes(p.id)),
-            configurable: true
+    _syncUsers() {
+        let changed = false;
+        INITIAL_DATA.users.forEach(initUser => {
+            if (!this.data.users.find(u => u.username === initUser.username)) {
+                this.data.users.push(initUser);
+                changed = true;
+                console.log('Migrated user:', initUser.username);
+            }
         });
+        if (changed) this._save();
     }
 
-    // Legacy alias: products86 -> products.outOfStock86
-    if (!info.products86) {
-        Object.defineProperty(info, 'products86', {
-            get: () => info.products?.outOfStock86 || [],
-            configurable: true
-        });
-    }
-
-    // Legacy alias: dynamics
-    if (!info.dynamics) {
-        Object.defineProperty(info, 'dynamics', {
-            get: () => ({
-                active: info.activeDynamic ? {
-                    ...((info.dynamicCatalog || []).find(d => d.id === info.activeDynamic?.catalogId) || {}),
-                    ...(info.activeDynamic || {})
-                } : null,
-                leaderboard: info.activeDynamic?.scores || []
-            }),
-            configurable: true
-        });
-    }
-
-    return this.data.dailyInfo;
-}
-
-// Get active promos for today (for waiter view)
-getActivePromos() {
-    const info = this.getDailyInfo();
-    if (!info.promoCatalog || !info.activePromoIds) return [];
-    return info.promoCatalog.filter(p => info.activePromoIds.includes(p.id));
-}
-
-// Get active dynamic with merged data
-getActiveDynamic() {
-    const info = this.getDailyInfo();
-    if (!info.activeDynamic || !info.activeDynamic.catalogId) return null;
-    const catalog = info.dynamicCatalog || [];
-    const dynamicDef = catalog.find(d => d.id === info.activeDynamic.catalogId);
-    if (!dynamicDef) return null;
-    return {
-        ...dynamicDef,
-        scores: info.activeDynamic.scores || []
-    };
-}
-
-// Get all waiters for scoring
-getWaiters() {
-    return this.data.users.filter(u => u.role === 'waiter');
-}
-
-// === GAMES ===
-updateDailyGames(games) {
-    const info = this.getDailyInfo();
-    info.games = games;
-
-    console.log('🔥 BEFORE Firebase sync - games array:', JSON.stringify(games.slice(-3), null, 2));
-
-    this._save();
-
-    // SYNC FIREBASE - CRITICAL FIX: Use 'allGames' collection instead of 'daily'
-    // 'daily' collection was forcing all dates to TODAY (2026-01-27)
-    // SYNC FIREBASE - RE-ENABLED (Sanitized)
-    if (window.dbFirestore && window.FB) {
-        const { doc, setDoc } = window.FB;
-        // CRITICAL: Sanitize data to remove 'undefined' values which crash Firebase
-        const cleanGames = JSON.parse(JSON.stringify(info.games));
-        const dataToSync = { games: cleanGames };
-
-        console.log('🔥 SYNCING to Firebase (allGames collection):', JSON.stringify(dataToSync.games.slice(-3), null, 2));
-
-        // Use 'allGames' collection which supports any date
-        setDoc(doc(window.dbFirestore, 'config', 'allGames'), dataToSync, { merge: true })
-            .then(() => {
-                console.log('🔥 Firebase sync SUCCESS to allGames');
-            })
-            .catch(e => console.error('🔥 Sync update games error', e));
-    }
-}
-
-// Request a game to be added (Hostess -> Manager)
-requestGame(gameName) {
-    if (!gameName) return;
-
-    // CRITICAL FIX: Robust Deduplication (Case insensitive + Trim)
-    const info = this.getDailyInfo();
-    const normalizedName = gameName.trim().toLowerCase();
-
-    const existingReq = (info.gameRequests || []).find(r =>
-        (r.name || '').trim().toLowerCase() === normalizedName
-    );
-
-    if (existingReq) {
-        console.log("⚠️ Duplicate request blocked:", gameName);
-        if (typeof alert === 'function') alert("⚠️ Esta solicitud ya fue enviada anteriormente.");
-        return;
-    }
-
-    const newReq = {
-        id: 'req_' + Date.now(),
-        gameName: gameName, // CORRECTED PROPERTY NAME to match usage elsewhere
-        name: gameName, // Maintain legacy for safety
-        createdAt: new Date().toISOString()
-    };
-
-    if (!info.gameRequests) info.gameRequests = [];
-    info.gameRequests.push(newReq);
-    this._save();
-
-    // Sync to Firebase (Use allGames)
-    // Sync to Firebase (Use allGames) - RE-ENABLED (Sanitized)
-    if (window.dbFirestore && window.FB) {
-        const { doc, setDoc } = window.FB;
-        const docRef = doc(window.dbFirestore, 'config', 'allGames');
-
-        // CRITICAL: Sanitize
-        const cleanRequests = JSON.parse(JSON.stringify(info.gameRequests));
-
-        // Use setDoc with merge 
-        setDoc(docRef, { gameRequests: cleanRequests }, { merge: true })
-            .then(() => {
-                console.log('📨 Game Request sent to Manager:', gameName);
-                if (typeof alert === 'function') alert(`✅ Solicitud enviada al Gerente: "${gameName}"`);
-            }).catch(e => console.error('🔥 Error sending game request:', e));
-    }
-}
-
-// NEW: Remove Game Request (Manager -> Dismiss)
-removeGameRequest(reqId) {
-    const info = this.getDailyInfo();
-    if (!info.gameRequests) return;
-
-    info.gameRequests = info.gameRequests.filter(r => r.id !== reqId);
-    this._save();
-    this.updateDailyGames(info.games); // Reuse sync logic or direct update
-
-    // Manual Sync for Requests to be sure
-    // Manual Sync for Requests to be sure - RE-ENABLED (Sanitized)
-    if (window.dbFirestore && window.FB) {
-        const { doc, setDoc } = window.FB;
-        const docRef = doc(window.dbFirestore, 'config', 'allGames');
-        const cleanRequests = JSON.parse(JSON.stringify(info.gameRequests));
-        setDoc(docRef, { gameRequests: cleanRequests }, { merge: true })
-            .then(() => console.log('🗑️ Request removed:', reqId))
-            .catch(e => console.error('Error removing req:', e));
-    }
-}
-
-// --- RESERVATIONS SYSTEM ---
-
-getReservations() {
-    const info = this.getDailyInfo();
-    return info.reservations || [];
-}
-
-addReservation(data) {
-    // data: { customerName, pax, date, time, reason, game, vip (blazin/diamond/null), notes }
-    const info = this.getDailyInfo();
-    if (!info.reservations) info.reservations = [];
-
-    const newRes = {
-        id: 'res_' + Date.now(),
-        createdAt: new Date().toISOString(),
-        status: 'active', // active, seated, cancelled
-        ...data
-    };
-
-    info.reservations.push(newRes);
-    this._save();
-
-    // Sync to config/reservations (or allGames for simplicity if preferred, but separate is better)
-    // Let's stick to 'allGames' for now as the daily sync hub, or create 'config/reservations'
-    // Using 'allGames' so we don't multiply listener sources for Manager
-    this.updateDailyGames(info.games); // Trigger sync
-
-    // Also direct sync specifically for reservations if we want speed
-    // Also direct sync specifically for reservations - RE-ENABLED (Sanitized)
-    if (window.dbFirestore && window.FB) {
-        const { doc, setDoc } = window.FB;
-        const docRef = doc(window.dbFirestore, 'config', 'allGames');
-        const cleanReservations = JSON.parse(JSON.stringify(info.reservations));
-        setDoc(docRef, { reservations: cleanReservations }, { merge: true })
-            .then(() => {
-                console.log('🎟️ Reservation synced:', newRes.customerName);
-                if (typeof showToast === 'function') showToast('Reservación Guardada', 'success');
-            });
-    }
-    return newRes;
-}
-
-removeReservation(resId) {
-    const info = this.getDailyInfo();
-    if (!info.reservations) return;
-
-    info.reservations = info.reservations.filter(r => r.id !== resId);
-    this._save();
-
-    // Sync
-    // Sync - RE-ENABLED (Sanitized)
-    if (window.dbFirestore && window.FB) {
-        const { doc, setDoc } = window.FB;
-        const docRef = doc(window.dbFirestore, 'config', 'allGames');
-        const cleanReservations = JSON.parse(JSON.stringify(info.reservations));
-        setDoc(docRef, { reservations: cleanReservations }, { merge: true });
-    }
-}
-
-addGame(arg1) {
-    // Advanced Signature: addGame({ date, time, sport, league, homeTeam, awayTeam, match, tvs, audio })
-    let gameData = arg1;
-
-    console.log('🎯 addGame received gameData:', gameData);
-    console.log('📅 gameData.date:', gameData.date);
-
-    // CRITICAL FIX: Don't use toLocaleDateString - it causes timezone bugs
-    // Ensure date is treated as LOCAL, not UTC.
-    // Appending T12:00:00 ensures it falls in the middle of the day for any American/European timezone
-    let finalDate = gameData.date;
-    if (finalDate && finalDate.length === 10) {
-        // Keep it as is, it's already YYYY-MM-DD
-    } else if (!finalDate) {
-        // Only if no date provided, create today's date manually
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        finalDate = `${year}-${month}-${day}`;
-    }
-
-    // Validation / Defaults
-    const newGame = {
-        id: 'game_' + Date.now(),
-        date: finalDate, // Now strictly YYYY-MM-DD
-        time: gameData.time || '12:00',
-        sport: gameData.sport || 'Futbol',
-        league: gameData.league || 'Amistoso',
-        homeTeam: gameData.homeTeam || 'Local',
-        awayTeam: gameData.awayTeam || 'Visitante',
-        match: gameData.match,
-        tvs: gameData.tvs || '',
-        audio: gameData.audio || { salon: false, terraza: false }
-    };
-
-    console.log('💾 Final newGame.date:', newGame.date);
-
-    // LEARNING PHASE
-    if (window.KNOWN_TEAMS) {
-        this.learnTeams(newGame.homeTeam);
-        this.learnTeams(newGame.awayTeam);
-    }
-
-    // AUTO-RESOLVE REQUESTS (Moved after object creation)
-    const info = this.getDailyInfo();
-    const pendingRequests = info.gameRequests || [];
-
-    // Match logic
-    const gameFullName = newGame.match || `${newGame.homeTeam} vs ${newGame.awayTeam}`;
-    const normalizedGameName = gameFullName.trim().toLowerCase();
-
-    const matchedReqs = pendingRequests.filter(r => {
-        const reqName = (r.gameName || r.name || '').trim().toLowerCase();
-        // 1. Direct Match
-        if (reqName === normalizedGameName) return true;
-        // 2. Partial Match
-        if (normalizedGameName.includes(reqName) && reqName.length > 4) return true;
-        return false;
-    });
-
-    if (matchedReqs.length > 0) {
-        console.log(`✅ Auto-resolving ${matchedReqs.length} pending requests for "${gameFullName}"`);
-        info.gameRequests = pendingRequests.filter(r => !matchedReqs.includes(r));
-    } else {
-        if (!info.gameRequests) info.gameRequests = []; // Ensure array exists
-    }
-
-    if (!info.games) info.games = [];
-    info.games.push(newGame);
-    this._save();
-
-    this.updateDailyGames(info.games);
-
-    // SYNC: RE-ENABLED (Sanitized)
-    if (window.dbFirestore && window.FB && matchedReqs.length > 0) {
-        const { doc, setDoc } = window.FB;
-        const docRef = doc(window.dbFirestore, 'config', 'allGames');
-        const cleanRequests = JSON.parse(JSON.stringify(info.gameRequests));
-        setDoc(docRef, { gameRequests: cleanRequests }, { merge: true })
-    }
-
-    return newGame;
-}
-
-// New Helpers for Game Management
-updateGameTVs(gameId, tvString) {
-    const game = (this.data.dailyInfo.games || []).find(g => g.id === gameId);
-    if (game) {
-        game.tvs = tvString;
-        this.updateDailyGames(this.data.dailyInfo.games);
-    }
-}
-
-setGameAudio(gameId, zone, state) {
-    // Zone: 'salon' | 'terraza'
-    // State: true | false
-    const games = this.data.dailyInfo.games || [];
-    const game = games.find(g => g.id === gameId);
-
-    if (game) {
-        // Logic: If turning ON, turn OFF for all others in that zone (Exclusive Audio)
-        if (state === true) {
-            games.forEach(g => {
-                if (g.audio) g.audio[zone] = false;
-            });
+    _load() {
+        const s = localStorage.getItem(STORE_KEY);
+        if (s) {
+            const parsed = JSON.parse(s);
+            // CRITICAL FIX: If local data has NO games but initialization expects them,
+            // or if structure is old, we might want to merge or reset dailyInfo part.
+            // For now, let's just trust it but verify dailyInfo exists.
+            if (!parsed.dailyInfo) {
+                parsed.dailyInfo = JSON.parse(JSON.stringify(INITIAL_DATA.dailyInfo));
+            }
+            return parsed;
         }
-
-        // Now set target
-        if (!game.audio) game.audio = { salon: false, terraza: false };
-        game.audio[zone] = state;
-
-        this.updateDailyGames(games);
-    }
-}
-
-learnTeams(teamName) {
-    if (!teamName || teamName === 'Local' || teamName === 'Visitante' || !window.KNOWN_TEAMS) return;
-
-    // Normalize check
-    const normalized = teamName.trim();
-
-    if (!window.KNOWN_TEAMS.includes(normalized)) {
-        console.log(`🧠 Learning new team: ${normalized}`);
-        window.KNOWN_TEAMS.push(normalized);
-        window.KNOWN_TEAMS.sort();
-
-        // Update UI
-        if (typeof window.updateTeamDatalist === 'function') window.updateTeamDatalist();
-
-        // Sync to Cloud
-        if (window.dbFirestore && window.FB) {
-            const { doc, setDoc, arrayUnion } = window.FB;
-            const configRef = doc(window.dbFirestore, 'config', 'teams');
-            setDoc(configRef, {
-                list: arrayUnion(normalized)
-            }, { merge: true }).catch(e => console.error('🔥 Error learning team:', e));
-        }
-    }
-} deleteGame(index) {
-    const info = this.getDailyInfo();
-    info.games.splice(index, 1);
-    this.updateDailyGames(info.games);
-}
-
-// === PROMOS ===
-addPromoToCatalog(title, description) {
-    const info = this.getDailyInfo();
-    if (!info.promoCatalog) info.promoCatalog = [];
-    const id = 'pc' + Date.now();
-    info.promoCatalog.push({ id, title, description, createdAt: new Date().toISOString() });
-    this._save();
-    return id;
-}
-
-deletePromoFromCatalog(promoId) {
-    const info = this.getDailyInfo();
-    info.promoCatalog = (info.promoCatalog || []).filter(p => p.id !== promoId);
-    info.activePromoIds = (info.activePromoIds || []).filter(id => id !== promoId);
-    this._save();
-}
-
-togglePromoActive(promoId) {
-    const info = this.getDailyInfo();
-    if (!info.activePromoIds) info.activePromoIds = [];
-    const idx = info.activePromoIds.indexOf(promoId);
-    if (idx >= 0) {
-        info.activePromoIds.splice(idx, 1);
-    } else {
-        info.activePromoIds.push(promoId);
-    }
-    this._save();
-}
-
-// === DYNAMICS ===
-addDynamicToCatalog(title, description, metric) {
-    const info = this.getDailyInfo();
-    if (!info.dynamicCatalog) info.dynamicCatalog = [];
-    const id = 'dc' + Date.now();
-    info.dynamicCatalog.push({ id, title, description, metric, createdAt: new Date().toISOString() });
-    this._save();
-    return id;
-}
-
-deleteDynamicFromCatalog(dynamicId) {
-    const info = this.getDailyInfo();
-    info.dynamicCatalog = (info.dynamicCatalog || []).filter(d => d.id !== dynamicId);
-    if (info.activeDynamic && info.activeDynamic.catalogId === dynamicId) {
-        info.activeDynamic = null;
-    }
-    this._save();
-}
-
-activateDynamic(catalogId) {
-    const info = this.getDailyInfo();
-    // Initialize scores with all waiters at 0
-    const waiters = this.getWaiters();
-    info.activeDynamic = {
-        catalogId,
-        date: new Date().toISOString().split('T')[0],
-        scores: waiters.map(w => ({
-            odoo_id: w.odoo_id,
-            waiterName: w.name,
-            score: 0
-        }))
-    };
-    this._save();
-}
-
-deactivateDynamic() {
-    const info = this.getDailyInfo();
-    info.activeDynamic = null;
-    this._save();
-}
-
-updateWaiterScore(odoo_id, newScore) {
-    const info = this.getDailyInfo();
-    if (!info.activeDynamic || !info.activeDynamic.scores) return;
-    const entry = info.activeDynamic.scores.find(s => s.odoo_id === odoo_id);
-    if (entry) {
-        entry.score = parseInt(newScore) || 0;
-    }
-    // Sort by score descending
-    info.activeDynamic.scores.sort((a, b) => b.score - a.score);
-    this._save();
-}
-
-// === PRODUCTS 86/85/PUSH ===
-addProduct(type, name, category) {
-    // type: 'outOfStock86', 'lowStock85', 'push'
-    // category: 'cocina' or 'meseros'
-    const info = this.getDailyInfo();
-    if (!info.products) info.products = { outOfStock86: [], lowStock85: [], push: [] };
-    if (!info.products[type]) info.products[type] = [];
-    info.products[type].push({
-        id: type + '_' + Date.now(),
-        name,
-        category
-    });
-    this._save();
-}
-
-deleteProduct(type, index) {
-    const info = this.getDailyInfo();
-    if (info.products && info.products[type]) {
-        info.products[type].splice(index, 1);
-        this._save();
-    }
-}
-
-// Legacy compatibility
-updateDailyPromos(promos) {
-    // For backward compat - convert to new structure
-    const info = this.getDailyInfo();
-    info.promoCatalog = promos;
-    info.activePromoIds = promos.map(p => p.id);
-    this._save();
-}
-
-updateDailyDynamics(dynamicsData) {
-    const info = this.getDailyInfo();
-    if (dynamicsData && dynamicsData.active) {
-        // Legacy format
-        if (!info.dynamicCatalog) info.dynamicCatalog = [];
-        const existing = info.dynamicCatalog.find(d => d.id === dynamicsData.active.id);
-        if (!existing) {
-            info.dynamicCatalog.push({
-                id: dynamicsData.active.id,
-                title: dynamicsData.active.title,
-                description: dynamicsData.active.description,
-                metric: dynamicsData.active.metric || 'count'
-            });
-        }
-        info.activeDynamic = {
-            catalogId: dynamicsData.active.id,
-            date: new Date().toISOString().split('T')[0],
-            scores: (dynamicsData.leaderboard || []).map(l => ({
-                odoo_id: l.waiterId,
-                waiterName: l.waiterName,
-                score: l.score || 0
-            }))
-        };
-    } else {
-        info.activeDynamic = null;
-    }
-    this._save();
-}
-
-updateProducts86(products) {
-    // Legacy - maps to outOfStock86
-    const info = this.getDailyInfo();
-    if (!info.products) info.products = { outOfStock86: [], lowStock85: [], push: [] };
-    info.products.outOfStock86 = products.map(p => ({
-        id: p.id,
-        name: p.name,
-        category: p.category === 'Platillos' || p.category === 'cocina' ? 'cocina' : 'meseros'
-    }));
-    this._save();
-}
-
-// === AI SUGGESTIONS (Personalized) ===
-generateAISuggestion(customerId) {
-    const customer = this.data.customers.find(c => c.id === customerId);
-    if (!customer) return 'Cliente nuevo - ofrecer menú completo.';
-
-    const visits = this.data.visits.filter(v => v.customerId === customerId);
-    const classification = this.getCustomerClassification(customerId);
-
-    let suggestions = [];
-
-    // Based on classification
-    if (classification === 'Diamond' || classification === 'VIP') {
-        suggestions.push('Cliente premium - ofrecer platillos especiales o promociones VIP');
+        return JSON.parse(JSON.stringify(INITIAL_DATA));
     }
 
-    // Based on visit frequency
-    if (visits.length >= 5) {
-        suggestions.push('Cliente frecuente');
-    } else if (visits.length === 1) {
-        suggestions.push('Segunda visita - impresionar para fidelizar');
-    }
-
-    // Based on top drinks
-    if (customer.topDrinks && customer.topDrinks.length > 0) {
-        const topDrink = customer.topDrinks[0];
-        // Check if there's a promo for drinks
-        const dailyInfo = this.getDailyInfo();
-        const drinkPromo = dailyInfo.promos.find(p => p.title.toLowerCase().includes('cerveza') || p.title.toLowerCase().includes('bebida'));
-        if (drinkPromo) {
-            suggestions.push(`Ofrecer "${drinkPromo.title}" - cliente suele pedir ${topDrink}`);
-        } else {
-            suggestions.push(`Cliente prefiere ${topDrink}`);
+    _save() {
+        try {
+            localStorage.setItem(STORE_KEY, JSON.stringify(this.data));
+            this.notifyListeners();
+        } catch (e) {
+            console.error('Error saving data:', e);
         }
     }
 
-    // Based on top food
-    if (customer.topFood && customer.topFood.length > 0) {
-        const topFood = customer.topFood[0];
-        suggestions.push(`Suele pedir ${topFood}`);
+    login(username, password) {
+        const user = this.data.users.find(u => u.username === username && u.password === password);
+        return user || null;
     }
 
-    // Based on team (if there's a game today)
-    if (customer.team) {
-        const dailyInfo = this.getDailyInfo();
-        const game = dailyInfo.games.find(g =>
-            g.homeTeam === customer.team || g.awayTeam === customer.team
+    getBranches() {
+        return this.data.branches;
+    }
+
+    // Hostess Methods
+    searchCustomers(query) {
+        if (!query || query.length < 2) return [];
+        const q = query.toLowerCase();
+        return this.data.customers.filter(c =>
+            c.firstName.toLowerCase().includes(q) ||
+            c.lastName.toLowerCase().includes(q)
         );
-        if (game) {
-            suggestions.push(`¡Su equipo juega hoy! ${game.homeTeam} vs ${game.awayTeam} a las ${game.time}`);
+    }
+
+    isTableOccupied(table, branchId) {
+        const isOcc = this.data.visits.some(v => {
+            if (v.branchId !== branchId) return false;
+            if (v.status !== 'active') return false;
+
+            // 1. Exact String Match (Trimmed)
+            if (String(v.table).trim() === String(table).trim()) return true;
+
+            // 2. Numeric Match (Handle "1" vs "01")
+            const vNum = parseInt(v.table);
+            const tNum = parseInt(table);
+            if (!isNaN(vNum) && !isNaN(tNum) && vNum === tNum) return true;
+
+            return false;
+        });
+
+        console.log(`🛡️ Checking Table Occupancy: Input '${table}' @ Branch '${branchId}' -> Result: ${isOcc}`);
+        return isOcc;
+    }
+
+    // Get available table numbers for a branch based on user position
+    getAvailableTables(branchId, userPosition) {
+        const branch = this.data.branches.find(b => b.id === branchId);
+        if (!branch || !branch.tables) {
+            return Array.from({ length: 50 }, (_, i) => i + 1); // Fallback for old data
         }
+
+        let availableTables = [...branch.tables.regular];
+
+        // BARRA staff can also use BARRA tables
+        if (userPosition === 'BARRA' && branch.tables.barra.length > 0) {
+            availableTables = [...availableTables, ...branch.tables.barra];
+        }
+
+        return availableTables.sort((a, b) => a - b);
     }
 
-    // Default if no suggestions
-    if (suggestions.length === 0) {
-        return 'Nuevo cliente - ofrecer promociones del día y menú recomendado.';
+    // Validate if a table number is valid for a branch and user position
+    isValidTable(tableNumber, branchId, userPosition) {
+        const availableTables = this.getAvailableTables(branchId, userPosition);
+        return availableTables.includes(parseInt(tableNumber));
     }
 
-    return suggestions.join('. ');
-}
 
-// --- INVENTORY / ADMIN METHODS ---
+    createUser(userData) {
+        const id = 'U' + Date.now();
+        const user = { id, ...userData };
+        this.data.users.push(user);
+        this._save();
+        return user;
+    }
 
-toggleItemAvailability(itemId) {
-    if (!itemId) return false;
+    getCustomerById(id) {
+        return this.data.customers.find(c => c.id === id);
+    }
 
-    // Helper to find and toggle
-    const toggleInList = (list) => {
-        const item = list.find(i => i.id === itemId);
-        if (item) {
-            if (item.available === undefined) item.available = true;
-            item.available = !item.available;
+    createCustomer(data) {
+        const id = 'C' + Date.now();
+        const customer = { id, ...data, visits: 0, topDrinks: [], topFood: [] };
+        this.data.customers.push(customer);
+        this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'customers', customer.id), customer)
+                .catch(e => console.error('🔥 Customer sync error', e));
+        }
+
+        return customer;
+    }
+
+    updateCustomer(customerId, updates) {
+        const idx = this.data.customers.findIndex(c => c.id === customerId);
+        if (idx !== -1) {
+            this.data.customers[idx] = { ...this.data.customers[idx], ...updates };
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'customers', customerId), updates)
+                    .catch(e => console.error('🔥 Sync update customer error', e));
+            }
             return true;
         }
         return false;
-    };
+    }
 
-    const foundInFood = toggleInList(this.menu.alimentos);
-    const foundInDrinks = !foundInFood && toggleInList(this.menu.bebidas);
+    createVisit(visitData) {
+        const visit = {
+            id: 'V' + Date.now(),
+            status: 'active',
+            ...visitData
+        };
+        this.data.visits.push(visit);
 
-    if (foundInFood || foundInDrinks) {
+        // Update customer visit count
+        const cust = this.data.customers.find(c => c.id === visitData.customerId);
+        if (cust) {
+            cust.visits = (cust.visits || 0) + 1;
+        }
+
         this._save();
-        return true;
+
+        // SYNC TO FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'visits', visit.id), visit)
+                .then(() => console.log('🔥 Visit synced to cloud'))
+                .catch(e => console.error('🔥 Sync error', e));
+        }
+
+        return visit;
     }
-    return false;
-}
 
-addNewProduct(name, category, price, type) {
-    // type should be 'alimentos' or 'bebidas'
-    if (!this.menu[type]) return false;
-
-    const newId = (type === 'alimentos' ? 'A' : 'B') + Date.now().toString().slice(-4);
-
-    const newItem = {
-        id: newId,
-        name: name,
-        category: category,
-        price: parseFloat(price) || 0,
-        available: true
-    };
-
-    this.menu[type].push(newItem);
-    this._save();
-    return newItem;
-}
-
-addGame_DUPLICATE_DO_NOT_USE(gameData) {
-    const info = this.getDailyInfo();
-    const newGame = {
-        id: 'g' + Date.now(),
-        league: gameData.league || 'General',
-        homeTeam: gameData.homeTeam,
-        awayTeam: gameData.awayTeam,
-        time: gameData.time,
-        date: new Date().toISOString().split('T')[0]
-    };
-    info.games.push(newGame);
-    this._save();
-
-    // SYNC FIREBASE
-    if (window.dbFirestore && window.FB) {
-        const { doc, setDoc } = window.FB;
-        setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
-            .catch(e => console.error('🔥 Sync add game error', e));
+    // MENU MANAGEMENT METHODS
+    getMenu() {
+        return this.data.menu;
     }
-    return newGame;
-}
 
-removeGame(gameId) {
-    const info = this.getDailyInfo();
-    const oldGames = info.games || [];
-    const newGames = oldGames.filter(g => g.id !== gameId);
+    getMenuItemsByCategory(type, category) {
+        // type: 'alimentos' or 'bebidas'
+        if (!this.data.menu || !this.data.menu[type]) return [];
 
-    // Use centralized updater (handles Firebase sync to allGames)
-    this.updateDailyGames(newGames);
-}
+        if (category) {
+            return this.data.menu[type].filter(item => item.category === category);
+        }
+        return this.data.menu[type];
+    }
 
-clearTodayGames() {
-    const today = new Date().toLocaleDateString('en-CA');
-    const info = this.getDailyInfo();
-    const oldGames = info.games || [];
-    const beforeCount = oldGames.length;
+    toggleItemAvailability(itemId) {
+        // Toggle 86 status for food or beverage item
+        let item = this.data.menu.alimentos.find(i => i.id === itemId);
+        if (!item) {
+            item = this.data.menu.bebidas.find(i => i.id === itemId);
+        }
 
-    // Keep only games NOT from today
-    const newGames = oldGames.filter(g => g.date !== today);
-    const afterCount = newGames.length;
+        if (item) {
+            item.available = !item.available;
+            this._save();
+            return item;
+        }
+        return null;
+    }
 
-    console.log(`🗑️ Cleared ${beforeCount - afterCount} games from ${today}`);
+    createOrder(orderData) {
+        // Create new order for a table
+        const order = {
+            id: 'O' + Date.now(),
+            visitId: orderData.visitId,
+            items: orderData.items, // [{itemId, name, quantity, observations}, ...]
+            timestamp: new Date().toISOString(),
+            status: 'pending' // pending, preparing, delivered
+        };
+        this.data.orders.push(order);
+        this._save();
+        return order;
+    }
 
-    // Use centralized updater (handles Firebase sync to allGames)
-    this.updateDailyGames(newGames);
-}
+    getOrdersByVisit(visitId) {
+        return this.data.orders.filter(o => o.visitId === visitId);
+    }
+
+    // New Hostess Management
+    getActiveVisitsByBranch(branchId) {
+        return this.data.visits
+            .filter(v => v.branchId === branchId && v.status === 'active')
+            .map(v => ({
+                ...v,
+                customer: this.data.customers.find(c => c.id === v.customerId)
+            }));
+    }
+
+    updateVisitDetails(visitId, updatedFields) {
+        const visit = this.data.visits.find(v => v.id === visitId);
+        if (visit) {
+            // Merge all updated fields into the visit object
+            Object.assign(visit, updatedFields);
+            console.log('✅ updateVisitDetails called for visit', visitId, 'Updated fields:', updatedFields);
+            this._save();
+
+            // SYNC FIREBASE (CRITICAL FIX)
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                // Only send the updated fields to save bandwidth
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), updatedFields)
+                    .then(() => console.log('☁️ Synced updated details to Firebase'))
+                    .catch(e => console.error('🔥 Sync update details error', e));
+            }
+
+            return visit;
+        } else {
+            console.warn('⚠️ updateVisitDetails: Visit not found:', visitId);
+        }
+    }
+
+    releaseTable(visitId) {
+        const visit = this.data.visits.find(v => v.id === visitId);
+        if (visit) {
+            visit.status = 'closed'; // Force close/release
+            visit.endTime = new Date().toISOString();
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), { status: 'closed', endTime: visit.endTime })
+                    .catch(e => console.error('🔥 Sync release error', e));
+            }
+        }
+    }
+
+    // Waiter Methods
+    getActiveVisits(waiterId) {
+        // Return visits assigned to this waiter that are active
+        return this.data.visits
+            .filter(v => v.waiterId === waiterId && v.status === 'active')
+            .map(v => {
+                const customer = this.data.customers.find(c => c.id === v.customerId);
+                return { ...v, customer };
+            });
+    }
+
+    // Close visit and set consumption
+    closeVisit(visitId, amount) {
+        const visit = this.data.visits.find(v => v.id === visitId);
+        if (visit) {
+            visit.status = 'closed';
+            visit.totalAmount = amount;
+            visit.endTime = new Date().toISOString();
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), { status: 'closed', totalAmount: amount, endTime: visit.endTime })
+                    .catch(e => console.error('🔥 Sync close error', e));
+            }
+        }
+    }
+
+    updateVisit(visitId, updates) {
+        const idx = this.data.visits.findIndex(v => v.id === visitId);
+        if (idx !== -1) {
+            this.data.visits[idx] = { ...this.data.visits[idx], ...updates };
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), updates)
+                    .catch(e => console.error('🔥 Sync update error', e));
+            }
+        }
+    }
+
+    markProspect(visitId) {
+        const visit = this.data.visits.find(v => v.id === visitId);
+        if (visit) {
+            visit.isProspect = true;
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), { isProspect: true })
+                    .catch(e => console.error('🔥 Sync mark prospect error', e));
+            }
+        }
+    }
+
+    // Manager / Admin Methods
+    getActiveVisitsGlobal() {
+        return this.data.visits
+            .filter(v => v.status === 'active')
+            .map(v => ({
+                ...v,
+                customer: this.data.customers.find(c => c.id === v.customerId),
+                branchName: this.data.branches.find(b => b.id === v.branchId)?.name
+            }));
+    }
+
+    getProspects() {
+        // Return visits marked as prospect AND NOT reviewed
+        return this.data.visits
+            .filter(v => v.isProspect && !v.prospectReviewed)
+            .map(v => {
+                const customer = this.data.customers.find(c => c.id === v.customerId);
+                return { ...v, customer };
+            });
+    }
+
+    markProspectAsReviewed(visitId) {
+        const v = this.data.visits.find(v => v.id === visitId);
+        if (v) {
+            v.prospectReviewed = true;
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'visits', visitId), { prospectReviewed: true })
+                    .catch(e => console.error('🔥 Sync mark prospect reviewed error', e));
+            }
+        }
+    }
+
+    getBirthdaysToday() {
+        const today = new Date();
+        const m = (today.getMonth() + 1).toString().padStart(2, '0');
+        const d = today.getDate().toString().padStart(2, '0');
+        // Match MM-DD in birthday string YYYY-MM-DD
+        return this.data.customers.filter(c => c.birthday && c.birthday.endsWith(`${m} -${d} `));
+    }
+
+    getRetentionAlerts() {
+        // Mock logic: Customers with > 2 visits who haven't visited in 14 days
+        const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+
+        return this.data.customers.filter(c => {
+            if ((c.visits || 0) < 2) return false;
+            // Find last visit
+            const lastVisit = this.data.visits
+                .filter(v => v.customerId === c.id)
+                .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+            if (!lastVisit) return false;
+            return (now - new Date(lastVisit.date).getTime()) > TWO_WEEKS;
+        });
+    }
+
+    getVisits() {
+        return this.data.visits.map(v => ({
+            ...v,
+            customer: this.data.customers.find(c => c.id === v.customerId)
+        }));
+    }
+
+    getVisitsByDate(dateStr) {
+        // dateStr YYYY-MM-DD
+        return this.data.visits.filter(v => {
+            const vDate = new Date(v.date).toISOString().split('T')[0];
+            return vDate === dateStr;
+        }).map(v => ({
+            ...v,
+            customer: this.data.customers.find(c => c.id === v.customerId)
+        }));
+    }
+
+    getVisitById(visitId) {
+        const v = this.data.visits.find(v => v.id === visitId);
+        if (!v) return null;
+        const customer = this.data.customers.find(c => c.id === v.customerId);
+        return { ...v, customer };
+    }
+
+    // Regional Reporting Helpers
+    getStatsByBranch(branchId, startDate, endDate) {
+        const visits = this.data.visits.filter(v => {
+            if (v.branchId !== branchId) return false;
+            if (v.status === 'active') return false; // Only count closed for sales? Or both? Let's use closed for sales.
+            const d = new Date(v.date);
+            return d >= startDate && d <= endDate;
+        });
+
+        const totalSales = visits.reduce((acc, v) => acc + Number(v.totalAmount || 0), 0);
+        const traffic = visits.length;
+        return { totalSales, traffic };
+    }
+
+    getActiveTablesCount(branchId) {
+        return this.data.visits.filter(v => v.branchId === branchId && v.status === 'active').length;
+    }
+
+    // ===== WAITLIST METHODS =====
+    addToWaitlist(data) {
+        const entry = {
+            id: 'W' + Date.now(),
+            branchId: data.branchId,
+            customerName: data.customerName,
+            pax: data.pax,
+            phone: data.phone,
+            addedAt: new Date().toISOString(),
+            estimatedWait: data.estimatedWait || 15,
+            notified: false
+        };
+        this.data.waitlist.push(entry);
+        this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'waitlist', entry.id), entry)
+                .catch(e => console.error('🔥 Sync waitlist add error', e));
+        }
+
+        return entry;
+    }
+
+    getWaitlist(branchId) {
+        return this.data.waitlist
+            .filter(w => w.branchId === branchId && !w.removed)
+            .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt));
+    }
+
+    removeFromWaitlist(id) {
+        const idx = this.data.waitlist.findIndex(w => w.id === id);
+        if (idx !== -1) {
+            this.data.waitlist[idx].removed = true;
+            this.data.waitlist[idx].removedAt = new Date().toISOString();
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'waitlist', id), {
+                    removed: true,
+                    removedAt: this.data.waitlist[idx].removedAt
+                }).catch(e => console.error('🔥 Sync waitlist remove error', e));
+            }
+        }
+    }
+
+    notifyNextInWaitlist(branchId) {
+        const next = this.getWaitlist(branchId)[0];
+        if (next) {
+            next.notified = true;
+            this._save();
+            return next;
+        }
+        return null;
+    }
+
+    // ===== RESERVATION METHODS =====
+    createReservation(data) {
+        const reservation = {
+            id: 'R' + Date.now(),
+            branchId: data.branchId,
+            customerName: data.customerName,
+            customerId: data.customerId || null,
+            phone: data.phone,
+            date: data.date, // ISO string
+            time: data.time, // HH:MM
+            pax: data.pax,
+            table: data.table || null,
+            status: 'pending', // pending, confirmed, cancelled, completed
+            notes: data.notes || '',
+            reason: data.reason || '',
+            game: data.game || '',
+            vip: data.vip || '',
+            createdAt: new Date().toISOString()
+        };
+        this.data.reservations.push(reservation);
+        this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'reservations', reservation.id), reservation)
+                .catch(e => console.error('🔥 Sync add reservation error', e));
+        }
+
+        return reservation;
+    }
+
+    getReservations(branchId, date) {
+        let filtered = this.data.reservations.filter(r => r.branchId === branchId);
+        if (date) {
+            const dateStr = new Date(date).toISOString().split('T')[0];
+            filtered = filtered.filter(r => r.date.startsWith(dateStr));
+        }
+        return filtered.sort((a, b) => {
+            const aTime = a.date + 'T' + a.time;
+            const bTime = b.date + 'T' + b.time;
+            return new Date(aTime) - new Date(bTime);
+        });
+    }
+
+    confirmReservation(id) {
+        const r = this.data.reservations.find(x => x.id === id);
+        if (r) {
+            r.status = 'confirmed';
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'reservations', id), { status: 'confirmed' })
+                    .catch(e => console.error('🔥 Sync confirm reservation error', e));
+            }
+        }
+    }
+
+    cancelReservation(id) {
+        const r = this.data.reservations.find(x => x.id === id);
+        if (r) {
+            r.status = 'cancelled';
+            this._save();
+
+            // SYNC FIREBASE
+            if (window.dbFirestore && window.FB) {
+                const { doc, updateDoc } = window.FB;
+                updateDoc(doc(window.dbFirestore, 'reservations', id), { status: 'cancelled' })
+                    .catch(e => console.error('🔥 Sync cancel reservation error', e));
+            }
+        }
+    }
+
+    deleteReservation(id) {
+        const idx = this.data.reservations.findIndex(x => x.id === id);
+        if (idx !== -1) {
+            // Remove local
+            this.data.reservations.splice(idx, 1);
+            this._save();
+
+            // SYNC FIREBASE (Delete)
+            if (window.dbFirestore && window.FB) {
+                const { doc, deleteDoc } = window.FB;
+                deleteDoc(doc(window.dbFirestore, 'reservations', id))
+                    .then(() => console.log('🗑️ Reservation deleted from Cloud'))
+                    .catch(e => console.error('🔥 Sync delete reservation error', e));
+            }
+
+            // Refresh Manager UI if active
+            if (window.renderManagerDashboard) window.renderManagerDashboard('reservations');
+            return true;
+        }
+        return false;
+    }
+
+    // ===== CLIENT CLASSIFICATION =====
+    getCustomerClassification(customerId) {
+        const customer = this.data.customers.find(c => c.id === customerId);
+        if (!customer) return 'none';
+
+        const visits = this.data.visits.filter(v => v.customerId === customerId);
+        if (visits.length === 0) return 'new';
+
+        const now = new Date();
+        const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        const twoWeeksAgo = new Date(now - 14 * 24 * 60 * 60 * 1000);
+
+        // Weekly visits
+        const visitsThisWeek = visits.filter(v => new Date(v.date) >= oneWeekAgo);
+        const visitsLastTwoWeeks = visits.filter(v => new Date(v.date) >= twoWeeksAgo);
+
+        // Total spending
+        const totalSpending = visits.reduce((sum, v) => sum + Number(v.totalAmount || 0), 0);
+        const avgPerVisit = visits.length > 0 ? totalSpending / visits.length : 0;
+
+        // Weekly spending
+        const weeklySpending = visitsThisWeek.reduce((sum, v) => sum + Number(v.totalAmount || 0), 0);
+
+        // Check branches visited
+        const branchesVisited = new Set(visits.map(v => v.branchId));
+        const multiSucursal = branchesVisited.size > 1;
+
+        // Classification logic
+        // Diamond: >1 visita/semana + >$2,500/semana
+        if (visitsLastTwoWeeks.length >= 2 && weeklySpending > 2500) {
+            return 'diamond';
+        }
+
+        // VIP: >$2,500 por visita + múltiples sucursales
+        if (avgPerVisit > 2500 && multiSucursal) {
+            return 'vip';
+        }
+
+        // Blazin: ≥1 visita/semana
+        if (visitsThisWeek.length >= 1 && visits.length >= 4) {
+            return 'blazin';
+        }
+
+        // New: <= 3 visits
+        if (visits.length <= 3) {
+            return 'new';
+        }
+
+        return 'regular';
+    }
+
+    getCustomersByClassification(type, branchId = null) {
+        let customers = this.data.customers;
+
+        return customers.filter(c => {
+            const classification = this.getCustomerClassification(c.id);
+            if (classification !== type) return false;
+
+            // Filter by branch if specified
+            if (branchId) {
+                const hasVisitInBranch = this.data.visits.some(v =>
+                    v.customerId === c.id && v.branchId === branchId
+                );
+                return hasVisitInBranch;
+            }
+            return true;
+        });
+    }
+
+    // ===== ADVANCED REPORTING =====
+    getTopProducts(type, startDate, endDate, branchId = null) {
+        // type: 'entry', 'food', 'drink'
+        let visits = this.data.visits.filter(v => {
+            const d = new Date(v.date);
+            const inRange = (!startDate || d >= startDate) && (!endDate || d <= endDate);
+            const inBranch = !branchId || v.branchId === branchId;
+            return inRange && inBranch && v.status === 'closed';
+        });
+
+        const productCounts = {};
+        visits.forEach(v => {
+            const customer = this.data.customers.find(c => c.id === v.customerId);
+            if (!customer) return;
+
+            let products = [];
+            if (type === 'entry') products = customer.topFood || []; // Simplified
+            else if (type === 'food') products = customer.topFood || [];
+            else if (type === 'drink') products = customer.topDrinks || [];
+
+            products.forEach(p => {
+                productCounts[p] = (productCounts[p] || 0) + 1;
+            });
+        });
+
+        return Object.entries(productCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
+    }
+
+    getBirthdaysThisMonth(branchId = null) {
+        const today = new Date();
+        const m = (today.getMonth() + 1).toString().padStart(2, '0');
+
+        let customers = this.data.customers.filter(c => {
+            if (!c.birthday) return false;
+            const match = c.birthday.includes(`-${m}-`);
+            if (!match) return false;
+
+            // Filter by branch if specified
+            if (branchId) {
+                return this.data.visits.some(v => v.customerId === c.id && v.branchId === branchId);
+            }
+            return true;
+        });
+
+        return customers.map(c => {
+            const dayMatch = c.birthday.match(/-(\d{2})\s*$/);
+            const day = dayMatch ? parseInt(dayMatch[1]) : 0;
+            return { ...c, birthdayDay: day };
+        }).sort((a, b) => a.birthdayDay - b.birthdayDay);
+    }
+
+    getSportAnalytics(branchId = null) {
+        let customers = this.data.customers;
+        if (branchId) {
+            const customerIdsInBranch = new Set(
+                this.data.visits
+                    .filter(v => v.branchId === branchId)
+                    .map(v => v.customerId)
+            );
+            customers = customers.filter(c => customerIdsInBranch.has(c.id));
+        }
+
+        const teamCounts = {};
+        customers.forEach(c => {
+            const teams = c.teams || (c.team ? [c.team] : []);
+            teams.forEach(t => {
+                teamCounts[t] = (teamCounts[t] || 0) + 1;
+            });
+        });
+
+        return Object.entries(teamCounts)
+            .map(([team, count]) => ({ team, count }))
+            .sort((a, b) => b.count - a.count);
+    }
+
+    getDemographics(branchId = null) {
+        let customers = this.data.customers;
+        if (branchId) {
+            const customerIdsInBranch = new Set(
+                this.data.visits
+                    .filter(v => v.branchId === branchId)
+                    .map(v => v.customerId)
+            );
+            customers = customers.filter(c => customerIdsInBranch.has(c.id));
+        }
+
+        const cityCounts = {};
+        const countryCounts = {};
+        const colonyCounts = {};
+
+        customers.forEach(c => {
+            if (c.city) cityCounts[c.city] = (cityCounts[c.city] || 0) + 1;
+            if (c.country) countryCounts[c.country] = (countryCounts[c.country] || 0) + 1;
+            if (c.colony) colonyCounts[c.colony] = (colonyCounts[c.colony] || 0) + 1;
+        });
+
+        return {
+            cities: Object.entries(cityCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+            countries: Object.entries(countryCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+            colonies: Object.entries(colonyCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count)
+        };
+    }
+
+    getAbsentCustomers(thresholdDays = 30, branchId = null) {
+        const threshold = thresholdDays * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+
+        return this.data.customers.filter(c => {
+            if ((c.visits || 0) < 2) return false;
+
+            const customerVisits = this.data.visits.filter(v => {
+                if (v.customerId !== c.id) return false;
+                return !branchId || v.branchId === branchId;
+            });
+
+            if (customerVisits.length === 0) return false;
+
+            const lastVisit = customerVisits
+                .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+            return (now - new Date(lastVisit.date).getTime()) > threshold;
+        });
+    }
+
+    // ===== NEW REPORTING METHODS (Step 2) =====
+
+    getCustomersByType(type, startDate, endDate, branchId = null) {
+        // Types: 'diamond', 'blazin', 'new', 'absent', 'couch_card'
+        // Filter by date range? For 'new', yes (joined in date range).
+        // For 'diamond', 'blazin' -> Status within range? Or current status?
+        // Usually reports allow seeing WHO was Diamond in that period, but current status is easier.
+        // Let's filter by: Active in that period + Current Status matches type.
+
+        let customers = this.data.customers;
+
+        // 1. Filter by Activity in Date Range (if provided)
+        if (startDate && endDate) {
+            const activeCustomerIds = new Set(this.data.visits
+                .filter(v => {
+                    const d = new Date(v.date);
+                    return d >= new Date(startDate) && d <= new Date(endDate);
+                })
+                .map(v => v.customerId));
+
+            customers = customers.filter(c => activeCustomerIds.has(c.id));
+        }
+
+        // 2. Filter by Type
+        return customers.filter(c => {
+            if (type === 'couch_card') return c.couchCard === true;
+
+            const classification = this.getCustomerClassification(c.id);
+            if (type === 'absent') return false; // Handled separately usually, or use getAbsent
+
+            // For 'new', check if first visit is in range?
+            if (type === 'new') {
+                // Simplification: classification 'new' means <= 3 visits total.
+                return classification === 'new';
+            }
+
+            return classification === type;
+        });
+    }
+
+    getCustomerBranchVisits(startDate, endDate) {
+        // Returns list of customers with visit counts per branch
+        const result = {}; // { custId: { name, phone, juriquilla: 5, paseo: 2 ... } }
+
+        const visits = this.data.visits.filter(v => {
+            const d = new Date(v.date);
+            return (!startDate || d >= new Date(startDate)) && (!endDate || d <= new Date(endDate));
+        });
+
+        visits.forEach(v => {
+            if (!result[v.customerId]) {
+                const c = this.data.customers.find(x => x.id === v.customerId);
+                if (c) {
+                    result[v.customerId] = {
+                        name: c.firstName + ' ' + c.lastName,
+                        phone: c.phone || 'N/A',
+                        total: 0,
+                        branches: {}
+                    };
+                }
+            }
+
+            if (result[v.customerId]) {
+                const entry = result[v.customerId];
+                entry.total++;
+                entry.branches[v.branchId] = (entry.branches[v.branchId] || 0) + 1;
+            }
+        });
+
+        return Object.values(result).sort((a, b) => b.total - a.total);
+    }
+
+    getDemographicReport(type, startDate, endDate) {
+        // type: 'city', 'country', 'birthday' (birthday filtered by month in range?)
+
+        // Filter active customers in range
+        const activeVisits = this.data.visits.filter(v => {
+            const d = new Date(v.date);
+            return (!startDate || d >= new Date(startDate)) && (!endDate || d <= new Date(endDate));
+        });
+        const activeCustIds = new Set(activeVisits.map(v => v.customerId));
+        const customers = this.data.customers.filter(c => activeCustIds.has(c.id));
+
+        const counts = {};
+
+        customers.forEach(c => {
+            let key = 'Desconocido';
+            if (type === 'city') key = c.city || 'Desconocido';
+            if (type === 'country') key = c.country || 'Desconocido';
+
+            if (type === 'birthday') {
+                // Group by Month?
+                // User wants "Cumpleaños del mes ... filtrar por periodo"
+                // Just list them?
+                // Let's return the list directly for birthday
+                return;
+            }
+
+            counts[key] = (counts[key] || 0) + 1;
+        });
+
+        if (type === 'birthday') {
+            // Return customers whose birthday (month-day) falls in selected date range
+            if (!startDate || !endDate) return [];
+
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+
+            return this.data.customers.filter(c => {
+                if (!c.birthday) return false;
+
+                // Parse birthday "YYYY-MM-DD"
+                const parts = c.birthday.split('-');
+                if (parts.length < 3) return false;
+
+                const month = parseInt(parts[1]) - 1; // 0-indexed
+                const day = parseInt(parts[2]);
+
+                // Create date in current year for comparison
+                const currentYear = new Date().getFullYear();
+                const birthdayThisYear = new Date(currentYear, month, day);
+
+                // Create comparable dates (same year) from start/end range
+                const startCompare = new Date(currentYear, start.getMonth(), start.getDate());
+                const endCompare = new Date(currentYear, end.getMonth(), end.getDate());
+
+                // Check if birthday falls within the month-day range
+                return birthdayThisYear >= startCompare && birthdayThisYear <= endCompare;
+            }).map(c => ({ name: c.firstName + ' ' + c.lastName, birthday: c.birthday, phone: c.phone, branch: 'N/A' }));
+        }
+
+        return Object.entries(counts)
+            .map(([label, value]) => ({ label, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 10);
+    }
+
+    getMostVisitedBranch(customerId) {
+        // Calculate which branch this customer visits most
+        const visits = this.data.visits.filter(v => v.customerId === customerId);
+        if (visits.length === 0) return 'N/A';
+
+        const branchCounts = {};
+        visits.forEach(v => {
+            branchCounts[v.branchId] = (branchCounts[v.branchId] || 0) + 1;
+        });
+
+        // Find max
+        let maxBranch = null;
+        let maxCount = 0;
+        Object.entries(branchCounts).forEach(([branchId, count]) => {
+            if (count > maxCount) {
+                maxCount = count;
+                maxBranch = branchId;
+            }
+        });
+
+        // Return branch name
+        const branch = this.data.branches.find(b => b.id === maxBranch);
+        return branch ? branch.name : maxBranch || 'N/A';
+    }
+
+    // ===== CAMPAIGN MANAGEMENT =====
+    createCampaign(data) {
+        const campaign = {
+            id: 'CAMP' + Date.now(),
+            name: data.name,
+            segment: data.segment, // 'vip', 'loyal', 'new', 'risk', 'all'
+            message: data.message,
+            imageUrl: data.imageUrl || null,
+            branchId: data.branchId || null, // null = all branches
+            customerIds: data.customerIds || [],
+            sentCount: 0,
+            createdAt: new Date().toISOString(),
+            createdBy: data.createdBy
+        };
+        this.data.campaigns.push(campaign);
+        this._save();
+        return campaign;
+    }
+
+    getCampaigns(branchId = null) {
+        if (!branchId) return this.data.campaigns;
+        return this.data.campaigns.filter(c => !c.branchId || c.branchId === branchId);
+    }
+
+    trackCampaignSend(customerId, campaignType) {
+        // Track that we sent a message
+        console.log(`Campaign sent to ${customerId}: ${campaignType}`);
+    }
+
+    // === DAILY INFO METHODS (Enhanced) ===
+    getMatches() {
+        // RETURN ALL games regardless of date.
+        // It's better to show yesterday's game than nothing.
+        // The manager is responsible for deleting old games.
+        const games = this.getDailyInfo().games || [];
+        console.log(`Getting matches: found ${games.length} games.`, games);
+        return games;
+    }
+
+    getDailyInfo() {
+        if (!this.data.dailyInfo) {
+            this.data.dailyInfo = {
+                games: [],
+                gameRequests: [], // New: Requests from Hostess
+                promoCatalog: [],
+                activePromoIds: [],
+                dynamicCatalog: [],
+                activeDynamic: null,
+                products: { outOfStock86: [], lowStock85: [], push: [] }
+            };
+            this._save();
+        }
+        // Ensure products structure exists
+        if (!this.data.dailyInfo.products) {
+            this.data.dailyInfo.products = { outOfStock86: [], lowStock85: [], push: [] };
+            this._save();
+        }
+        // Ensure games array exists
+        if (!this.data.dailyInfo.games) {
+            this.data.dailyInfo.games = [];
+        }
+        // Ensure promo catalog exists
+        if (!this.data.dailyInfo.promoCatalog) {
+            this.data.dailyInfo.promoCatalog = [];
+        }
+        if (!this.data.dailyInfo.activePromoIds) {
+            this.data.dailyInfo.activePromoIds = [];
+        }
+
+        // BACKWARDS COMPATIBILITY: Create aliases for old code that still uses old property names
+        // This prevents errors when legacy code tries to access dailyInfo.promos, dailyInfo.products86, etc.
+        const info = this.data.dailyInfo;
+
+        // Legacy alias: promos -> active promos from catalog
+        if (!info.promos) {
+            Object.defineProperty(info, 'promos', {
+                get: () => (info.promoCatalog || []).filter(p => (info.activePromoIds || []).includes(p.id)),
+                configurable: true
+            });
+        }
+
+        // Legacy alias: products86 -> products.outOfStock86
+        if (!info.products86) {
+            Object.defineProperty(info, 'products86', {
+                get: () => info.products?.outOfStock86 || [],
+                configurable: true
+            });
+        }
+
+        // Legacy alias: dynamics
+        if (!info.dynamics) {
+            Object.defineProperty(info, 'dynamics', {
+                get: () => ({
+                    active: info.activeDynamic ? {
+                        ...((info.dynamicCatalog || []).find(d => d.id === info.activeDynamic?.catalogId) || {}),
+                        ...(info.activeDynamic || {})
+                    } : null,
+                    leaderboard: info.activeDynamic?.scores || []
+                }),
+                configurable: true
+            });
+        }
+
+        return this.data.dailyInfo;
+    }
+
+    // Get active promos for today (for waiter view)
+    getActivePromos() {
+        const info = this.getDailyInfo();
+        if (!info.promoCatalog || !info.activePromoIds) return [];
+        return info.promoCatalog.filter(p => info.activePromoIds.includes(p.id));
+    }
+
+    // Get active dynamic with merged data
+    getActiveDynamic() {
+        const info = this.getDailyInfo();
+        if (!info.activeDynamic || !info.activeDynamic.catalogId) return null;
+        const catalog = info.dynamicCatalog || [];
+        const dynamicDef = catalog.find(d => d.id === info.activeDynamic.catalogId);
+        if (!dynamicDef) return null;
+        return {
+            ...dynamicDef,
+            scores: info.activeDynamic.scores || []
+        };
+    }
+
+    // Get all waiters for scoring
+    getWaiters() {
+        return this.data.users.filter(u => u.role === 'waiter');
+    }
+
+    // === GAMES ===
+    updateDailyGames(games) {
+        const info = this.getDailyInfo();
+        info.games = games;
+
+        console.log('🔥 BEFORE Firebase sync - games array:', JSON.stringify(games.slice(-3), null, 2));
+
+        this._save();
+
+        // SYNC FIREBASE - CRITICAL FIX: Use 'allGames' collection instead of 'daily'
+        // 'daily' collection was forcing all dates to TODAY (2026-01-27)
+        // SYNC FIREBASE - RE-ENABLED (Sanitized)
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            // CRITICAL: Sanitize data to remove 'undefined' values which crash Firebase
+            const cleanGames = JSON.parse(JSON.stringify(info.games));
+            const dataToSync = { games: cleanGames };
+
+            console.log('🔥 SYNCING to Firebase (allGames collection):', JSON.stringify(dataToSync.games.slice(-3), null, 2));
+
+            // Use 'allGames' collection which supports any date
+            setDoc(doc(window.dbFirestore, 'config', 'allGames'), dataToSync, { merge: true })
+                .then(() => {
+                    console.log('🔥 Firebase sync SUCCESS to allGames');
+                })
+                .catch(e => console.error('🔥 Sync update games error', e));
+        }
+    }
+
+    // Request a game to be added (Hostess -> Manager)
+    requestGame(gameName) {
+        if (!gameName) return;
+
+        // CRITICAL FIX: Robust Deduplication (Case insensitive + Trim)
+        const info = this.getDailyInfo();
+        const normalizedName = gameName.trim().toLowerCase();
+
+        const existingReq = (info.gameRequests || []).find(r =>
+            (r.name || '').trim().toLowerCase() === normalizedName
+        );
+
+        if (existingReq) {
+            console.log("⚠️ Duplicate request blocked:", gameName);
+            if (typeof alert === 'function') alert("⚠️ Esta solicitud ya fue enviada anteriormente.");
+            return;
+        }
+
+        const newReq = {
+            id: 'req_' + Date.now(),
+            gameName: gameName, // CORRECTED PROPERTY NAME to match usage elsewhere
+            name: gameName, // Maintain legacy for safety
+            createdAt: new Date().toISOString()
+        };
+
+        if (!info.gameRequests) info.gameRequests = [];
+        info.gameRequests.push(newReq);
+        this._save();
+
+        // Sync to Firebase (Use allGames)
+        // Sync to Firebase (Use allGames) - RE-ENABLED (Sanitized)
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            const docRef = doc(window.dbFirestore, 'config', 'allGames');
+
+            // CRITICAL: Sanitize
+            const cleanRequests = JSON.parse(JSON.stringify(info.gameRequests));
+
+            // Use setDoc with merge 
+            setDoc(docRef, { gameRequests: cleanRequests }, { merge: true })
+                .then(() => {
+                    console.log('📨 Game Request sent to Manager:', gameName);
+                    if (typeof alert === 'function') alert(`✅ Solicitud enviada al Gerente: "${gameName}"`);
+                }).catch(e => console.error('🔥 Error sending game request:', e));
+        }
+    }
+
+    // NEW: Remove Game Request (Manager -> Dismiss)
+    removeGameRequest(reqId) {
+        const info = this.getDailyInfo();
+        if (!info.gameRequests) return;
+
+        info.gameRequests = info.gameRequests.filter(r => r.id !== reqId);
+        this._save();
+        this.updateDailyGames(info.games); // Reuse sync logic or direct update
+
+        // Manual Sync for Requests to be sure
+        // Manual Sync for Requests to be sure - RE-ENABLED (Sanitized)
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            const docRef = doc(window.dbFirestore, 'config', 'allGames');
+            const cleanRequests = JSON.parse(JSON.stringify(info.gameRequests));
+            setDoc(docRef, { gameRequests: cleanRequests }, { merge: true })
+                .then(() => console.log('🗑️ Request removed:', reqId))
+                .catch(e => console.error('Error removing req:', e));
+        }
+    }
+
+    // --- RESERVATIONS SYSTEM ---
+
+    getReservations() {
+        const info = this.getDailyInfo();
+        return info.reservations || [];
+    }
+
+    addReservation(data) {
+        // data: { customerName, pax, date, time, reason, game, vip (blazin/diamond/null), notes }
+        const info = this.getDailyInfo();
+        if (!info.reservations) info.reservations = [];
+
+        const newRes = {
+            id: 'res_' + Date.now(),
+            createdAt: new Date().toISOString(),
+            status: 'active', // active, seated, cancelled
+            ...data
+        };
+
+        info.reservations.push(newRes);
+        this._save();
+
+        // Sync to config/reservations (or allGames for simplicity if preferred, but separate is better)
+        // Let's stick to 'allGames' for now as the daily sync hub, or create 'config/reservations'
+        // Using 'allGames' so we don't multiply listener sources for Manager
+        this.updateDailyGames(info.games); // Trigger sync
+
+        // Also direct sync specifically for reservations if we want speed
+        // Also direct sync specifically for reservations - RE-ENABLED (Sanitized)
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            const docRef = doc(window.dbFirestore, 'config', 'allGames');
+            const cleanReservations = JSON.parse(JSON.stringify(info.reservations));
+            setDoc(docRef, { reservations: cleanReservations }, { merge: true })
+                .then(() => {
+                    console.log('🎟️ Reservation synced:', newRes.customerName);
+                    if (typeof showToast === 'function') showToast('Reservación Guardada', 'success');
+                });
+        }
+        return newRes;
+    }
+
+    removeReservation(resId) {
+        const info = this.getDailyInfo();
+        if (!info.reservations) return;
+
+        info.reservations = info.reservations.filter(r => r.id !== resId);
+        this._save();
+
+        // Sync
+        // Sync - RE-ENABLED (Sanitized)
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            const docRef = doc(window.dbFirestore, 'config', 'allGames');
+            const cleanReservations = JSON.parse(JSON.stringify(info.reservations));
+            setDoc(docRef, { reservations: cleanReservations }, { merge: true });
+        }
+    }
+
+    addGame(arg1) {
+        // Advanced Signature: addGame({ date, time, sport, league, homeTeam, awayTeam, match, tvs, audio })
+        let gameData = arg1;
+
+        console.log('🎯 addGame received gameData:', gameData);
+        console.log('📅 gameData.date:', gameData.date);
+
+        // CRITICAL FIX: Don't use toLocaleDateString - it causes timezone bugs
+        // Ensure date is treated as LOCAL, not UTC.
+        // Appending T12:00:00 ensures it falls in the middle of the day for any American/European timezone
+        let finalDate = gameData.date;
+        if (finalDate && finalDate.length === 10) {
+            // Keep it as is, it's already YYYY-MM-DD
+        } else if (!finalDate) {
+            // Only if no date provided, create today's date manually
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            finalDate = `${year}-${month}-${day}`;
+        }
+
+        // Validation / Defaults
+        const newGame = {
+            id: 'game_' + Date.now(),
+            date: finalDate, // Now strictly YYYY-MM-DD
+            time: gameData.time || '12:00',
+            sport: gameData.sport || 'Futbol',
+            league: gameData.league || 'Amistoso',
+            homeTeam: gameData.homeTeam || 'Local',
+            awayTeam: gameData.awayTeam || 'Visitante',
+            match: gameData.match,
+            tvs: gameData.tvs || '',
+            audio: gameData.audio || { salon: false, terraza: false }
+        };
+
+        console.log('💾 Final newGame.date:', newGame.date);
+
+        // LEARNING PHASE
+        if (window.KNOWN_TEAMS) {
+            this.learnTeams(newGame.homeTeam);
+            this.learnTeams(newGame.awayTeam);
+        }
+
+        // AUTO-RESOLVE REQUESTS (Moved after object creation)
+        const info = this.getDailyInfo();
+        const pendingRequests = info.gameRequests || [];
+
+        // Match logic
+        const gameFullName = newGame.match || `${newGame.homeTeam} vs ${newGame.awayTeam}`;
+        const normalizedGameName = gameFullName.trim().toLowerCase();
+
+        const matchedReqs = pendingRequests.filter(r => {
+            const reqName = (r.gameName || r.name || '').trim().toLowerCase();
+            // 1. Direct Match
+            if (reqName === normalizedGameName) return true;
+            // 2. Partial Match
+            if (normalizedGameName.includes(reqName) && reqName.length > 4) return true;
+            return false;
+        });
+
+        if (matchedReqs.length > 0) {
+            console.log(`✅ Auto-resolving ${matchedReqs.length} pending requests for "${gameFullName}"`);
+            info.gameRequests = pendingRequests.filter(r => !matchedReqs.includes(r));
+        } else {
+            if (!info.gameRequests) info.gameRequests = []; // Ensure array exists
+        }
+
+        if (!info.games) info.games = [];
+        info.games.push(newGame);
+        this._save();
+
+        this.updateDailyGames(info.games);
+
+        // SYNC: RE-ENABLED (Sanitized)
+        if (window.dbFirestore && window.FB && matchedReqs.length > 0) {
+            const { doc, setDoc } = window.FB;
+            const docRef = doc(window.dbFirestore, 'config', 'allGames');
+            const cleanRequests = JSON.parse(JSON.stringify(info.gameRequests));
+            setDoc(docRef, { gameRequests: cleanRequests }, { merge: true })
+        }
+
+        return newGame;
+    }
+
+    // New Helpers for Game Management
+    updateGameTVs(gameId, tvString) {
+        const game = (this.data.dailyInfo.games || []).find(g => g.id === gameId);
+        if (game) {
+            game.tvs = tvString;
+            this.updateDailyGames(this.data.dailyInfo.games);
+        }
+    }
+
+    setGameAudio(gameId, zone, state) {
+        // Zone: 'salon' | 'terraza'
+        // State: true | false
+        const games = this.data.dailyInfo.games || [];
+        const game = games.find(g => g.id === gameId);
+
+        if (game) {
+            // Logic: If turning ON, turn OFF for all others in that zone (Exclusive Audio)
+            if (state === true) {
+                games.forEach(g => {
+                    if (g.audio) g.audio[zone] = false;
+                });
+            }
+
+            // Now set target
+            if (!game.audio) game.audio = { salon: false, terraza: false };
+            game.audio[zone] = state;
+
+            this.updateDailyGames(games);
+        }
+    }
+
+    learnTeams(teamName) {
+        if (!teamName || teamName === 'Local' || teamName === 'Visitante' || !window.KNOWN_TEAMS) return;
+
+        // Normalize check
+        const normalized = teamName.trim();
+
+        if (!window.KNOWN_TEAMS.includes(normalized)) {
+            console.log(`🧠 Learning new team: ${normalized}`);
+            window.KNOWN_TEAMS.push(normalized);
+            window.KNOWN_TEAMS.sort();
+
+            // Update UI
+            if (typeof window.updateTeamDatalist === 'function') window.updateTeamDatalist();
+
+            // Sync to Cloud
+            if (window.dbFirestore && window.FB) {
+                const { doc, setDoc, arrayUnion } = window.FB;
+                const configRef = doc(window.dbFirestore, 'config', 'teams');
+                setDoc(configRef, {
+                    list: arrayUnion(normalized)
+                }, { merge: true }).catch(e => console.error('🔥 Error learning team:', e));
+            }
+        }
+    } deleteGame(index) {
+        const info = this.getDailyInfo();
+        info.games.splice(index, 1);
+        this.updateDailyGames(info.games);
+    }
+
+    // === PROMOS ===
+    addPromoToCatalog(title, description) {
+        const info = this.getDailyInfo();
+        if (!info.promoCatalog) info.promoCatalog = [];
+        const id = 'pc' + Date.now();
+        info.promoCatalog.push({ id, title, description, createdAt: new Date().toISOString() });
+        this._save();
+        return id;
+    }
+
+    deletePromoFromCatalog(promoId) {
+        const info = this.getDailyInfo();
+        info.promoCatalog = (info.promoCatalog || []).filter(p => p.id !== promoId);
+        info.activePromoIds = (info.activePromoIds || []).filter(id => id !== promoId);
+        this._save();
+    }
+
+    togglePromoActive(promoId) {
+        const info = this.getDailyInfo();
+        if (!info.activePromoIds) info.activePromoIds = [];
+        const idx = info.activePromoIds.indexOf(promoId);
+        if (idx >= 0) {
+            info.activePromoIds.splice(idx, 1);
+        } else {
+            info.activePromoIds.push(promoId);
+        }
+        this._save();
+    }
+
+    // === DYNAMICS ===
+    addDynamicToCatalog(title, description, metric) {
+        const info = this.getDailyInfo();
+        if (!info.dynamicCatalog) info.dynamicCatalog = [];
+        const id = 'dc' + Date.now();
+        info.dynamicCatalog.push({ id, title, description, metric, createdAt: new Date().toISOString() });
+        this._save();
+        return id;
+    }
+
+    deleteDynamicFromCatalog(dynamicId) {
+        const info = this.getDailyInfo();
+        info.dynamicCatalog = (info.dynamicCatalog || []).filter(d => d.id !== dynamicId);
+        if (info.activeDynamic && info.activeDynamic.catalogId === dynamicId) {
+            info.activeDynamic = null;
+        }
+        this._save();
+    }
+
+    activateDynamic(catalogId) {
+        const info = this.getDailyInfo();
+        // Initialize scores with all waiters at 0
+        const waiters = this.getWaiters();
+        info.activeDynamic = {
+            catalogId,
+            date: new Date().toISOString().split('T')[0],
+            scores: waiters.map(w => ({
+                odoo_id: w.odoo_id,
+                waiterName: w.name,
+                score: 0
+            }))
+        };
+        this._save();
+    }
+
+    deactivateDynamic() {
+        const info = this.getDailyInfo();
+        info.activeDynamic = null;
+        this._save();
+    }
+
+    updateWaiterScore(odoo_id, newScore) {
+        const info = this.getDailyInfo();
+        if (!info.activeDynamic || !info.activeDynamic.scores) return;
+        const entry = info.activeDynamic.scores.find(s => s.odoo_id === odoo_id);
+        if (entry) {
+            entry.score = parseInt(newScore) || 0;
+        }
+        // Sort by score descending
+        info.activeDynamic.scores.sort((a, b) => b.score - a.score);
+        this._save();
+    }
+
+    // === PRODUCTS 86/85/PUSH ===
+    addProduct(type, name, category) {
+        // type: 'outOfStock86', 'lowStock85', 'push'
+        // category: 'cocina' or 'meseros'
+        const info = this.getDailyInfo();
+        if (!info.products) info.products = { outOfStock86: [], lowStock85: [], push: [] };
+        if (!info.products[type]) info.products[type] = [];
+        info.products[type].push({
+            id: type + '_' + Date.now(),
+            name,
+            category
+        });
+        this._save();
+    }
+
+    deleteProduct(type, index) {
+        const info = this.getDailyInfo();
+        if (info.products && info.products[type]) {
+            info.products[type].splice(index, 1);
+            this._save();
+        }
+    }
+
+    // Legacy compatibility
+    updateDailyPromos(promos) {
+        // For backward compat - convert to new structure
+        const info = this.getDailyInfo();
+        info.promoCatalog = promos;
+        info.activePromoIds = promos.map(p => p.id);
+        this._save();
+    }
+
+    updateDailyDynamics(dynamicsData) {
+        const info = this.getDailyInfo();
+        if (dynamicsData && dynamicsData.active) {
+            // Legacy format
+            if (!info.dynamicCatalog) info.dynamicCatalog = [];
+            const existing = info.dynamicCatalog.find(d => d.id === dynamicsData.active.id);
+            if (!existing) {
+                info.dynamicCatalog.push({
+                    id: dynamicsData.active.id,
+                    title: dynamicsData.active.title,
+                    description: dynamicsData.active.description,
+                    metric: dynamicsData.active.metric || 'count'
+                });
+            }
+            info.activeDynamic = {
+                catalogId: dynamicsData.active.id,
+                date: new Date().toISOString().split('T')[0],
+                scores: (dynamicsData.leaderboard || []).map(l => ({
+                    odoo_id: l.waiterId,
+                    waiterName: l.waiterName,
+                    score: l.score || 0
+                }))
+            };
+        } else {
+            info.activeDynamic = null;
+        }
+        this._save();
+    }
+
+    updateProducts86(products) {
+        // Legacy - maps to outOfStock86
+        const info = this.getDailyInfo();
+        if (!info.products) info.products = { outOfStock86: [], lowStock85: [], push: [] };
+        info.products.outOfStock86 = products.map(p => ({
+            id: p.id,
+            name: p.name,
+            category: p.category === 'Platillos' || p.category === 'cocina' ? 'cocina' : 'meseros'
+        }));
+        this._save();
+    }
+
+    // === AI SUGGESTIONS (Personalized) ===
+    generateAISuggestion(customerId) {
+        const customer = this.data.customers.find(c => c.id === customerId);
+        if (!customer) return 'Cliente nuevo - ofrecer menú completo.';
+
+        const visits = this.data.visits.filter(v => v.customerId === customerId);
+        const classification = this.getCustomerClassification(customerId);
+
+        let suggestions = [];
+
+        // Based on classification
+        if (classification === 'Diamond' || classification === 'VIP') {
+            suggestions.push('Cliente premium - ofrecer platillos especiales o promociones VIP');
+        }
+
+        // Based on visit frequency
+        if (visits.length >= 5) {
+            suggestions.push('Cliente frecuente');
+        } else if (visits.length === 1) {
+            suggestions.push('Segunda visita - impresionar para fidelizar');
+        }
+
+        // Based on top drinks
+        if (customer.topDrinks && customer.topDrinks.length > 0) {
+            const topDrink = customer.topDrinks[0];
+            // Check if there's a promo for drinks
+            const dailyInfo = this.getDailyInfo();
+            const drinkPromo = dailyInfo.promos.find(p => p.title.toLowerCase().includes('cerveza') || p.title.toLowerCase().includes('bebida'));
+            if (drinkPromo) {
+                suggestions.push(`Ofrecer "${drinkPromo.title}" - cliente suele pedir ${topDrink}`);
+            } else {
+                suggestions.push(`Cliente prefiere ${topDrink}`);
+            }
+        }
+
+        // Based on top food
+        if (customer.topFood && customer.topFood.length > 0) {
+            const topFood = customer.topFood[0];
+            suggestions.push(`Suele pedir ${topFood}`);
+        }
+
+        // Based on team (if there's a game today)
+        if (customer.team) {
+            const dailyInfo = this.getDailyInfo();
+            const game = dailyInfo.games.find(g =>
+                g.homeTeam === customer.team || g.awayTeam === customer.team
+            );
+            if (game) {
+                suggestions.push(`¡Su equipo juega hoy! ${game.homeTeam} vs ${game.awayTeam} a las ${game.time}`);
+            }
+        }
+
+        // Default if no suggestions
+        if (suggestions.length === 0) {
+            return 'Nuevo cliente - ofrecer promociones del día y menú recomendado.';
+        }
+
+        return suggestions.join('. ');
+    }
+
+    // --- INVENTORY / ADMIN METHODS ---
+
+    toggleItemAvailability(itemId) {
+        if (!itemId) return false;
+
+        // Helper to find and toggle
+        const toggleInList = (list) => {
+            const item = list.find(i => i.id === itemId);
+            if (item) {
+                if (item.available === undefined) item.available = true;
+                item.available = !item.available;
+                return true;
+            }
+            return false;
+        };
+
+        const foundInFood = toggleInList(this.menu.alimentos);
+        const foundInDrinks = !foundInFood && toggleInList(this.menu.bebidas);
+
+        if (foundInFood || foundInDrinks) {
+            this._save();
+            return true;
+        }
+        return false;
+    }
+
+    addNewProduct(name, category, price, type) {
+        // type should be 'alimentos' or 'bebidas'
+        if (!this.menu[type]) return false;
+
+        const newId = (type === 'alimentos' ? 'A' : 'B') + Date.now().toString().slice(-4);
+
+        const newItem = {
+            id: newId,
+            name: name,
+            category: category,
+            price: parseFloat(price) || 0,
+            available: true
+        };
+
+        this.menu[type].push(newItem);
+        this._save();
+        return newItem;
+    }
+
+    addGame_DUPLICATE_DO_NOT_USE(gameData) {
+        const info = this.getDailyInfo();
+        const newGame = {
+            id: 'g' + Date.now(),
+            league: gameData.league || 'General',
+            homeTeam: gameData.homeTeam,
+            awayTeam: gameData.awayTeam,
+            time: gameData.time,
+            date: new Date().toISOString().split('T')[0]
+        };
+        info.games.push(newGame);
+        this._save();
+
+        // SYNC FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, setDoc } = window.FB;
+            setDoc(doc(window.dbFirestore, 'config', 'daily'), { games: info.games }, { merge: true })
+                .catch(e => console.error('🔥 Sync add game error', e));
+        }
+        return newGame;
+    }
+
+    removeGame(gameId) {
+        const info = this.getDailyInfo();
+        const oldGames = info.games || [];
+        const newGames = oldGames.filter(g => g.id !== gameId);
+
+        // Use centralized updater (handles Firebase sync to allGames)
+        this.updateDailyGames(newGames);
+    }
+
+    clearTodayGames() {
+        const today = new Date().toLocaleDateString('en-CA');
+        const info = this.getDailyInfo();
+        const oldGames = info.games || [];
+        const beforeCount = oldGames.length;
+
+        // Keep only games NOT from today
+        const newGames = oldGames.filter(g => g.date !== today);
+        const afterCount = newGames.length;
+
+        console.log(`🗑️ Cleared ${beforeCount - afterCount} games from ${today}`);
+
+        // Use centralized updater (handles Firebase sync to allGames)
+        this.updateDailyGames(newGames);
+    }
 
 
     // === GAME REQUESTS ===
