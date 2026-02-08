@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v21.9 (Final Cleanup: Duplicate Block Removed)
+        v22.0 (Manager: Future Games + Layout Fix)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -1351,26 +1351,36 @@ window.getSportIcon = function (league) {
 };
 
 window.generateGameOptions = function (selected) {
-  // Get all matches and FILTER strictly for TODAY (User Request)
+  // Get all matches
   const allMatches = window.db.getMatches() || [];
   // Use en-CA for YYYY-MM-DD format in local time
   const today = new Date().toLocaleDateString('en-CA');
 
-  // ONLY Show games for TODAY. Future games should NOT appear.
-  const matches = allMatches.filter(m => m.date === today);
+  // SHOW FUTURE GAMES (Requested by Manager)
+  // Filter: Date must be today or future
+  let matches = allMatches.filter(m => m.date >= today);
 
-  console.log(`Dropdown Filter: Found ${matches.length} games for today (${today})`);
+  // Sort by Date then Time
+  matches.sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return a.time.localeCompare(b.time);
+  });
+
+  console.log(`Dropdown Filter: Found ${matches.length} upcoming games`);
 
   let html = matches.map(m => {
     const matchName = m.match || `${m.homeTeam} vs ${m.awayTeam}`;
     // Fallback if matchName is undefined/null
     const val = matchName || 'Evento Sin Nombre';
-    return `<option value="${val}" ${val === selected ? 'selected' : ''}>${val} (${m.time})</option>`;
+    // Format date for display (e.g., 2023-10-25)
+    const displayDate = m.date === today ? 'HOY' : m.date;
+
+    return `<option value="${val}" ${val === selected ? 'selected' : ''}>${val} (${displayDate} ${m.time})</option>`;
   }).join('');
 
-  // If the currently selected game is NOT in today's list (phantom game), show it with warning
-  if (selected && !matches.find(m => (m.match || `${m.homeTeam} vs ${m.awayTeam}`) === selected)) {
-    html += `<option value="${selected}" selected>${selected} (⚠️ No programado hoy)</option>`;
+  // If the currently selected game is NOT in the list (past game or validation error), show it with warning
+  if (selected && selected !== 'OTRO' && !matches.find(m => (m.match || `${m.homeTeam} vs ${m.awayTeam}`) === selected)) {
+    html += `<option value="${selected}" selected>${selected} (⚠️ Pasado / No listado)</option>`;
   }
 
   // Add Other Option
@@ -6154,12 +6164,12 @@ window.submitReservation = function () {
 // ==========================================
 function renderManagerReservationsTab(container) {
   container.innerHTML = `
-      < div class="flex justify-between items-center mb-6" >
+      <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-black text-white italic tracking-tighter">ADMINISTRAR RESERVACIONES</h2>
           <button onclick="window.showReservationModal()" class="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-black shadow-lg flex items-center gap-2 transform active:scale-95 transition">
             🎟️ CREAR RESERVACIÓN
           </button>
-        </div >
+        </div>
 
       <div id="manager-reservations-list" class="space-y-4">
         <!-- List injected via renderManagerReservations() logic but customized for full page -->
@@ -6178,16 +6188,16 @@ function renderManagerReservationsTab(container) {
 
   if (reservations.length === 0) {
     listContainer.innerHTML = `
-      < div class="text-center py-12 opacity-50" >
+      <div class="text-center py-12 opacity-50">
                 <div class="text-6xl mb-4">📭</div>
                 <p class="text-xl text-gray-400">No hay reservaciones activas</p>
-            </div >
+            </div>
       `;
     return;
   }
 
   listContainer.innerHTML = reservations.map(r => `
-      < div class="bg-gray-800 p-4 rounded-xl border-l-4 ${r.vip === 'diamond' ? 'border-blue-400 bg-blue-900/10' : r.vip === 'blazin' ? 'border-orange-500 bg-orange-900/10' : 'border-gray-600'} flex justify-between items-center animate-fade-in text-white shadow-lg relative group" >
+      <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${r.vip === 'diamond' ? 'border-blue-400 bg-blue-900/10' : r.vip === 'blazin' ? 'border-orange-500 bg-orange-900/10' : 'border-gray-600'} flex justify-between items-center animate-fade-in text-white shadow-lg relative group">
 
                   <div class="flex-1">
                     <div class="flex items-center gap-3 mb-1">
