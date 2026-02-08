@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v21.7 (Critical Fix: Syntax Error Resolved Again)
+        v21.9 (Final Cleanup: Duplicate Block Removed)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6473,44 +6473,6 @@ window.renderHostessDashboard = function () {
           </div>
 
           <!-- Tab Content: Reservations - SOLO LECTURA -->
-          <div id="content-reservations" class="tab-content hidden">
-            <div class="card">
-              <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl">Reservaciones de Hoy</h3>
-
-                <button onclick="window.showReservationModal()" class="bg-blue-600 text-white px-3 py-1 rounded shadow-lg text-sm font-bold cursor-pointer hover:bg-blue-500 active:scale-95 transition">
-                  🎟️ Reservar
-                </button>
-              </div>
-
-              ${reservations.length === 0 ? `
-          <div class="text-center py-12">
-            <div class="text-6xl mb-4">📅</div>
-            <p class="text-xl text-secondary">Sin reservaciones para hoy</p>
-          </div>
-        ` : `
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${reservations.map(r => `
-              <div class="card p-4 border-l-4 ${r.status === 'confirmed' ? 'border-green-500 bg-green-900/10' : r.status === 'cancelled' ? 'border-red-500 bg-red-900/10' : 'border-blue-500 bg-blue-900/10'}">
-                <div class="flex justify-between items-start mb-2">
-                  <div class="text-2xl font-bold text-yellow-400">${r.time}</div>
-                  <span class="text-xs px-3 py-1 rounded font-bold ${r.status === 'confirmed' ? 'bg-green-600 text-white' :
-        r.status === 'cancelled' ? 'bg-red-600 text-white' :
-          'bg-blue-600 text-white'
-      }">
-                    ${r.status.toUpperCase()}
-                  </span>
-                </div>
-                <div class="text-lg font-bold">${r.customerName}</div>
-                <div class="text-sm text-secondary">${r.pax} personas</div>
-                <div class="text-sm text-secondary">${r.phone || 'Sin tel'}</div>
-                ${r.notes ? `<div class="text-sm italic mt-2 p-2 bg-white/5 rounded">"${r.notes}"</div>` : ''}
-              </div>
-            `).join('')}
-          </div>
-        `}
-            </div>
-          </div>
 
           <!-- BOTTOM NAVIGATION BAR -->
           <nav class="bottom-nav">
