@@ -6484,8 +6484,10 @@ function renderManagerReservationsTab(container) {
                   <div class="text-sm text-gray-500 italic truncate max-w-[300px] mb-2">${r.game || r.reason || 'Sin motivo'}</div>
                   ${r.notes ? `<div class="bg-black/30 p-2 rounded text-xs text-yellow-200 mb-3 border border-yellow-900/30">📝 ${r.notes}</div>` : ''}
                   
-                        ✅ Check-In / Asignar Mesa
-                   </button>
+                  <!-- MANAGER ONLY: DELETE BUTTON -->
+                  <button onclick="window.deleteReservation('${r.id}')" class="w-full bg-red-900/20 text-red-500 py-3 rounded-lg hover:bg-red-900/40 transition font-bold border border-red-900/30" title="Eliminar Reservación">
+                    🗑️ ELIMINAR RESERVACIÓN
+                  </button>
       </div>
     `}).join('');
   }
