@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.34 (Fix: Scroll + Reservation Completion)
+        v22.35 (Fix: DOM Access Errors)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -4074,8 +4074,27 @@ function toggleSportField(select) {
 // --- LEGACY SEARCH CODE REMOVED ---
 
 function saveConsumption(visitId) {
-  const amount = document.getElementById('w-ticket').value;
-  const folio = document.getElementById('w-folio').value;
+  console.log('💾 Saving consumption for visit:', visitId);
+
+  // SAFETY: Check if we're in the waiter view
+  const reasonEl = document.getElementById('w-reason');
+  const folioEl = document.getElementById('w-folio');
+  const amountEl = document.getElementById('w-ticket'); // Also check for amount element
+
+  if (!reasonEl || !folioEl || !amountEl) {
+    console.warn('⚠️ Waiter form not found. Skipping consumption save.');
+    // If called from Manager, just close the visit without updating consumption
+    if (confirm('¿Cerrar esta mesa?')) {
+      window.db.closeVisit(visitId);
+      if (window.renderManagerDashboard) {
+        window.renderManagerDashboard('tables');
+      }
+    }
+    return;
+  }
+
+  const amount = amountEl.value;
+  const folio = folioEl.value;
 
   if (!amount) {
     alert('⚠️ Ingresa el total del ticket para cerrar la mesa');
@@ -6879,7 +6898,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.34';
+const CURRENT_VERSION = '22.35';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
@@ -7277,9 +7296,17 @@ window.checkInReservation = function (resId) {
   // Switch to Check-In Tab
   switchHostessTab('checkin');
 
-  // Pre-fill Form
-  document.getElementById('h-firstname').value = res.customerName.split(' ')[0] || '';
-  document.getElementById('h-lastname').value = res.customerName.split(' ')[1] || '';
+  // Pre-fill Form (with null checks)
+  const firstNameInput = document.getElementById('h-firstname');
+  const lastNameInput = document.getElementById('h-lastname');
+
+  if (!firstNameInput || !lastNameInput) {
+    console.error('❌ Hostess form not found. Are you in Hostess view?');
+    return alert('Error: Esta función solo está disponible en el dashboard de Hostess');
+  }
+
+  firstNameInput.value = res.customerName.split(' ')[0] || '';
+  lastNameInput.value = res.customerName.split(' ')[1] || '';
 
   // Fill Pax
   const paxDisplay = document.getElementById('h-pax');
