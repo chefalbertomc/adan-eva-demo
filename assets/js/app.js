@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.19 (Fix: Hostess Check-In Error)
+        v22.20 (Debug: Manual Sync Button)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -4532,11 +4532,14 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
                 <header class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50 flex justify-between items-center shadow-lg safe-area-pt">
                   <div>
                     <h1 class="text-xl font-black text-yellow-500 tracking-tighter flex items-center gap-1">
-                      GERENTE <span class="text-white text-xs bg-gray-700 px-1 rounded ml-1">v9.6</span>
+                      GERENTE <span class="text-white text-xs bg-gray-700 px-1 rounded ml-1">v22.20</span>
                     </h1>
                     <p class="text-[10px] text-gray-400 font-mono">${STATE.branch.name} • ${STATE.user.name}</p>
                   </div>
                   <div class="flex items-center gap-2">
+                    <button onclick="window.db._syncLocalReservationsToFirebase(); alert('☁️ Intentando subir reservaciones... revisa la consola.');" class="text-xs bg-blue-900/80 hover:bg-blue-800 text-blue-200 px-3 py-1 rounded border border-blue-700 transition-colors uppercase font-bold flex items-center gap-1 mr-2">
+                      ☁️ Forzar Sync
+                    </button>
                     <button onclick="renderManagerDashboard(window.CURRENT_MANAGER_TAB || 'tables')" class="text-xs bg-gray-700 hover:bg-yellow-600 hover:text-black text-yellow-500 px-3 py-1 rounded border border-yellow-600/50 transition-colors uppercase font-bold flex items-center gap-1">
                       🔄 Actualizar
                     </button>

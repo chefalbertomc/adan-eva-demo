@@ -599,17 +599,29 @@ class Store {
         };
 
         // Try immediately
+        // Try immediately
         if (window.dbFirestore) {
+            console.log('🔥 Firebase already ready. Starting sync...');
             startSync();
             this._syncLocalReservationsToFirebase(); // PUSH LOCAL DATA TO CLOUD
+        } else {
+            console.log('⏳ Waiting for Firebase to be ready...');
         }
 
         // Also listen for the custom event from index.html
-        window.addEventListener('firebase-ready', startSync);
+        window.addEventListener('firebase-ready', () => {
+            console.log('✅ Firebase Ready Event received. Starting sync...');
+            startSync();
+            this._syncLocalReservationsToFirebase();
+        });
 
         // Backup: Try again in 1s and 3s just in case
         setTimeout(startSync, 1000);
-        setTimeout(startSync, 3000);
+        setTimeout(() => {
+            console.log('⏰ Backup Sync Trigger (3s)');
+            startSync();
+            this._syncLocalReservationsToFirebase();
+        }, 3000);
 
         this.listeners = [];
 
