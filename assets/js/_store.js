@@ -1698,6 +1698,10 @@ class Store {
         return false;
     }
 
+    removeReservation(id) {
+        return this.deleteReservation(id);
+    }
+
     // ===== CLIENT CLASSIFICATION =====
     getCustomerClassification(customerId) {
         const customer = this.data.customers.find(c => c.id === customerId);
