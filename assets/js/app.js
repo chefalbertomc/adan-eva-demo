@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.10 (Manager: Fix Reload on Save)
+        v22.11 (Hostess: Fix Missing Functions)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6867,5 +6867,154 @@ window.submitManagerReservation = function () {
   } else {
     console.error("DB not linked");
     alert("Error de base de datos");
+  }
+};
+// NEW: Render Hostess Reservation List
+window.renderHostessReservationList = function (dateFilter) {
+  const listContainer = document.getElementById('hostess-reservations-list');
+  if (!listContainer) return;
+
+  // Default to today if no date provided
+  if (!dateFilter) {
+    // Use local date string matching Manager's format
+    dateFilter = new Date().toLocaleDateString('en-CA');
+
+    // Update input if exists
+    const input = document.getElementById('hostess-date-filter');
+    if (input) input.value = dateFilter;
+  }
+
+  const branchId = STATE.branch?.id;
+  // Get reservations for specific date (Filtering done by DB if supported, else manual)
+  let reservations = (window.db.getReservations && branchId)
+    ? window.db.getReservations(branchId)
+    : [];
+
+  // Manual Filter if DB doesn't support date arg or returns all
+  if (reservations.length > 0) {
+    reservations = reservations.filter(r => r.date === dateFilter);
+  }
+
+  if (reservations.length === 0) {
+    listContainer.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <div class="text-4xl mb-2">📅</div>
+                <p>No hay reservaciones para esta fecha</p>
+            </div>
+        `;
+    return;
+  }
+
+  // Sort by time
+  reservations.sort((a, b) => a.time.localeCompare(b.time));
+
+  const now = new Date();
+  const currentHours = now.getHours();
+  const currentMinutes = now.getMinutes();
+  const currentTimeVal = currentHours * 60 + currentMinutes;
+
+  listContainer.innerHTML = reservations.map(r => {
+    // Traffic Light Logic
+    // Parse reservation time "HH:MM"
+    const [resH, resM] = r.time.split(':').map(Number);
+    const resTimeVal = resH * 60 + resM;
+    const diff = currentTimeVal - resTimeVal; // Positive if late
+
+    let statusColor = 'border-green-500'; // Default Green (On Time / Future)
+    let statusIcon = '🟢';
+    let statusText = 'A Tiempo';
+
+    // Logic: 
+    // If diff > 30 mins -> RED (Expired)
+    // If diff > 0 and <= 30 mins -> YELLOW (Delayed but valid)
+    // If diff <= 0 -> GREEN (On Time)
+
+    // Only apply if looking at TODAY
+    const isToday = dateFilter === new Date().toLocaleDateString('en-CA');
+
+    if (isToday) {
+      if (diff > 30) {
+        statusColor = 'border-red-600';
+        statusIcon = '🔴';
+        statusText = 'Vencida (>30min)';
+      } else if (diff > 0) {
+        statusColor = 'border-yellow-500';
+        statusIcon = '🟡';
+        statusText = 'Retraso Permitido';
+      }
+    }
+
+    return `
+        <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${statusColor} shadow-lg relative animate-fade-in group">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <div class="flex items-center gap-2">
+                         <span class="font-black text-lg text-white uppercase">${r.customerName}</span>
+                         ${r.vip ? `<span class="bg-yellow-900 text-yellow-500 text-[10px] px-2 rounded border border-yellow-600 font-bold">${r.vip.toUpperCase()}</span>` : ''}
+                    </div>
+                    <div class="text-sm text-gray-400 mt-1 flex flex-wrap items-center gap-3">
+                        <span>🕒 ${r.time}</span>
+                        <span>👥 ${r.pax} pax</span>
+                        ${r.phone ? `<span>📞 ${r.phone}</span>` : ''}
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs font-bold text-gray-400 mb-1">${statusIcon} ${statusText}</div>
+                    ${diff > 30 && isToday ? '<span class="text-[10px] text-red-400 font-bold">CANCELAR?</span>' : ''}
+                </div>
+            </div>
+
+            ${r.notes ? `<div class="bg-black/30 p-2 rounded text-xs text-yellow-200 mb-3 border border-yellow-900/30">📝 ${r.notes}</div>` : ''}
+
+            <button onclick="checkInReservation('${r.id}')" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-2 rounded-lg shadow-md uppercase tracking-wide text-sm flex items-center justify-center gap-2">
+                ✅ Check-In / Asignar Mesa
+            </button>
+        </div>
+        `;
+  }).join('');
+};
+
+// Check-In Reservation (Populate Hostess Form)
+window.checkInReservation = function (resId) {
+  const branchId = STATE.branch?.id;
+  // Get ALL reservations to find by ID
+  const allRes = window.db.getReservations(branchId);
+  const res = allRes.find(r => r.id === resId);
+
+  if (!res) return alert("Error: Reservación no encontrada");
+
+  // Switch to Check-In Tab
+  switchHostessTab('checkin');
+
+  // Pre-fill Form
+  document.getElementById('h-firstname').value = res.customerName.split(' ')[0] || '';
+  document.getElementById('h-lastname').value = res.customerName.split(' ')[1] || '';
+
+  // Fill Pax
+  const paxDisplay = document.getElementById('h-pax');
+  if (paxDisplay) paxDisplay.innerText = res.pax;
+
+  // Fill Search Input as visual cue
+  const searchInput = document.getElementById('customer-search');
+  if (searchInput) searchInput.value = res.customerName;
+
+  // Toast
+  if (window.showToast) window.showToast(`✅ Datos de ${res.customerName} cargados`, 'success');
+};
+
+// Start Hostess Tab Switcher
+window.switchHostessTab = function (tabName) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+
+  const target = document.getElementById('content-' + tabName);
+  const navItem = document.getElementById('tab-' + tabName);
+
+  if (target) target.classList.remove('hidden');
+  if (navItem) navItem.classList.add('active');
+
+  // Init Logic
+  if (tabName === 'reservations') {
+    renderHostessReservationList();
   }
 };
