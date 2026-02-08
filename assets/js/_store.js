@@ -2294,6 +2294,30 @@ class Store {
         return newRes;
     }
 
+    updateReservation(resId, updates) {
+        const info = this.getDailyInfo();
+        if (!info.reservations) return false;
+
+        const idx = info.reservations.findIndex(r => r.id === resId);
+        if (idx === -1) return false;
+
+        // Update local
+        Object.assign(info.reservations[idx], updates);
+        this._save();
+
+        // SYNC TO FIREBASE
+        if (window.dbFirestore && window.FB) {
+            const { doc, updateDoc } = window.FB;
+            updateDoc(doc(window.dbFirestore, 'reservations', resId), updates)
+                .then(() => {
+                    console.log('🔄 Reservation updated in cloud:', resId);
+                })
+                .catch(e => console.error('🔥 Reservation update error:', e));
+        }
+
+        return true;
+    }
+
     removeReservation(resId) {
         const info = this.getDailyInfo();
         if (!info.reservations) return;

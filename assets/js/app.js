@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.33 (Fix: Syntax Error)
+        v22.34 (Fix: Scroll + Reservation Completion)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6343,7 +6343,7 @@ function renderManagerReservationsTab(container) {
           </div>
       </div>
 
-      <div id="manager-reservations-list" class="space-y-4">
+      <div id="manager-reservations-list" class="space-y-4 pb-24">
         <!-- List injected via renderManagerReservations() logic but customized for full page -->
       </div>
     `;
@@ -6879,7 +6879,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.33';
+const CURRENT_VERSION = '22.34';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
@@ -7179,10 +7179,12 @@ window.renderHostessReservationList = function (dateFilter) {
   // Get ALL reservations (don't filter by branch yet, reservations don't have branchId)
   let reservations = window.db.getReservations ? window.db.getReservations() : [];
 
-  // Manual Filter by date
-  if (reservations.length > 0) {
-    reservations = reservations.filter(r => r.date === dateFilter);
-  }
+  // Filter by date and exclude completed/cancelled
+  reservations = reservations.filter(r =>
+    r.date === dateFilter &&
+    r.status !== 'completed' &&
+    r.status !== 'cancelled'
+  );
 
   if (reservations.length === 0) {
     listContainer.innerHTML = `
@@ -7381,7 +7383,7 @@ window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
 
   // 6. If this came from a Reservation, MARK IT AS COMPLETED
   const todayStr = new Date().toLocaleDateString('en-CA');
-  const pendingRes = window.db.data.reservations.find(r =>
+  const pendingRes = window.db.getReservations().find(r =>
     r.customerName.toLowerCase() === fullNameQuery.toLowerCase() &&
     r.date === todayStr &&
     r.status !== 'completed' &&
@@ -7389,27 +7391,21 @@ window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
   );
 
   if (pendingRes) {
-    pendingRes.status = 'completed';
-    if (window.dbFirestore && window.FB) {
-      const { doc, updateDoc } = window.FB;
-      updateDoc(doc(window.dbFirestore, 'reservations', pendingRes.id), { status: 'completed' })
-        .catch(e => console.error('🔥 Sync update res status error', e));
-    }
-    window.db._save();
+    // Update reservation status to completed
+    window.db.updateReservation(pendingRes.id, { status: 'completed', completedAt: new Date().toISOString() });
+    console.log('✅ Reservation marked as completed:', pendingRes.id);
   }
 
-  // 7. Success Feedback & Reset
-  alert(`✅ Mesa ${tableNumber} asignada a ${firstName} (${customer.id.substring(0, 4)}...)`);
-
-  // Clear Form
+  // 7. Clear Form
   document.getElementById('h-firstname').value = '';
   document.getElementById('h-lastname').value = '';
-  if (document.getElementById('h-lastname2')) document.getElementById('h-lastname2').value = '';
+  if (document.getElementById('h-maternal')) document.getElementById('h-maternal').value = '';
   document.getElementById('h-table').value = '';
   document.getElementById('h-waiter').value = '';
-  document.getElementById('customer-search').value = '';
+  document.getElementById('h-pax').innerText = '1';
 
-  // Switch to Dashboard
+  // 8. Switch to Tables Tab
   switchHostessTab('tables');
-  renderHostessDashboard();
+
+  alert(`✅ Mesa ${tableNumber} asignada a ${fullName}`);
 };
