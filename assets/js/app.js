@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.47 (Fix: Inline Expansion Pattern)
+        v22.48 (Fix: Inline Form & Cache Bust)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -7005,7 +7005,8 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.47';
+const CURRENT_VERSION = '22.48';
+console.log("🚀 App Loaded: v22.48");
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
