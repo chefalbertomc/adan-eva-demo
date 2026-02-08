@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.0 (Manager: Future Games + Layout Fix)
+        v22.1 (Modal: Solid Background Fix)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6046,14 +6046,15 @@ window.showReservationModal = function () {
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'reservation-modal';
-    // FIX: High z-index, fixed positioning, overflow handling for mobile
-    modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-fade-in hidden p-4';
+    // FIX: Fully OPAQUE background (bg-black) to prevent bleed-through. High z-index.
+    modal.className = 'fixed inset-0 z-[10000] flex items-center justify-center bg-black animate-fade-in hidden sm:p-4';
     modal.innerHTML = `
-                <div class="bg-gray-900 border border-yellow-500/50 rounded-xl w-full max-w-md relative shadow-2xl flex flex-col max-h-[90vh]">
-                  <div class="p-6 overflow-y-auto custom-scrollbar">
-                    <button onclick="document.getElementById('reservation-modal').classList.add('hidden')" class="absolute top-2 right-2 text-gray-500 hover:text-white text-xl z-10 w-8 h-8 flex items-center justify-center bg-black/50 rounded-full">✕</button>
+                <!-- Modal Content: Solid gray background, no transparency -->
+                <div class="bg-gray-900 border border-yellow-500/50 sm:rounded-xl w-full h-full sm:h-auto sm:max-w-md relative shadow-2xl flex flex-col sm:max-h-[90vh]">
+                  <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                    <button onclick="document.getElementById('reservation-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-500 hover:text-white text-2xl z-20 bg-gray-800 w-10 h-10 rounded-full flex items-center justify-center shadow-lg border border-gray-700">✕</button>
 
-                    <h3 class="text-xl font-black text-yellow-500 mb-6 flex items-center gap-2 sticky top-0 bg-gray-900/95 py-2 z-10">
+                    <h3 class="text-2xl font-black text-yellow-500 mb-8 flex items-center gap-2 sticky top-0 bg-gray-900 z-10 py-2 border-b border-gray-800">
                       🎟️ NUEVA RESERVACIÓN
                     </h3>
 
