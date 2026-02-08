@@ -933,66 +933,72 @@ class Store {
         // 5. SYNC RESERVATIONS (NEW)
         const resRef = collection(db, "reservations");
         onSnapshot(resRef, (snapshot) => {
-            let changes = false;
-            // Ensure array exists
-            if (!this.data.reservations) this.data.reservations = [];
+            // 3. Listen to 'reservations' collection
+            const { collection, onSnapshot } = window.FB;
+            onSnapshot(collection(window.dbFirestore, 'reservations'), (snapshot) => {
+                let changes = false;
 
-            snapshot.docChanges().forEach((change) => {
-                const resData = change.doc.data();
-                const idx = this.data.reservations.findIndex(r => r.id === resData.id);
+                // Get daily info to store reservations correctly
+                const dailyInfo = this.getDailyInfo();
+                if (!dailyInfo.reservations) dailyInfo.reservations = [];
 
-                if (change.type === "added") {
-                    if (idx === -1) {
-                        this.data.reservations.push(resData);
-                        changes = true;
+                snapshot.docChanges().forEach((change) => {
+                    const resData = { id: change.doc.id, ...change.doc.data() };
+                    const idx = dailyInfo.reservations.findIndex(r => r.id === resData.id);
+
+                    if (change.type === "added") {
+                        if (idx === -1) {
+                            dailyInfo.reservations.push(resData);
+                            changes = true;
+                            console.log('📥 New reservation from cloud:', resData.customerName);
+                        }
                     }
-                }
-                if (change.type === "modified") {
-                    if (idx !== -1) {
-                        this.data.reservations[idx] = resData;
-                        changes = true;
-                    } else {
-                        // Should verify if we should add it? Yes.
-                        this.data.reservations.push(resData);
-                        changes = true;
+                    if (change.type === "modified") {
+                        if (idx !== -1) {
+                            dailyInfo.reservations[idx] = resData;
+                            changes = true;
+                        } else {
+                            // Should verify if we should add it? Yes.
+                            dailyInfo.reservations.push(resData);
+                            changes = true;
+                        }
                     }
-                }
-                if (change.type === "removed") {
-                    if (idx !== -1) {
-                        this.data.reservations.splice(idx, 1);
-                        changes = true;
+                    if (change.type === "removed") {
+                        if (idx !== -1) {
+                            dailyInfo.reservations.splice(idx, 1);
+                            changes = true;
+                        }
                     }
+                });
+
+                if (changes) {
+                    console.log("☁️ Reservaciones sincronizadas. Total:", dailyInfo.reservations.length);
+                    this._save();
+
+                    // Refresh UI if necessary
+                    setTimeout(() => {
+                        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+                        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+
+                        if (window.renderManagerDashboard && document.getElementById('manager-reservations-list')) {
+                            console.log('🔄 Refreshing Manager Reservations (Auto)');
+                            window.renderManagerDashboard('reservations');
+                        }
+                        if (window.renderHostessReservationList && document.getElementById('hostess-reservations-list')) {
+                            console.log('🔄 Refreshing Hostess Reservations (Auto)');
+                            window.renderHostessReservationList();
+                        }
+                    }, 100);
                 }
             });
-
-            if (changes) {
-                console.log("☁️ Reservaciones sincronizadas. Total:", this.data.reservations.length);
-                this._save();
-
-                // Refresh UI if necessary
-                setTimeout(() => {
-                    const activeTag = document.activeElement ? document.activeElement.tagName : '';
-                    if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
-
-                    if (window.renderManagerDashboard && document.getElementById('manager-reservations-list')) {
-                        console.log('🔄 Refreshing Manager Reservations (Auto)');
-                        window.renderManagerDashboard('reservations');
-                    }
-                    if (window.renderHostessReservationList && document.getElementById('hostess-reservations-list')) {
-                        console.log('🔄 Refreshing Hostess Reservations (Auto)');
-                        window.renderHostessReservationList();
-                    }
-                }, 100);
-            }
-        });
-    }
+        }
 
     // ON-DEMAND MIGRATION: Push local reservations to Firebase if they aren't there
     _syncLocalReservationsToFirebase() {
-        const dailyInfo = this.getDailyInfo();
-        const localReservations = dailyInfo.reservations || [];
+            const dailyInfo = this.getDailyInfo();
+            const localReservations = dailyInfo.reservations || [];
 
-        if (localReservations.length === 0) {
+            if(localReservations.length === 0) {
             console.log('⏭️ No local reservations to sync');
             return;
         }
