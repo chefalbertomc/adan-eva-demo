@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.46 (Fix: Manual Table Input)
+        v22.47 (Fix: Inline Expansion Pattern)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6267,73 +6267,39 @@ window.deleteReservation = function (resId) {
   }
 };
 
-// Manager Check-In: Assign Table to Reservation
-window.managerCheckInReservation = function (resId) {
-  const branchId = STATE.branch?.id;
-  const allRes = window.db.getReservations(branchId);
-  const res = allRes.find(r => r.id === resId);
+// Manager Check-In: Show Inline Form
+window.showManagerCheckInForm = function (resId) {
+  // Hide all other forms first
+  document.querySelectorAll('[id^="checkin-form-"]').forEach(form => {
+    form.classList.add('hidden');
+  });
 
-  if (!res) {
-    alert('Reservación no encontrada');
-    return;
+  // Show this form
+  const form = document.getElementById(`checkin-form-${resId}`);
+  if (form) {
+    form.classList.remove('hidden');
+    // Focus on table input
+    setTimeout(() => {
+      document.getElementById(`table-input-${resId}`)?.focus();
+    }, 100);
   }
-
-  const waiters = window.db.data.users.filter(u => u.role === 'waiter' && u.branchId === branchId);
-
-  if (waiters.length === 0) {
-    alert('❌ No hay meseros disponibles');
-    return;
-  }
-
-  // Create modal with manual input
-  const modal = document.createElement('div');
-  modal.id = 'manager-checkin-modal';
-  modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4';
-  modal.innerHTML = `
-    <div class="bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-700 shadow-2xl">
-      <h3 class="text-xl font-black text-white mb-4">✅ ASIGNAR MESA</h3>
-      
-      <div class="mb-4">
-        <p class="text-gray-400 text-sm mb-2">Cliente:</p>
-        <p class="text-white font-bold text-lg">${res.customerName}</p>
-        <p class="text-gray-500 text-sm">👥 ${res.pax} personas | 🕒 ${res.time}</p>
-      </div>
-
-      <div class="mb-4">
-        <label class="text-gray-400 text-sm font-bold block mb-2">Número de Mesa:</label>
-        <input type="number" id="manager-table-input" placeholder="Ej: 5" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-3 focus:border-yellow-500 outline-none text-center text-2xl font-bold" min="1">
-      </div>
-
-      <div class="mb-6">
-        <label class="text-gray-400 text-sm font-bold block mb-2">Seleccionar Mesero:</label>
-        <select id="manager-waiter-select" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-3 focus:border-yellow-500 outline-none">
-          <option value="">-- Selecciona un mesero --</option>
-          ${waiters.map(w => `<option value="${w.id}">${w.name}</option>`).join('')}
-        </select>
-      </div>
-
-      <div class="flex gap-3">
-        <button onclick="confirmManagerCheckIn('${resId}')" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-black shadow-lg transform active:scale-95 transition">
-          ✅ CONFIRMAR
-        </button>
-        <button onclick="closeManagerCheckInModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-bold transform active:scale-95 transition">
-          ❌ CANCELAR
-        </button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  // Focus on table input
-  setTimeout(() => {
-    document.getElementById('manager-table-input')?.focus();
-  }, 100);
 };
 
-window.confirmManagerCheckIn = function (resId) {
-  const tableNum = document.getElementById('manager-table-input').value;
-  const waiterId = document.getElementById('manager-waiter-select').value;
+window.cancelManagerCheckIn = function (resId) {
+  const form = document.getElementById(`checkin-form-${resId}`);
+  if (form) {
+    form.classList.add('hidden');
+    // Clear inputs
+    const tableInput = document.getElementById(`table-input-${resId}`);
+    const waiterSelect = document.getElementById(`waiter-select-${resId}`);
+    if (tableInput) tableInput.value = '';
+    if (waiterSelect) waiterSelect.value = '';
+  }
+};
+
+window.confirmManagerCheckInInline = function (resId) {
+  const tableNum = document.getElementById(`table-input-${resId}`).value;
+  const waiterId = document.getElementById(`waiter-select-${resId}`).value;
 
   if (!tableNum || !waiterId) {
     alert('Por favor ingresa el número de mesa y selecciona un mesero');
@@ -6375,8 +6341,8 @@ window.confirmManagerCheckIn = function (resId) {
     completedAt: new Date().toISOString()
   });
 
-  // Close modal
-  closeManagerCheckInModal();
+  // Hide form
+  cancelManagerCheckIn(resId);
 
   // Refresh Manager dashboard
   if (window.renderManagerDashboard) {
@@ -6384,11 +6350,6 @@ window.confirmManagerCheckIn = function (resId) {
   }
 
   alert(`✅ Mesa ${tableNum} asignada a ${res.customerName}`);
-};
-
-window.closeManagerCheckInModal = function () {
-  const modal = document.getElementById('manager-checkin-modal');
-  if (modal) modal.remove();
 };
 
 // ==========================================
@@ -7044,7 +7005,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.46';
+const CURRENT_VERSION = '22.47';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
