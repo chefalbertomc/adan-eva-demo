@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.14 (Manager: Unified UI with Hostess)
+        v22.15 (Manager + Hostess: Unify Date Filter)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6220,7 +6220,6 @@ window.submitReservation = function () {
     game: document.getElementById('res-reason').value === 'Partido' ? document.getElementById('res-game').value : '',
     date: new Date().toLocaleDateString('en-CA') // Today
   };
-
   window.db.addReservation(data);
   document.getElementById('reservation-modal').classList.add('hidden');
 };
@@ -6229,12 +6228,29 @@ window.submitReservation = function () {
 // MANAGER RESERVATIONS TAB (FULL CRUD)
 // ==========================================
 function renderManagerReservationsTab(container) {
+  // Default Date: Today
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  // Check if a date is already stored in a global/temp state or use today
+  // For now, we'll just re-read the input if it exists, or default
+  let currentDate = todayStr;
+  const existingInput = document.getElementById('manager-date-filter');
+  if (existingInput) currentDate = existingInput.value;
+
   container.innerHTML = `
       <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-black text-white italic tracking-tighter">ADMINISTRAR RESERVACIONES</h2>
           <button onclick="toggleReservationForm()" class="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-black shadow-lg flex items-center gap-2 transform active:scale-95 transition">
             🎟️ CREAR RESERVACIÓN
           </button>
+      </div>
+
+      <!-- DATE FILTER FOR MANAGER -->
+      <div class="bg-gray-800 p-4 rounded-xl mb-6 shadow-lg border border-gray-700">
+        <label class="text-gray-400 text-xs font-bold uppercase mb-2 block">📅 Filtrar por Fecha:</label>
+        <input type="date" id="manager-date-filter" 
+               class="w-full bg-black border border-gray-600 rounded p-3 text-white font-bold focus:border-yellow-500 outline-none" 
+               value="${currentDate}" 
+               onchange="renderManagerReservationsTab(document.getElementById('manager-content'))">
       </div>
 
       <!-- INLINE RESERVATION FORM (ACCORDION STYLE) -->
@@ -6326,6 +6342,12 @@ function renderManagerReservationsTab(container) {
       </div>
     `;
 
+  // Generate Game Options
+  const gameSelect = container.querySelector('#res-game');
+  if (window.generateGameOptions && gameSelect) {
+    gameSelect.innerHTML = window.generateGameOptions('');
+  }
+
   // Re-use the list renderer but point to our new container
   const listContainer = container.querySelector('#manager-reservations-list');
 
@@ -6336,11 +6358,17 @@ function renderManagerReservationsTab(container) {
     ? window.db.getReservations(branchId)
     : [];
 
+  // FILTER BY SELECTED DATE from Input
+  if (reservations.length > 0) {
+    // Use the input value we captured at the start
+    reservations = reservations.filter(r => r.date === currentDate);
+  }
+
   if (reservations.length === 0) {
     listContainer.innerHTML = `
       <div class="text-center py-12 opacity-50">
                 <div class="text-6xl mb-4">📭</div>
-                <p class="text-xl text-gray-400">No hay reservaciones activas</p>
+                <p class="text-xl text-gray-400">No hay reservaciones para:<br><span class="text-yellow-500 font-bold">${currentDate}</span></p>
             </div>
       `;
   } else {
@@ -6354,7 +6382,10 @@ function renderManagerReservationsTab(container) {
     const currentHours = now.getHours();
     const currentMinutes = now.getMinutes();
     const currentTimeVal = currentHours * 60 + currentMinutes;
-    const todayStr = new Date().toLocaleDateString('en-CA');
+    // Use the SELECTED DATE for "Today" comparison logic
+    // If selected date != real today, we shouldn't show "late" status based on current time,
+    // but for simplicity we kept the logic. Ideally we check if date === realToday.
+    const realToday = new Date().toLocaleDateString('en-CA');
 
     listContainer.innerHTML = reservations.map(r => {
       // Traffic Light Logic (Same as Hostess)
@@ -6367,10 +6398,7 @@ function renderManagerReservationsTab(container) {
       let statusText = 'A Tiempo';
 
       // Only apply traffic light if looking at TODAY's reservations
-      // If it's a future date, it's always green/scheduled
-      // If it's a past date, it's probably expired/red
-
-      if (r.date === todayStr) {
+      if (r.date === realToday) {
         if (diff > 30) {
           statusColor = 'border-red-600';
           statusIcon = '🔴';
@@ -6380,7 +6408,7 @@ function renderManagerReservationsTab(container) {
           statusIcon = '🟡';
           statusText = 'Retraso Permitido';
         }
-      } else if (r.date < todayStr) {
+      } else if (r.date < realToday) {
         statusColor = 'border-red-900';
         statusIcon = '⚫';
         statusText = 'Fecha Pasada';
@@ -6421,6 +6449,99 @@ function renderManagerReservationsTab(container) {
       </div>
     `}).join('');
   }
+};
+
+// NEW: Render Hostess Reservation List
+window.renderHostessReservationList = function (dateFilter) {
+  const listContainer = document.getElementById('hostess-reservations-list');
+  if (!listContainer) return;
+
+  // Default to today if no date provided
+  if (!dateFilter) {
+    dateFilter = new Date().toLocaleDateString('en-CA');
+    const input = document.getElementById('hostess-date-filter');
+    if (input) input.value = dateFilter;
+  }
+
+  const branchId = STATE.branch?.id;
+  let reservations = (window.db.getReservations && branchId)
+    ? window.db.getReservations(branchId)
+    : [];
+
+  if (reservations.length > 0) {
+    reservations = reservations.filter(r => r.date === dateFilter);
+  }
+
+  if (reservations.length === 0) {
+    listContainer.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <div class="text-4xl mb-2">📅</div>
+                <p>No hay reservaciones para: ${dateFilter}</p>
+            </div>
+        `;
+    return;
+  }
+
+  reservations.sort((a, b) => a.time.localeCompare(b.time));
+  const now = new Date();
+  const currentHours = now.getHours();
+  const currentMinutes = now.getMinutes();
+  const currentTimeVal = currentHours * 60 + currentMinutes;
+  const realToday = new Date().toLocaleDateString('en-CA');
+
+  listContainer.innerHTML = reservations.map(r => {
+    const [resH, resM] = r.time.split(':').map(Number);
+    const resTimeVal = resH * 60 + resM;
+    const diff = currentTimeVal - resTimeVal;
+
+    let statusColor = 'border-green-500';
+    let statusIcon = '🟢';
+    let statusText = 'A Tiempo';
+
+    if (r.date === realToday) {
+      if (diff > 30) {
+        statusColor = 'border-red-600';
+        statusIcon = '🔴';
+        statusText = 'Vencida (>30min)';
+      } else if (diff > 0) {
+        statusColor = 'border-yellow-500';
+        statusIcon = '🟡';
+        statusText = 'Retraso Permitido';
+      }
+    } else if (r.date < realToday) {
+      statusColor = 'border-red-900';
+      statusIcon = '⚫';
+      statusText = 'Fecha Pasada';
+    }
+
+    return `
+        <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${statusColor} shadow-lg relative animate-fade-in group">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <div class="flex items-center gap-2">
+                         <span class="font-black text-lg text-white uppercase">${r.customerName}</span>
+                         ${r.vip ? `<span class="bg-yellow-900 text-yellow-500 text-[10px] px-2 rounded border border-yellow-600 font-bold">${r.vip.toUpperCase()}</span>` : ''}
+                    </div>
+                    <div class="text-sm text-gray-400 mt-1 flex flex-wrap items-center gap-3">
+                        <span>🕒 ${r.time}</span>
+                        <span>👥 ${r.pax} pax</span>
+                        ${r.phone ? `<span>📞 ${r.phone}</span>` : ''}
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs font-bold text-gray-400 mb-1">${statusIcon} ${statusText}</div>
+                    ${diff > 30 && r.date === realToday ? '<span class="text-[10px] text-red-400 font-bold">CANCELAR?</span>' : ''}
+                </div>
+            </div>
+
+            ${r.notes ? `<div class="bg-black/30 p-2 rounded text-xs text-yellow-200 mb-3 border border-yellow-900/30">📝 ${r.notes}</div>` : ''}
+
+            <button onclick="checkInReservation('${r.id}')" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-2 rounded-lg shadow-md uppercase tracking-wide text-sm flex items-center justify-center gap-2">
+                ✅ Check-In / Asignar Mesa
+            </button>
+        </div>
+        `;
+  }).join('');
 };
 
 // Toggle Helper
