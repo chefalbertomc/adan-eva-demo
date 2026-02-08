@@ -6106,7 +6106,12 @@ function renderManagerReservationsTab(container) {
   // Re-use the list renderer but point to our new container
   const listContainer = container.querySelector('#manager-reservations-list');
 
-  const reservations = (window.db.getReservations ? window.db.getReservations() : []) || [];
+  const branchId = STATE.branch?.id;
+  // Show ALL future reservations for the tab, so we don't pass a specific date
+  // Or maybe we want to filter? For now let's get all for the branch.
+  const reservations = (window.db.getReservations && branchId)
+    ? window.db.getReservations(branchId)
+    : [];
 
   if (reservations.length === 0) {
     listContainer.innerHTML = `
