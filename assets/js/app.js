@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.9 (Hostess: Reservations Tab + Check-In)
+        v22.10 (Manager: Fix Reload on Save)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6856,12 +6856,13 @@ window.submitManagerReservation = function () {
     window.db.addReservation(data);
     alert("✅ Reservación creada exitosamente.");
     toggleReservationForm();
-    // Refresh by re-rendering tab if possible, or reload
-    const container = document.getElementById('content-reservations');
-    if (container && typeof renderManagerReservationsTab === 'function') {
-      renderManagerReservationsTab(container);
-    } else {
-      window.location.reload();
+
+    // Refresh Logic (No Reload)
+    const content = document.getElementById('manager-content');
+    if (content && typeof renderManagerReservationsTab === 'function') {
+      renderManagerReservationsTab(content);
+    } else if (typeof renderManagerDashboard === 'function') {
+      renderManagerDashboard('reservations');
     }
   } else {
     console.error("DB not linked");
