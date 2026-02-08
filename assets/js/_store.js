@@ -989,22 +989,30 @@ class Store {
 
     // ON-DEMAND MIGRATION: Push local reservations to Firebase if they aren't there
     _syncLocalReservationsToFirebase() {
-        if (!this.data.reservations || this.data.reservations.length === 0) return;
+        const dailyInfo = this.getDailyInfo();
+        const localReservations = dailyInfo.reservations || [];
 
-        console.log('🚀 Checking local reservations to sync with cloud...');
+        if (localReservations.length === 0) {
+            console.log('⏭️ No local reservations to sync');
+            return;
+        }
+
+        console.log(`🚀 Migrating ${localReservations.length} local reservations to cloud...`);
 
         // Wait a bit for FB to be ready if called instantly
         setTimeout(() => {
-            if (!window.dbFirestore || !window.FB) return;
+            if (!window.dbFirestore || !window.FB) {
+                console.warn('⚠️ Firebase not ready for migration');
+                return;
+            }
             const { doc, setDoc } = window.FB;
 
-            this.data.reservations.forEach(r => {
+            localReservations.forEach(r => {
                 // We use setDoc which overwrites/creates using the ID.
                 // This ensures that if the Mac has the "master" copy, it pushes it up.
-                // In a perfect world we'd check timestamps, but for this "rescue" we just push.
                 setDoc(doc(window.dbFirestore, 'reservations', r.id), r)
-                    .then(() => console.log(`☁️ Synced local auth-res ${r.id}`))
-                    .catch(e => console.error('🔥 Migration error', e));
+                    .then(() => console.log(`☁️ Synced reservation: ${r.customerName} (${r.id})`))
+                    .catch(e => console.error('🔥 Migration error for', r.id, e));
             });
         }, 3000); // 3s delay to let connection settle
     }
