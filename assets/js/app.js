@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.43 (Feature: Check-In in Manager)
+        v22.44 (Revert: Manager Check-In Removed)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6484,14 +6484,9 @@ function renderManagerReservationsTab(container) {
                   <div class="text-sm text-gray-500 italic truncate max-w-[300px] mb-2">${r.game || r.reason || 'Sin motivo'}</div>
                   ${r.notes ? `<div class="bg-black/30 p-2 rounded text-xs text-yellow-200 mb-3 border border-yellow-900/30">📝 ${r.notes}</div>` : ''}
                   
-                  <!-- CHECK-IN BUTTON (Works in both Hostess and Manager) -->
-                  <button onclick="checkInReservation('${r.id}')" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-black shadow-lg transform active:scale-95 transition mb-2">
-                    ✅ CHECK-IN / ASIGNAR MESA
-                  </button>
-
                   <!-- MANAGER ONLY: DELETE BUTTON -->
-                  <button onclick="window.deleteReservation('${r.id}')" class="w-full bg-red-900/20 text-red-500 py-2 rounded-lg hover:bg-red-900/40 transition font-bold border border-red-900/30" title="Eliminar Reservación">
-                    🗑️ ELIMINAR
+                  <button onclick="window.deleteReservation('${r.id}')" class="w-full bg-red-900/20 text-red-500 py-3 rounded-lg hover:bg-red-900/40 transition font-bold border border-red-900/30" title="Eliminar Reservación">
+                    🗑️ ELIMINAR RESERVACIÓN
                   </button>
       </div>
     `}).join('');
@@ -6920,7 +6915,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.43';
+const CURRENT_VERSION = '22.44';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
@@ -7309,7 +7304,6 @@ window.renderHostessReservationList = function (dateFilter) {
 // Check-In Reservation (Populate Hostess Form)
 window.checkInReservation = function (resId) {
   const branchId = STATE.branch?.id;
-  // Get ALL reservations to find by ID
   const allRes = window.db.getReservations(branchId);
   const res = allRes.find(r => r.id === resId);
 
@@ -7318,39 +7312,28 @@ window.checkInReservation = function (resId) {
     return;
   }
 
-  // Check if we're in Hostess or Manager dashboard
+  // Check if we're in Hostess dashboard
   const isHostess = document.getElementById('content-checkin') !== null;
-  const isManager = document.getElementById('manager-content') !== null;
 
-  if (!isHostess && !isManager) {
-    alert('Error: Esta función requiere estar en el dashboard de Hostess o Gerente');
+  if (!isHostess) {
+    alert('Esta función solo está disponible en el dashboard de Hostess');
     return;
   }
 
-  // If in Manager, switch to Hostess view first
-  if (isManager) {
-    // Store reservation ID for after switch
-    sessionStorage.setItem('pendingCheckInReservation', resId);
-    alert('Cambiando a vista de Hostess para asignar mesa...');
-    // Switch to Hostess role
-    window.location.hash = '#hostess';
-    window.location.reload();
-    return;
-  }
+  // Switch to Check-In Tab
+  switchHostessTab('checkin');
 
-  // HOSTESS FLOW: Populate form
+  // Populate form
   const firstNameInput = document.getElementById('h-firstname');
   const lastNameInput = document.getElementById('h-lastname');
   const lastName2Input = document.getElementById('h-lastname2');
   const paxDisplay = document.getElementById('h-pax');
 
-  // Only proceed if elements exist (Hostess view)
   if (!firstNameInput || !lastNameInput || !paxDisplay) {
     console.error('❌ Hostess form elements not found. Are you in Hostess view?');
     return alert('Error: Esta función solo está disponible en el dashboard de Hostess');
   }
 
-  // Switch to Check-In Tab
   switchHostessTab('checkin');
 
   firstNameInput.value = res.customerName.split(' ')[0] || '';
