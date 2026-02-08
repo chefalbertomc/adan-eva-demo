@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.20 (Debug: Manual Sync Button)
+        v22.21 (Fix: Hostess CheckIn Logic)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -7214,10 +7214,14 @@ window.switchHostessTab = function (tabName) {
 };
 
 // ==========================================
-// HOSTESS CHECK-IN PROCESS (FIX: ADDED MISSING FUNCTION)
+// HOSTESS CHECK-IN PROCESS (FIX: READ FROM DOM + MATERNAL SURNAME)
 // ==========================================
-window.processHostessCheckIn = function (tableNumber, waiterId) {
-  // 1. Validate Inputs
+window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
+  // 1. Get Values (Argument OR DOM)
+  const tableNumber = tableNumberArg || document.getElementById('h-table').value;
+  const waiterId = waiterIdArg || document.getElementById('h-waiter').value;
+
+  // 2. Validate Inputs
   if (!tableNumber || !waiterId) {
     alert("Por favor selecciona una Mesa y un Mesero.");
     return;
@@ -7230,39 +7234,46 @@ window.processHostessCheckIn = function (tableNumber, waiterId) {
     return;
   }
 
-  // 2. Gather Data from Hostess Form (populated by checkInReservation or manually)
-  const firstName = document.getElementById('h-firstname').value;
-  const lastName = document.getElementById('h-lastname').value;
+  // 3. Gather Data from Hostess Form
+  const firstName = document.getElementById('h-firstname').value.toUpperCase();
+  const lastName1 = document.getElementById('h-lastname').value.toUpperCase();
+  const lastName2 = document.getElementById('h-lastname2') ? document.getElementById('h-lastname2').value.toUpperCase() : '';
+
+  // Combine Last Names
+  const fullLastName = `${lastName1} ${lastName2}`.trim();
+
   const pax = parseInt(document.getElementById('h-pax').innerText) || 2;
-  // Try to find if we are checking in a specific reservation ID (hidden field or state?)
-  // For now, we search by name or create new customer on the fly
 
   if (!firstName) {
     alert("Falta el nombre del cliente.");
     return;
   }
 
-  // 3. Find or Create Customer
-  const fullName = `${firstName} ${lastName}`.trim();
+  // 4. Find or Create Customer
+  // Check by full name composition
+  const fullNameQuery = `${firstName} ${fullLastName}`.trim();
+
   let customer = window.db.data.customers.find(c =>
-    (c.firstName + ' ' + c.lastName).toLowerCase() === fullName.toLowerCase()
+    (c.firstName + ' ' + c.lastName).toLowerCase() === fullNameQuery.toLowerCase()
   );
 
   if (!customer) {
     customer = window.db.createCustomer({
       firstName,
-      lastName,
+      lastName: fullLastName,
       phone: '',
       email: '',
       branchId
     });
+  } else {
+    // Update existing if needed (optional, maybe just update last visit)
   }
 
-  // 4. Create Visit
+  // 5. Create Visit
   const visitData = {
     branchId,
     table: tableNumber,
-    waiterId, // "W1", "W2", etc.
+    waiterId,
     customerId: customer.id,
     pax,
     startTime: new Date().toISOString(),
@@ -7273,25 +7284,17 @@ window.processHostessCheckIn = function (tableNumber, waiterId) {
 
   const newVisit = window.db.createVisit(visitData);
 
-  // 5. If this came from a Reservation, MARK IT AS COMPLETED/CHECKED-IN
-  // Constraint: We don't have the reservation ID explicitly stored in the DOM yet.
-  // IMPROVEMENT: We should store it when clicking "Check-In".
-  // For now, let's try to match by name/date/time strict, or just leave it.
-  // Ideally we update checkInReservation to store the ID in a hidden field.
-
-  // Attempt to find pending reservation for this customer today
+  // 6. If this came from a Reservation, MARK IT AS COMPLETED
   const todayStr = new Date().toLocaleDateString('en-CA');
   const pendingRes = window.db.data.reservations.find(r =>
-    r.customerName === fullName &&
+    r.customerName.toLowerCase() === fullNameQuery.toLowerCase() &&
     r.date === todayStr &&
     r.status !== 'completed' &&
     r.status !== 'cancelled'
   );
 
   if (pendingRes) {
-    // Mark as completed/checked-in
     pendingRes.status = 'completed';
-    // Sync update
     if (window.dbFirestore && window.FB) {
       const { doc, updateDoc } = window.FB;
       updateDoc(doc(window.dbFirestore, 'reservations', pendingRes.id), { status: 'completed' })
@@ -7300,15 +7303,19 @@ window.processHostessCheckIn = function (tableNumber, waiterId) {
     window.db._save();
   }
 
-  // 6. Success Feedback & Reset
+  // 7. Success Feedback & Reset
   alert(`✅ Mesa ${tableNumber} asignada a ${firstName} (${customer.id.substring(0, 4)}...)`);
 
   // Clear Form
   document.getElementById('h-firstname').value = '';
   document.getElementById('h-lastname').value = '';
+  if (document.getElementById('h-lastname2')) document.getElementById('h-lastname2').value = '';
+  document.getElementById('h-table').value = '';
+  document.getElementById('h-waiter').value = '';
   document.getElementById('customer-search').value = '';
 
-  // Switch to Dashboard (Tables View)
+  // Switch to Dashboard
   switchHostessTab('tables');
-  renderHostessDashboard(); // Refresh tables
+  renderHostessDashboard();
 };
+```
