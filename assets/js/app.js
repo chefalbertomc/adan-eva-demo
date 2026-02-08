@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.28 (Fix: Reservations Display + Scroll)
+        v22.29 (Fix: Cache Clear on Update)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6872,70 +6872,96 @@ window.renderHostessDashboard = function () {
 
 // ==========================================
 // ==========================================
-
-// INITIALIZATION
+// VERSION CHECK & AUTO-RELOAD
 // ==========================================
-window.initApp = async function () {
-  console.log('🚀 Initializing App...');
+const CURRENT_VERSION = '22.28';
+const storedVersion = localStorage.getItem('app_version');
 
-  // 1. Initialize DB
-  if (!window.db) {
-    console.error('❌ Database not found!');
-    appContainer.innerHTML = '<div class="text-white p-10">Error critic: Base de datos no encontrada.</div>';
-    return;
-  }
+if (storedVersion && storedVersion !== CURRENT_VERSION) {
+  console.log(`🔄 Version mismatch: ${storedVersion} → ${CURRENT_VERSION}. Clearing cache...`);
 
-  // 2. Auth Listener
-  window.db.auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      console.log('👤 User Authenticated:', user.uid);
-      // Check existing user in local DB or fetch
-      const dbUser = window.db.data.users.find(u => u.id === user.uid);
-      if (dbUser) {
-        STATE.user = dbUser;
-        STATE.branch = window.db.data.branches.find(b => b.id === dbUser.branchId);
-        console.log('🏢 Branch:', STATE.branch);
+  // Clear localStorage except auth
+  const authData = localStorage.getItem('adanEvaAuth');
+  localStorage.clear();
+  if (authData) localStorage.setItem('adanEvaAuth', authData);
 
-        // Render Dashboard based on Role
-        if (STATE.user.role === 'hostess') {
-          // START LISTENER FOR VISITS
-          window.db.subscribeToVisits((visits) => {
-            if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
-          });
-          renderHostessDashboard();
-        } else if (STATE.user.role === 'manager' || STATE.user.role === 'admin') {
-          if (typeof renderManagerDashboard === 'function') renderManagerDashboard('home');
-        } else if (STATE.user.role === 'waiter') {
-          if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard();
+  // Set new version
+  localStorage.setItem('app_version', CURRENT_VERSION);
+
+  // Force reload
+  window.location.reload(true);
+}
+
+// Set version on first load
+if (!storedVersion) {
+  localStorage.setItem('app_version', CURRENT_VERSION);
+}
+
+// ==========================================
+// GLOBAL STATE
+// ==========================================
+const STATE = {
+  async function() {
+    console.log('🚀 Initializing App...');
+
+    // 1. Initialize DB
+    if (!window.db) {
+      console.error('❌ Database not found!');
+      appContainer.innerHTML = '<div class="text-white p-10">Error critic: Base de datos no encontrada.</div>';
+      return;
+    }
+
+    // 2. Auth Listener
+    window.db.auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        console.log('👤 User Authenticated:', user.uid);
+        // Check existing user in local DB or fetch
+        const dbUser = window.db.data.users.find(u => u.id === user.uid);
+        if (dbUser) {
+          STATE.user = dbUser;
+          STATE.branch = window.db.data.branches.find(b => b.id === dbUser.branchId);
+          console.log('🏢 Branch:', STATE.branch);
+
+          // Render Dashboard based on Role
+          if (STATE.user.role === 'hostess') {
+            // START LISTENER FOR VISITS
+            window.db.subscribeToVisits((visits) => {
+              if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
+            });
+            renderHostessDashboard();
+          } else if (STATE.user.role === 'manager' || STATE.user.role === 'admin') {
+            if (typeof renderManagerDashboard === 'function') renderManagerDashboard('home');
+          } else if (STATE.user.role === 'waiter') {
+            if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard();
+          } else {
+            appContainer.innerHTML = '<div class="text-white">Rol desconocido</div>';
+          }
         } else {
-          appContainer.innerHTML = '<div class="text-white">Rol desconocido</div>';
+          console.error('User not found in local DB data');
+          if (typeof renderLogin === 'function') renderLogin();
         }
       } else {
-        console.error('User not found in local DB data');
+        console.log('👤 No User. Rendering Login.');
         if (typeof renderLogin === 'function') renderLogin();
       }
-    } else {
-      console.log('👤 No User. Rendering Login.');
-      if (typeof renderLogin === 'function') renderLogin();
-    }
-  });
-};
+    });
+  };
 
-// Start
-document.addEventListener('DOMContentLoaded', window.initApp);
+  // Start
+  document.addEventListener('DOMContentLoaded', window.initApp);
 
-// NEW: Render Game Requests
-function renderManagerGameRequests(container) {
-  if (!container) return;
+  // NEW: Render Game Requests
+  function renderManagerGameRequests(container) {
+    if (!container) return;
 
-  const requests = window.db.getDailyInfo().gameRequests || [];
+const requests = window.db.getDailyInfo().gameRequests || [];
 
-  if (requests.length === 0) {
-    container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
-    return;
-  }
+if (requests.length === 0) {
+  container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
+  return;
+}
 
-  container.innerHTML = requests.map((r) => `
+container.innerHTML = requests.map((r) => `
       <div class="bg-gray-800 p-3 rounded-lg border-l-4 border-blue-500 mb-2 flex justify-between items-center animate-fade-in">
         <div>
           <div class="flex items-center gap-2">
