@@ -6249,6 +6249,24 @@ window.submitReservation = function () {
   document.getElementById('reservation-modal').classList.add('hidden');
 };
 
+// Delete Reservation (Manager Only)
+window.deleteReservation = function (resId) {
+  if (!confirm('¿Eliminar esta reservación?')) return;
+
+  if (window.db.removeReservation) {
+    window.db.removeReservation(resId);
+
+    // Refresh Manager reservations view
+    if (window.renderManagerDashboard && document.getElementById('manager-reservations-list')) {
+      window.renderManagerDashboard('reservations');
+    }
+
+    alert('✅ Reservación eliminada');
+  } else {
+    alert('❌ Error al eliminar');
+  }
+};
+
 // Manager Check-In: Assign Table to Reservation
 window.managerCheckInReservation = function (resId) {
   const branchId = STATE.branch?.id;
