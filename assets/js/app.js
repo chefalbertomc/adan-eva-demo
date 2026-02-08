@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.11 (Hostess: Fix Missing Functions)
+        v22.13 (Hostess Fix + Manager Phone Auto)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -881,7 +881,6 @@ function selectManagerCustomer(id, name, vip) {
   const vipInput = document.getElementById('res-vip');
   vipInput.value = vip || ''; // Empty if no VIP
 
-  // Highlight appropriate button (REPLACED WITH TEXT DISPLAY)
   const display = document.getElementById('res-vip-display');
   if (display) {
     if (vip === 'blazin') {
@@ -894,6 +893,14 @@ function selectManagerCustomer(id, name, vip) {
       display.textContent = 'Normal';
       display.className = 'text-gray-400 font-bold';
     }
+  }
+
+  // Auto-fill Phone if available in DB
+  const customers = window.db.getCustomers() || [];
+  const customer = customers.find(c => c.id === id);
+  if (customer && customer.phone) {
+    const phoneInput = document.getElementById('res-phone');
+    if (phoneInput) phoneInput.value = customer.phone;
   }
 
   dismissManagerSearch();
@@ -6857,18 +6864,28 @@ window.submitManagerReservation = function () {
     alert("✅ Reservación creada exitosamente.");
     toggleReservationForm();
 
-    // Refresh Logic (No Reload)
-    const content = document.getElementById('manager-content');
-    if (content && typeof renderManagerReservationsTab === 'function') {
-      renderManagerReservationsTab(content);
-    } else if (typeof renderManagerDashboard === 'function') {
-      renderManagerDashboard('reservations');
+    // Simplified Refresh
+    if (typeof window.renderManagerDashboard === 'function') {
+      window.renderManagerDashboard('reservations');
+    } else {
+      window.location.reload();
     }
+
+    alert(`✅ Mesa Asignada: ${fullName}`);
+
+    // Reset Form
+    document.getElementById('h-firstname').value = '';
+    document.getElementById('h-lastname').value = '';
+    document.getElementById('h-lastname2').value = '';
+    document.querySelectorAll('.table-btn.selected').forEach(b => b.classList.remove('selected', 'bg-yellow-500', 'text-black'));
+
+    // Refresh Dashboard
+    renderHostessDashboard();
   } else {
-    console.error("DB not linked");
-    alert("Error de base de datos");
+    alert("Error de DB");
   }
 };
+
 // NEW: Render Hostess Reservation List
 window.renderHostessReservationList = function (dateFilter) {
   const listContainer = document.getElementById('hostess-reservations-list');
