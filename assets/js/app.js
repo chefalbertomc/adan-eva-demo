@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.45 (Feature: Manager Check-In Modal)
+        v22.46 (Fix: Manual Table Input)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6278,27 +6278,14 @@ window.managerCheckInReservation = function (resId) {
     return;
   }
 
-  // Get available tables and waiters
-  const availableTables = [];
-  for (let i = 1; i <= 20; i++) {
-    if (!window.db.isTableOccupied(i, branchId)) {
-      availableTables.push(i);
-    }
-  }
-
   const waiters = window.db.data.users.filter(u => u.role === 'waiter' && u.branchId === branchId);
-
-  if (availableTables.length === 0) {
-    alert('❌ No hay mesas disponibles');
-    return;
-  }
 
   if (waiters.length === 0) {
     alert('❌ No hay meseros disponibles');
     return;
   }
 
-  // Create modal
+  // Create modal with manual input
   const modal = document.createElement('div');
   modal.id = 'manager-checkin-modal';
   modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4';
@@ -6313,11 +6300,8 @@ window.managerCheckInReservation = function (resId) {
       </div>
 
       <div class="mb-4">
-        <label class="text-gray-400 text-sm font-bold block mb-2">Seleccionar Mesa:</label>
-        <select id="manager-table-select" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-3 focus:border-yellow-500 outline-none">
-          <option value="">-- Selecciona una mesa --</option>
-          ${availableTables.map(t => `<option value="${t}">Mesa ${t}</option>`).join('')}
-        </select>
+        <label class="text-gray-400 text-sm font-bold block mb-2">Número de Mesa:</label>
+        <input type="number" id="manager-table-input" placeholder="Ej: 5" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-3 focus:border-yellow-500 outline-none text-center text-2xl font-bold" min="1">
       </div>
 
       <div class="mb-6">
@@ -6340,18 +6324,30 @@ window.managerCheckInReservation = function (resId) {
   `;
 
   document.body.appendChild(modal);
+
+  // Focus on table input
+  setTimeout(() => {
+    document.getElementById('manager-table-input')?.focus();
+  }, 100);
 };
 
 window.confirmManagerCheckIn = function (resId) {
-  const tableNum = document.getElementById('manager-table-select').value;
+  const tableNum = document.getElementById('manager-table-input').value;
   const waiterId = document.getElementById('manager-waiter-select').value;
 
   if (!tableNum || !waiterId) {
-    alert('Por favor selecciona mesa y mesero');
+    alert('Por favor ingresa el número de mesa y selecciona un mesero');
     return;
   }
 
   const branchId = STATE.branch?.id;
+
+  // Check if table is occupied
+  if (window.db.isTableOccupied(parseInt(tableNum), branchId)) {
+    alert(`❌ La mesa ${tableNum} ya está ocupada. Por favor elige otra mesa.`);
+    return;
+  }
+
   const allRes = window.db.getReservations(branchId);
   const res = allRes.find(r => r.id === resId);
 
@@ -7048,7 +7044,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.45';
+const CURRENT_VERSION = '22.46';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
