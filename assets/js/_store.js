@@ -749,6 +749,14 @@ class Store {
                 if (change.type === "modified") {
                     // console.log(`🔥 SYNC MOD: Visit ${visitData.id} | Status ${visitData.status}`);
                     if (localIdx !== -1) {
+                        // CRITICAL: Don't overwrite if local is closed but remote is active
+                        const localVisit = this.data.visits[localIdx];
+
+                        if (localVisit.status === 'closed' && visitData.status === 'active') {
+                            console.log('⚠️ Skipping cloud update - local visit is closed:', visitData.id);
+                            return; // Don't overwrite local closed status
+                        }
+
                         this.data.visits[localIdx] = visitData; // Update local
                         changes = true;
                     }
