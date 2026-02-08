@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.5 (Manager: Clean Tabs - No Overlaps)
+        v22.6 (Manager: Relative Search + Cleaner VIP)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -881,23 +881,19 @@ function selectManagerCustomer(id, name, vip) {
   const vipInput = document.getElementById('res-vip');
   vipInput.value = vip || ''; // Empty if no VIP
 
-  // Highlight appropriate button
-  if (vip === 'blazin') {
-    const btn = document.querySelector(`button[onclick*="'blazin'"]`);
-    if (btn) {
-      btn.classList.add('selected', 'border-orange-500', 'text-orange-500');
-      btn.classList.remove('border-gray-600', 'text-gray-400');
+  // Highlight appropriate button (REPLACED WITH TEXT DISPLAY)
+  const display = document.getElementById('res-vip-display');
+  if (display) {
+    if (vip === 'blazin') {
+      display.textContent = '🔥 BLAZIN';
+      display.className = 'text-orange-500 font-bold';
+    } else if (vip === 'diamond') {
+      display.textContent = '💎 DIAMOND';
+      display.className = 'text-blue-400 font-bold';
+    } else {
+      display.textContent = 'Normal';
+      display.className = 'text-gray-400 font-bold';
     }
-  } else if (vip === 'diamond') {
-    const btn = document.querySelector(`button[onclick*="'diamond'"]`);
-    if (btn) {
-      btn.classList.add('selected', 'border-blue-400', 'text-blue-400');
-      btn.classList.remove('border-gray-600', 'text-gray-400');
-    }
-  } else {
-    // Normal / None
-    const btn = document.querySelector(`button[onclick*="selectResVip(this, '')"]`);
-    if (btn) btn.classList.add('selected');
   }
 
   dismissManagerSearch();
@@ -6252,8 +6248,8 @@ function renderManagerReservationsTab(container) {
                          autocomplete="off"
                          onkeyup="searchCustomerForManager(this.value)">
                   
-                  <!-- Search Results Container -->
-                  <div id="res-search-results" class="hidden absolute top-full left-0 right-0 bg-black border border-yellow-500/50 rounded-b-lg mt-1 z-50 shadow-2xl max-h-60 overflow-y-auto"></div>
+                  <!-- Search Results Container: RELATIVE to push content down, not absolute overlay -->
+                  <div id="res-search-results" class="hidden w-full bg-black border border-yellow-500/50 rounded-lg mt-2 mb-4 overflow-hidden relative shadow-md"></div>
                 </div>
               </div>
 
@@ -6269,12 +6265,11 @@ function renderManagerReservationsTab(container) {
               </div>
 
               <div>
-                <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Categoría VIP (Auto)</label>
-                <div class="flex gap-2 opacity-80 pointer-events-none"> <!-- Read Only Visual -->
-                  <button onclick="selectResVip(this, '')" class="res-vip-btn flex-1 p-2 rounded border border-gray-600 bg-gray-800 text-gray-400 text-sm selected">Normal</button>
-                  <button onclick="selectResVip(this, 'blazin')" class="res-vip-btn flex-1 p-2 rounded border border-orange-500/50 bg-gray-800 text-orange-500 text-sm">🔥 Blazin</button>
-                  <button onclick="selectResVip(this, 'diamond')" class="res-vip-btn flex-1 p-2 rounded border border-blue-400/50 bg-gray-800 text-blue-400 text-sm">💎 Diamond</button>
-                </div>
+                <label class="block text-xs uppercase text-gray-400 font-bold mb-1 flex justify-between">
+                    Categoría VIP (Auto)
+                    <span id="res-vip-display" class="text-yellow-500">Normal</span>
+                </label>
+                <!-- VIP BUTTONS REMOVED AS REQUESTED -->
                 <input type="hidden" id="res-vip" value="">
                 <p class="text-[10px] text-gray-500 mt-1 italic">* La categoría se asigna automáticamente al buscar el cliente.</p>
               </div>
