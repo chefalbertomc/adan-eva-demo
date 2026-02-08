@@ -6874,7 +6874,7 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.28';
+const CURRENT_VERSION = '22.29';
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
@@ -6898,70 +6898,69 @@ if (!storedVersion) {
 }
 
 // ==========================================
-// GLOBAL STATE
+// INITIALIZATION
 // ==========================================
-const STATE = {
-  async function() {
-    console.log('🚀 Initializing App...');
+window.initApp = async function () {
+  console.log('🚀 Initializing App...');
 
-    // 1. Initialize DB
-    if (!window.db) {
-      console.error('❌ Database not found!');
-      appContainer.innerHTML = '<div class="text-white p-10">Error critic: Base de datos no encontrada.</div>';
-      return;
-    }
+  // 1. Initialize DB
+  if (!window.db) {
+    console.error('❌ Database not found!');
+    appContainer.innerHTML = '<div class="text-white p-10">Error critic: Base de datos no encontrada.</div>';
+    return;
+  }
 
-    // 2. Auth Listener
-    window.db.auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        console.log('👤 User Authenticated:', user.uid);
-        // Check existing user in local DB or fetch
-        const dbUser = window.db.data.users.find(u => u.id === user.uid);
-        if (dbUser) {
-          STATE.user = dbUser;
-          STATE.branch = window.db.data.branches.find(b => b.id === dbUser.branchId);
-          console.log('🏢 Branch:', STATE.branch);
+  // 2. Auth Listener
+  window.db.auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      console.log('👤 User Authenticated:', user.uid);
+      // Check existing user in local DB or fetch
+      const dbUser = window.db.data.users.find(u => u.id === user.uid);
+      if (dbUser) {
+        STATE.user = dbUser;
+        STATE.branch = window.db.data.branches.find(b => b.id === dbUser.branchId);
+        console.log('🏢 Branch:', STATE.branch);
 
-          // Render Dashboard based on Role
-          if (STATE.user.role === 'hostess') {
-            // START LISTENER FOR VISITS
-            window.db.subscribeToVisits((visits) => {
-              if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
-            });
-            renderHostessDashboard();
-          } else if (STATE.user.role === 'manager' || STATE.user.role === 'admin') {
-            if (typeof renderManagerDashboard === 'function') renderManagerDashboard('home');
-          } else if (STATE.user.role === 'waiter') {
-            if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard();
-          } else {
-            appContainer.innerHTML = '<div class="text-white">Rol desconocido</div>';
-          }
+        // Render Dashboard based on Role
+        if (STATE.user.role === 'hostess') {
+          // START LISTENER FOR VISITS
+          window.db.subscribeToVisits((visits) => {
+            if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
+          });
+          renderHostessDashboard();
+        } else if (STATE.user.role === 'manager' || STATE.user.role === 'admin') {
+          if (typeof renderManagerDashboard === 'function') renderManagerDashboard('home');
+        } else if (STATE.user.role === 'waiter') {
+          if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard();
         } else {
-          console.error('User not found in local DB data');
-          if (typeof renderLogin === 'function') renderLogin();
+          appContainer.innerHTML = '<div class="text-white">Rol desconocido</div>';
         }
       } else {
-        console.log('👤 No User. Rendering Login.');
+        console.error('User not found in local DB data');
         if (typeof renderLogin === 'function') renderLogin();
       }
-    });
-  };
+    } else {
+      console.log('👤 No User. Rendering Login.');
+      if (typeof renderLogin === 'function') renderLogin();
+    }
+  });
+};
 
-  // Start
-  document.addEventListener('DOMContentLoaded', window.initApp);
+// Start
+document.addEventListener('DOMContentLoaded', window.initApp);
 
-  // NEW: Render Game Requests
-  function renderManagerGameRequests(container) {
-    if (!container) return;
+// NEW: Render Game Requests
+function renderManagerGameRequests(container) {
+  if (!container) return;
 
-const requests = window.db.getDailyInfo().gameRequests || [];
+  const requests = window.db.getDailyInfo().gameRequests || [];
 
-if (requests.length === 0) {
-  container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
-  return;
-}
+  if (requests.length === 0) {
+    container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
+    return;
+  }
 
-container.innerHTML = requests.map((r) => `
+  container.innerHTML = requests.map((r) => `
       <div class="bg-gray-800 p-3 rounded-lg border-l-4 border-blue-500 mb-2 flex justify-between items-center animate-fade-in">
         <div>
           <div class="flex items-center gap-2">
