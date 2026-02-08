@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.1 (Modal: Solid Background Fix)
+        v22.3 (Manager: Inline Form - No More Modals)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -6167,10 +6167,69 @@ function renderManagerReservationsTab(container) {
   container.innerHTML = `
       <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-black text-white italic tracking-tighter">ADMINISTRAR RESERVACIONES</h2>
-          <button onclick="window.showReservationModal()" class="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-black shadow-lg flex items-center gap-2 transform active:scale-95 transition">
+          <button onclick="toggleReservationForm()" class="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-black shadow-lg flex items-center gap-2 transform active:scale-95 transition">
             🎟️ CREAR RESERVACIÓN
           </button>
-        </div>
+      </div>
+
+      <!-- INLINE RESERVATION FORM (ACCORDION STYLE) -->
+      <div id="reservation-form-container" class="hidden bg-gray-900 border border-yellow-500/30 rounded-xl p-4 mb-6 shadow-2xl animate-fade-in relative">
+          <div class="absolute top-0 left-0 w-1 h-full bg-yellow-500 rounded-l-xl"></div>
+          <h3 class="text-lg font-black text-yellow-500 mb-4 flex items-center gap-2">
+            📝 NUEVA RESERVACIÓN
+          </h3>
+
+          <div class="space-y-4">
+              <div>
+                <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Nombre Cliente</label>
+                <input type="text" id="res-name" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Ej. Juan Pérez">
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Pax</label>
+                  <input type="number" id="res-pax" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white outline-none" value="2">
+                </div>
+                <div>
+                  <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Hora</label>
+                  <input type="time" id="res-time" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white outline-none">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Categoría VIP</label>
+                <div class="flex gap-2">
+                  <button onclick="selectResVip(this, '')" class="res-vip-btn flex-1 p-2 rounded border border-gray-600 bg-gray-800 text-gray-400 text-sm selected">Normal</button>
+                  <button onclick="selectResVip(this, 'blazin')" class="res-vip-btn flex-1 p-2 rounded border border-orange-500/50 bg-gray-800 text-orange-500 text-sm">🔥 Blazin</button>
+                  <button onclick="selectResVip(this, 'diamond')" class="res-vip-btn flex-1 p-2 rounded border border-blue-400/50 bg-gray-800 text-blue-400 text-sm">💎 Diamond</button>
+                </div>
+                <input type="hidden" id="res-vip" value="">
+              </div>
+
+              <div>
+                <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Motivo / Partido</label>
+                <select id="res-reason" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white mb-2" onchange="toggleResGameDisplay(this)">
+                  <option value="Casual">Casual / Comida</option>
+                  <option value="Partido">Ver Partido</option>
+                  <option value="Cumpleaños">Cumpleaños</option>
+                  <option value="Negocios">Negocios</option>
+                </select>
+
+                <div id="res-game-container" class="hidden">
+                  <select id="res-game" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white text-sm">
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+              </div>
+
+              <div class="flex gap-3 mt-4">
+                 <button onclick="toggleReservationForm()" class="flex-1 bg-gray-800 text-gray-400 font-bold py-3 rounded-lg hover:bg-gray-700">CANCELAR</button>
+                 <button onclick="submitReservation()" class="flex-[2] bg-yellow-600 hover:bg-yellow-500 text-black font-black py-3 rounded-lg shadow-lg transform active:scale-95 transition">
+                    💾 GUARDAR
+                 </button>
+              </div>
+          </div>
+      </div>
 
       <div id="manager-reservations-list" class="space-y-4">
         <!-- List injected via renderManagerReservations() logic but customized for full page -->
@@ -6181,8 +6240,7 @@ function renderManagerReservationsTab(container) {
   const listContainer = container.querySelector('#manager-reservations-list');
 
   const branchId = STATE.branch?.id;
-  // Show ALL future reservations for the tab, so we don't pass a specific date
-  // Or maybe we want to filter? For now let's get all for the branch.
+  // Show ALL future reservations for the tab
   const reservations = (window.db.getReservations && branchId)
     ? window.db.getReservations(branchId)
     : [];
@@ -6194,12 +6252,10 @@ function renderManagerReservationsTab(container) {
                 <p class="text-xl text-gray-400">No hay reservaciones activas</p>
             </div>
       `;
-    return;
-  }
-
-  listContainer.innerHTML = reservations.map(r => `
+  } else {
+    // Render list (kept same logic as before but compacted for brevity in replacement)
+    listContainer.innerHTML = reservations.map(r => `
       <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${r.vip === 'diamond' ? 'border-blue-400 bg-blue-900/10' : r.vip === 'blazin' ? 'border-orange-500 bg-orange-900/10' : 'border-gray-600'} flex justify-between items-center animate-fade-in text-white shadow-lg relative group">
-
                   <div class="flex-1">
                     <div class="flex items-center gap-3 mb-1">
                       <span class="font-black text-xl uppercase tracking-tight">${r.customerName}</span>
@@ -6207,28 +6263,39 @@ function renderManagerReservationsTab(container) {
                     </div>
 
                     <div class="flex items-center gap-4 text-sm text-gray-400 mb-2">
-                      <div class="flex items-center gap-1"><span class="text-white">📅</span> ${r.time} hrs</div>
-                      <div class="flex items-center gap-1"><span class="text-white">👥</span> ${r.pax} pax</div>
+                       <div class="flex items-center gap-1"><span class="text-white">📅</span> ${r.time} hrs</div>
+                       <div class="flex items-center gap-1"><span class="text-white">👥</span> ${r.pax} pax</div>
                     </div>
-
-                    <div class="bg-black/30 p-2 rounded border border-gray-700/50 inline-block">
-                      <div class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-0.5">MOTIVO / PARTIDO</div>
-                      <div class="text-white font-bold text-sm">
-                        ${r.game ? `📺 ${r.game}` : `✨ ${r.reason}`}
-                      </div>
-                    </div>
+                    
+                    <div class="text-sm text-gray-500 italic truncate max-w-[200px]">${r.game || r.reason || 'Sin motivo'}</div>
                   </div>
 
-                  <!--ACTIONS -->
-      <div class="flex flex-col gap-2">
-        <button onclick="if(confirm('¿Borrar reservación de ${r.customerName}?')) { window.db.removeReservation('${r.id}'); renderManagerDashboard('reservations'); }"
-          class="bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white px-3 py-2 rounded transition border border-red-900/50">
-          🗑️ Borrar
-        </button>
+                  <button onclick="window.deleteReservation('${r.id}')" class="bg-red-900/20 text-red-500 p-2 rounded hover:bg-red-900/40 transition">
+                    🗑️
+                  </button>
       </div>
-                </div >
-      `).join('');
-}
+    `).join('');
+  }
+};
+
+// Toggle Helper
+window.toggleReservationForm = function () {
+  const form = document.getElementById('reservation-form-container');
+  form.classList.toggle('hidden');
+
+  if (!form.classList.contains('hidden')) {
+    // Reset form when opening
+    document.getElementById('res-name').value = '';
+    document.getElementById('res-pax').value = '2';
+    document.getElementById('res-time').value = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    // Populate games
+    const gameSelect = document.getElementById('res-game');
+    if (window.generateGameOptions) {
+      gameSelect.innerHTML = window.generateGameOptions('');
+    }
+  }
+};
 
 // ------ HOSTESS DASHBOARD (TABBED UI) ------
 window.renderHostessDashboard = function () {
@@ -6246,7 +6313,7 @@ window.renderHostessDashboard = function () {
 
   const div = document.createElement('div');
   div.innerHTML = `
-      < !--Header -->
+                <!-- Header -->
                 <header class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md">
                   <div>
                     <h1 class="text-2xl font-black text-yellow-500 italic tracking-tighter">RECEPCIÓN</h1>
@@ -6255,7 +6322,7 @@ window.renderHostessDashboard = function () {
                   <button onclick="handleLogout()" class="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded border border-gray-700">CERRAR SESIÓN</button>
                 </header>
 
-                <!--Stat Bar-- >
+                <!-- Stat Bar -->
                 <div class="grid grid-cols-3 gap-2 p-2">
                   <div onclick="switchHostessTab('checkin')" class="bg-gray-900 border border-gray-800 p-2 rounded text-center cursor-pointer hover:bg-gray-800">
                     <div class="text-lg font-black text-white">📋</div>
@@ -6271,93 +6338,93 @@ window.renderHostessDashboard = function () {
                   </div>
                 </div>
 
-                <!--Tab Content: Check - In(Default)-- >
-      <div id="content-checkin" class="tab-content">
-        <div class="card bg-gray-900/50 border border-yellow-500/30">
-          <h2 class="text-xl font-black text-white mb-6 flex items-center gap-2">
-            📋 NUEVO CHECK-IN
-          </h2>
+                <!-- Tab Content: Check-In (Default) -->
+  <div id="content-checkin" class="tab-content">
+    <div class="card bg-gray-900/50 border border-yellow-500/30">
+      <h2 class="text-xl font-black text-white mb-6 flex items-center gap-2">
+        📋 NUEVO CHECK-IN
+      </h2>
 
-          <!-- Step 1: Customer Info -->
-          <div class="space-y-4 mb-6">
-            <label class="text-xs text-gray-500 mb-1 block uppercase font-bold tracking-widest">Paso 1: Datos del Cliente</label>
+      <!-- Step 1: Customer Info -->
+      <div class="space-y-4 mb-6">
+        <label class="text-xs text-gray-500 mb-1 block uppercase font-bold tracking-widest">Paso 1: Datos del Cliente</label>
 
-            <!-- Search Bar (New Client Flow) -->
-            <div class="relative">
-              <input type="text" id="customer-search"
-                class="w-full bg-black border border-gray-700 rounded-lg p-4 text-white text-lg font-bold focus:border-yellow-500 outline-none"
-                placeholder="🔍 Buscar Cliente (Nombre/Tel)" onkeyup="searchCustomer(this.value)">
+        <!-- Search Bar (New Client Flow) -->
+        <div class="relative">
+          <input type="text" id="customer-search"
+            class="w-full bg-black border border-gray-700 rounded-lg p-4 text-white text-lg font-bold focus:border-yellow-500 outline-none"
+            placeholder="🔍 Buscar Cliente (Nombre/Tel)" onkeyup="searchCustomer(this.value)">
 
-                <div id="search-results" class="hidden absolute top-full left-0 right-0 bg-gray-900 border border-gray-700 rounded-lg mt-1 z-50 max-h-60 overflow-y-auto shadow-2xl"></div>
+            <div id="search-results" class="hidden absolute top-full left-0 right-0 bg-gray-900 border border-gray-700 rounded-lg mt-1 z-50 max-h-60 overflow-y-auto shadow-2xl"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <input type="text" id="h-firstname" placeholder="NOMBRE" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
+            <input type="text" id="h-lastname" placeholder="APELLIDO PATERNO" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
+            </div>
+            <input type="text" id="h-lastname2" placeholder="APELLIDO MATERNO (Opcional)" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide w-full">
+
+              <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <div class="flex justify-between items-center">
+                  <span class="text-gray-400 text-sm font-bold uppercase">PERSONAS:</span>
+                  <div class="flex items-center gap-4">
+                    <button onclick="adjustPax(-1)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600">-</button>
+                    <span id="h-pax" class="text-2xl font-black text-white">2</span>
+                    <button onclick="adjustPax(1)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600">+</button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <input type="text" id="h-firstname" placeholder="NOMBRE" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
-                <input type="text" id="h-lastname" placeholder="APELLIDO PATERNO" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
+            <!-- Step 2: Assign Table -->
+            <div class="space-y-4">
+              <label class="text-xs text-gray-500 mb-1 block uppercase font-bold tracking-widest">Paso 2: Asignación</label>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="text-[10px] text-gray-500 mb-1 block uppercase">Mesa #</label>
+                  <input type="number" id="h-table" class="w-full bg-gray-900 text-white border border-gray-700 rounded p-4 text-center font-bold text-xl focus:border-green-500 outline-none" placeholder="#">
                 </div>
-                <input type="text" id="h-lastname2" placeholder="APELLIDO MATERNO (Opcional)" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide w-full">
-
-                  <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                    <div class="flex justify-between items-center">
-                      <span class="text-gray-400 text-sm font-bold uppercase">PERSONAS:</span>
-                      <div class="flex items-center gap-4">
-                        <button onclick="adjustPax(-1)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600">-</button>
-                        <span id="h-pax" class="text-2xl font-black text-white">2</span>
-                        <button onclick="adjustPax(1)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600">+</button>
-                      </div>
-                    </div>
-                  </div>
+                <div>
+                  <label class="text-[10px] text-gray-500 mb-1 block uppercase">Mesero</label>
+                  <select id="h-waiter" class="w-full bg-gray-900 text-white border border-gray-700 rounded p-4 font-bold text-sm h-[62px]">
+                    <option value="">Auto-Asignar</option>
+                    ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}">${w.name}</option>`).join('')}
+                  </select>
                 </div>
+              </div>
 
-                <!-- Step 2: Assign Table -->
-                <div class="space-y-4">
-                  <label class="text-xs text-gray-500 mb-1 block uppercase font-bold tracking-widest">Paso 2: Asignación</label>
-                  <div class="grid grid-cols-2 gap-4">
-                    <div>
-                      <label class="text-[10px] text-gray-500 mb-1 block uppercase">Mesa #</label>
-                      <input type="number" id="h-table" class="w-full bg-gray-900 text-white border border-gray-700 rounded p-4 text-center font-bold text-xl focus:border-green-500 outline-none" placeholder="#">
-                    </div>
-                    <div>
-                      <label class="text-[10px] text-gray-500 mb-1 block uppercase">Mesero</label>
-                      <select id="h-waiter" class="w-full bg-gray-900 text-white border border-gray-700 rounded p-4 font-bold text-sm h-[62px]">
-                        <option value="">Auto-Asignar</option>
-                        ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}">${w.name}</option>`).join('')}
-                      </select>
-                    </div>
-                  </div>
+              <button onclick="processHostessCheckIn()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-5 rounded-xl uppercase tracking-widest text-lg shadow-lg transform active:scale-95 transition mt-4">
+                ✅ INGRESAR MESA
+              </button>
 
-                  <button onclick="processHostessCheckIn()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-5 rounded-xl uppercase tracking-widest text-lg shadow-lg transform active:scale-95 transition mt-4">
-                    ✅ INGRESAR MESA
-                  </button>
+              <button onclick="addToWaitlist()" class="w-full bg-gray-800 border-2 border-gray-700 text-white font-bold py-3 rounded-lg uppercase tracking-widest text-sm hover:border-blue-500 transition mt-2">
+                ⏱️ Agregar a Lista de Espera
+              </button>
+            </div>
+        </div>
+      </div>
 
-                  <button onclick="addToWaitlist()" class="w-full bg-gray-800 border-2 border-gray-700 text-white font-bold py-3 rounded-lg uppercase tracking-widest text-sm hover:border-blue-500 transition mt-2">
-                    ⏱️ Agregar a Lista de Espera
-                  </button>
-                </div>
+      <!-- Tab Content: Tables (Active Visits) -->
+      <div id="content-tables" class="tab-content hidden">
+        <div class="card">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-white italic tracking-tighter">MESAS HABILITADAS</h2>
+
+            <div class="text-right">
+              <div class="text-yellow-500 font-bold text-xl leading-none">${currentCount} / ${totalCapacity}</div>
+              <div class="text-[10px] text-gray-400 uppercase tracking-widest">Ocupación</div>
             </div>
           </div>
 
-          <!-- Tab Content: Tables (Active Visits) -->
-          <div id="content-tables" class="tab-content hidden">
-            <div class="card">
-              <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-black text-white italic tracking-tighter">MESAS HABILITADAS</h2>
+          <!-- Filter -->
+          <div class="mb-4">
+            <select id="filter-waiter" onchange="filterTablesByWaiter()" class="w-full bg-gray-800 border-2 border-gray-700 rounded-lg p-3 text-white font-bold">
+              <option value="all">👁️ Ver Todas</option>
+              ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}">Mesero: ${w.name}</option>`).join('')}
+            </select>
+          </div>
 
-                <div class="text-right">
-                  <div class="text-yellow-500 font-bold text-xl leading-none">${currentCount} / ${totalCapacity}</div>
-                  <div class="text-[10px] text-gray-400 uppercase tracking-widest">Ocupación</div>
-                </div>
-              </div>
-
-              <!-- Filter -->
-              <div class="mb-4">
-                <select id="filter-waiter" onchange="filterTablesByWaiter()" class="w-full bg-gray-800 border-2 border-gray-700 rounded-lg p-3 text-white font-bold">
-                  <option value="all">👁️ Ver Todas</option>
-                  ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}">Mesero: ${w.name}</option>`).join('')}
-                </select>
-              </div>
-
-              ${activeVisits.length === 0 ? `
+          ${activeVisits.length === 0 ? `
           <div class="text-center py-12 text-gray-500">
              <div class="text-6xl mb-4">🍽️</div>
              <p>No hay mesas activas</p>
@@ -6423,14 +6490,14 @@ window.renderHostessDashboard = function () {
             `}).join('')}
           </div>
         `}
-            </div>
-          </div>
+        </div>
+      </div>
 
-          <!-- Tab Content: Waitlist - TAB SEPARADO -->
-          <div id="content-waitlist" class="tab-content hidden">
-            <div class="card">
-              <h3 class="text-xl mb-4">Cola de Espera (${waitlist.length})</h3>
-              ${waitlist.length === 0 ? `
+      <!-- Tab Content: Waitlist - TAB SEPARADO -->
+      <div id="content-waitlist" class="tab-content hidden">
+        <div class="card">
+          <h3 class="text-xl mb-4">Cola de Espera (${waitlist.length})</h3>
+          ${waitlist.length === 0 ? `
           <div class="text-center py-12">
             <div class="text-6xl mb-4">⏱️</div>
             <p class="text-xl text-secondary">No hay clientes en espera</p>
@@ -6480,39 +6547,39 @@ window.renderHostessDashboard = function () {
             `).join('')}
           </div>
         `}
-            </div>
-          </div>
+        </div>
+      </div>
 
-          <!-- Tab Content: Reservations - SOLO LECTURA -->
+      <!-- Tab Content: Reservations - SOLO LECTURA -->
 
-          <!-- BOTTOM NAVIGATION BAR -->
-          <nav class="bottom-nav">
-            <button onclick="switchHostessTab('checkin')" id="tab-checkin" class="bottom-nav-item active" style="position: relative;">
-              <span class="bottom-nav-icon">📋</span>
-              <span class="bottom-nav-label">Check-In</span>
-            </button>
-            <button onclick="switchHostessTab('tables')" id="tab-tables" class="bottom-nav-item" style="position: relative;">
-              <span class="bottom-nav-icon">🍽️</span>
-              <span class="bottom-nav-label">Mesas</span>
-              ${activeVisits.length > 0 ? `<span class="bottom-nav-badge">${activeVisits.length}</span>` : ''}
-            </button>
-            <button onclick="switchHostessTab('waitlist')" id="tab-waitlist" class="bottom-nav-item" style="position: relative;">
-              <span class="bottom-nav-icon">⏱️</span>
-              <span class="bottom-nav-label">Espera</span>
-              ${waitlist.length > 0 ? `<span class="bottom-nav-badge">${waitlist.length}</span>` : ''}
-            </button>
-            <button onclick="switchHostessTab('reservations')" id="tab-reservations" class="bottom-nav-item" style="position: relative;">
-              <span class="bottom-nav-icon">📅</span>
-              <span class="bottom-nav-label">Reservas</span>
-              ${reservations.length > 0 ? `<span class="bottom-nav-badge">${reservations.length}</span>` : ''}
-            </button>
-          </nav>
+      <!-- BOTTOM NAVIGATION BAR -->
+      <nav class="bottom-nav">
+        <button onclick="switchHostessTab('checkin')" id="tab-checkin" class="bottom-nav-item active" style="position: relative;">
+          <span class="bottom-nav-icon">📋</span>
+          <span class="bottom-nav-label">Check-In</span>
+        </button>
+        <button onclick="switchHostessTab('tables')" id="tab-tables" class="bottom-nav-item" style="position: relative;">
+          <span class="bottom-nav-icon">🍽️</span>
+          <span class="bottom-nav-label">Mesas</span>
+          ${activeVisits.length > 0 ? `<span class="bottom-nav-badge">${activeVisits.length}</span>` : ''}
+        </button>
+        <button onclick="switchHostessTab('waitlist')" id="tab-waitlist" class="bottom-nav-item" style="position: relative;">
+          <span class="bottom-nav-icon">⏱️</span>
+          <span class="bottom-nav-label">Espera</span>
+          ${waitlist.length > 0 ? `<span class="bottom-nav-badge">${waitlist.length}</span>` : ''}
+        </button>
+        <button onclick="switchHostessTab('reservations')" id="tab-reservations" class="bottom-nav-item" style="position: relative;">
+          <span class="bottom-nav-icon">📅</span>
+          <span class="bottom-nav-label">Reservas</span>
+          ${reservations.length > 0 ? `<span class="bottom-nav-badge">${reservations.length}</span>` : ''}
+        </button>
+      </nav>
 
-          <!-- DuckOS Footer -->
-          <div class="dashboard-footer">
-            Powered by <span style="color: #F97316;">DuckOS</span> | Bar & Restaurant Solutions
-          </div>
-          `;
+      <!-- DuckOS Footer -->
+      <div class="dashboard-footer">
+        Powered by <span style="color: #F97316;">DuckOS</span> | Bar & Restaurant Solutions
+      </div>
+      `;
 
   // Add class for bottom nav padding
   div.className = 'p-4 max-w-6xl mx-auto has-bottom-nav';
@@ -6585,26 +6652,26 @@ function renderManagerGameRequests(container) {
   }
 
   container.innerHTML = requests.map((r) => `
-          <div class="bg-gray-800 p-3 rounded-lg border-l-4 border-blue-500 mb-2 flex justify-between items-center animate-fade-in">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="text-blue-400 font-bold text-[10px] uppercase tracking-wider">SOLICITUD DE PARTIDO</span>
-                <span class="text-xs text-gray-500">• ${r.time}</span>
-              </div>
-              <div class="font-bold text-white text-base">
-                ${r.gameName}
-              </div>
-              <div class="text-xs text-secondary mt-1">
-                Mesa ${r.tableName} (${r.waiterName})
-              </div>
-            </div>
-            <div>
-              <button onclick="window.db.removeGameRequest('${r.id}')" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 p-2 rounded-full transition-colors">
-                ✕
-              </button>
-            </div>
+      <div class="bg-gray-800 p-3 rounded-lg border-l-4 border-blue-500 mb-2 flex justify-between items-center animate-fade-in">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-blue-400 font-bold text-[10px] uppercase tracking-wider">SOLICITUD DE PARTIDO</span>
+            <span class="text-xs text-gray-500">• ${r.time}</span>
           </div>
-          `).join('');
+          <div class="font-bold text-white text-base">
+            ${r.gameName}
+          </div>
+          <div class="text-xs text-secondary mt-1">
+            Mesa ${r.tableName} (${r.waiterName})
+          </div>
+        </div>
+        <div>
+          <button onclick="window.db.removeGameRequest('${r.id}')" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 p-2 rounded-full transition-colors">
+            ✕
+          </button>
+        </div>
+      </div>
+      `).join('');
 }
 
 // NEW: Render Reservations (Real Data)
@@ -6623,19 +6690,19 @@ function renderManagerReservations(container) {
   }
 
   container.innerHTML = reservations.map(r => `
-          <div class="bg-gray-800 p-3 rounded-lg border-l-4 ${r.vip ? 'border-yellow-500' : 'border-gray-600'} flex justify-between items-center mb-2">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="font-bold text-white text-base">${r.customerName || 'Cliente'}</span>
-                ${r.vip === 'diamond' ? '💎' : r.vip === 'blazin' ? '🔥' : ''}
-              </div>
-              <div class="text-xs text-gray-400">
-                ${r.date || 'Hoy'} • ${r.time || '--:--'} • ${r.pax || 2} Pax
-              </div>
-              <div class="text-xs text-blue-300 mt-1">
-                🎯 ${r.notes || '---'}
-              </div>
-            </div>
+      <div class="bg-gray-800 p-3 rounded-lg border-l-4 ${r.vip ? 'border-yellow-500' : 'border-gray-600'} flex justify-between items-center mb-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-white text-base">${r.customerName || 'Cliente'}</span>
+            ${r.vip === 'diamond' ? '💎' : r.vip === 'blazin' ? '🔥' : ''}
           </div>
-          `).join('');
+          <div class="text-xs text-gray-400">
+            ${r.date || 'Hoy'} • ${r.time || '--:--'} • ${r.pax || 2} Pax
+          </div>
+          <div class="text-xs text-blue-300 mt-1">
+            🎯 ${r.notes || '---'}
+          </div>
+        </div>
+      </div>
+      `).join('');
 }
