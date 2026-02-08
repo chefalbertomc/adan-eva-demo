@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.6 (Manager: Relative Search + Cleaner VIP)
+        v22.7 (Manager: Datos Completos Reserva + Formato Juegos)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -1452,10 +1452,9 @@ window.generateGameOptions = function (selected) {
     const matchName = m.match || `${m.homeTeam} vs ${m.awayTeam}`;
     // Fallback if matchName is undefined/null
     const val = matchName || 'Evento Sin Nombre';
-    // Format date for display (e.g., 2023-10-25)
-    const displayDate = m.date === today ? 'HOY' : m.date;
-
-    return `<option value="${val}" ${val === selected ? 'selected' : ''}>${val} (${displayDate} ${m.time})</option>`;
+    // Format: "YYYY-MM-DD HH:mm | LEAGUE | Team vs Team"
+    // User request: "fecha hora deporte y equipos"
+    return `<option value="${val}" ${val === selected ? 'selected' : ''}>${m.date} ${m.time} • ${m.league || 'General'} • ${val}</option>`;
   }).join('');
 
   // If the currently selected game is NOT in the list (past game or validation error), show it with warning
@@ -6255,13 +6254,29 @@ function renderManagerReservationsTab(container) {
 
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Pax</label>
-                  <input type="number" id="res-pax" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white outline-none" value="2">
+                  <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Fecha</label>
+                  <input type="date" id="res-date" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white outline-none">
                 </div>
                 <div>
                   <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Hora</label>
                   <input type="time" id="res-time" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white outline-none">
                 </div>
+              </div>
+
+               <div class="grid grid-cols-2 gap-4">
+                 <div>
+                    <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Pax</label>
+                    <input type="number" id="res-pax" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white outline-none" value="2">
+                 </div>
+                 <div>
+                    <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Teléfono (10 dígitos)</label>
+                    <input type="tel" id="res-phone" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white outline-none" placeholder="##########" maxlength="10">
+                 </div>
+              </div>
+
+              <div>
+                <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Observaciones (Opcional)</label>
+                <textarea id="res-notes" rows="2" maxlength="50" class="w-full bg-black/50 border border-gray-700 rounded p-3 text-white outline-none resize-none" placeholder="Ej. Mesa en terraza, cumpleaños... (Max 50)"></textarea>
               </div>
 
               <div>
@@ -6330,12 +6345,14 @@ function renderManagerReservationsTab(container) {
                       ${r.vip === 'diamond' ? '<span class="bg-blue-900 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500">DIAMOND</span>' : r.vip === 'blazin' ? '<span class="bg-orange-900 text-orange-300 text-[10px] font-bold px-2 py-0.5 rounded border border-orange-500">BLAZIN</span>' : ''}
                     </div>
 
-                    <div class="flex items-center gap-4 text-sm text-gray-400 mb-2">
-                       <div class="flex items-center gap-1"><span class="text-white">📅</span> ${r.time} hrs</div>
+                    <div class="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-2">
+                       <div class="flex items-center gap-1"><span class="text-white">📅</span> ${r.date} ${r.time}</div>
                        <div class="flex items-center gap-1"><span class="text-white">👥</span> ${r.pax} pax</div>
+                       ${r.phone ? `<div class="flex items-center gap-1 text-blue-300"><span class="text-white">📞</span> ${r.phone}</div>` : ''}
                     </div>
                     
-                    <div class="text-sm text-gray-500 italic truncate max-w-[200px]">${r.game || r.reason || 'Sin motivo'}</div>
+                    <div class="text-sm text-gray-500 italic truncate max-w-[300px] mb-1">${r.game || r.reason || 'Sin motivo'}</div>
+                    ${r.notes ? `<div class="text-xs text-yellow-500 bg-yellow-900/20 p-1 rounded inline-block border border-yellow-700/50">📝 ${r.notes}</div>` : ''}
                   </div>
 
                   <button onclick="window.deleteReservation('${r.id}')" class="bg-red-900/20 text-red-500 p-2 rounded hover:bg-red-900/40 transition">
@@ -6354,8 +6371,11 @@ window.toggleReservationForm = function () {
   if (!form.classList.contains('hidden')) {
     // Reset form when opening
     document.getElementById('res-name').value = '';
+    document.getElementById('res-date').value = new Date().toLocaleDateString('en-CA'); // Default Today
     document.getElementById('res-pax').value = '2';
     document.getElementById('res-time').value = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('res-phone').value = '';
+    document.getElementById('res-notes').value = '';
 
     // Populate games
     const gameSelect = document.getElementById('res-game');
@@ -6780,14 +6800,17 @@ function renderManagerReservations(container) {
 // ==========================================
 window.submitManagerReservation = function () {
   const name = document.getElementById('res-name').value;
-  const pax = document.getElementById('res-pax').value;
+  const date = document.getElementById('res-date').value; // NEW
   const time = document.getElementById('res-time').value;
+  const pax = document.getElementById('res-pax').value;
+  const phone = document.getElementById('res-phone').value; // NEW
+  const notes = document.getElementById('res-notes').value; // NEW
   const vip = document.getElementById('res-vip').value;
   const reason = document.getElementById('res-reason').value;
   const game = document.getElementById('res-game').value;
 
-  if (!name || !time) {
-    alert('Por favor complete nombre y hora.');
+  if (!name || !date || !time) {
+    alert('Por favor complete nombre, fecha y hora.');
     return;
   }
 
@@ -6804,11 +6827,13 @@ window.submitManagerReservation = function () {
     id: Date.now().toString(),
     customerName: name,
     pax: pax,
+    phone: phone, // NEW
     time: time,
+    date: date, // NEW (Overrides 'today' default)
+    notes: notes, // NEW
     vip: vip,
     reason: reason,
     game: reason === 'Partido' ? game : '',
-    date: new Date().toLocaleDateString('en-CA'),
     status: 'active',
     branchId: STATE.branch ? STATE.branch.id : 'branch-1'
   };
