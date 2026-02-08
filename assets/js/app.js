@@ -223,7 +223,7 @@ function renderLogin() {
 
       <!-- VERSION TAG -->
       <div class="text-[10px] text-gray-600 mt-2">
-        v22.4 (Manager: VIP Gate + Search + Sorted Games)
+        v22.5 (Manager: Clean Tabs - No Overlaps)
         <br>
         <div class="flex gap-2 justify-center mt-2">
             <button onclick="window.location.reload(true)" style="background: #333; color: white; padding: 5px 10px; border: none; border-radius: 4px;">
@@ -4546,22 +4546,6 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
 
                 <main id="manager-content" class="p-3 animate-fade-in"></main>
 
-                <!-- GAME REQUESTS SECTION (NEW) -->
-                <section id="manager-game-requests" class="p-4 border-t border-gray-800 bg-gray-900">
-                  <h3 class="text-blue-400 font-bold mb-4 flex items-center gap-2">
-                    📺 SOLICITUDES DE TV <span class="bg-gray-800 text-xs px-2 py-0.5 rounded text-white">${window.db.getDailyInfo().gameRequests?.length || 0}</span>
-                  </h3>
-                  <div id="game-requests-list" class="space-y-3"></div>
-                </section>
-
-                <!-- RESERVATIONS SECTION -->
-                <section id="manager-reservations" class="p-4 border-t border-gray-800 bg-gray-900 mb-20">
-                  <h3 class="text-yellow-500 font-bold mb-4 flex items-center gap-2">
-                    🎟️ RESERVACIONES 
-                  </h3>
-                  <div id="reservations-list" class="space-y-3"></div>
-                </section>
-
                 <!-- BOTTOM NAVIGATION - GERENTE -->
                 <nav class="bottom-nav">
                   <button onclick="renderManagerDashboard('tables')" id="managertab-tables" class="bottom-nav-item ${activeTab === 'tables' ? 'active' : ''}" style="position: relative; min-width: 60px;">
@@ -4602,17 +4586,6 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
   else if (activeTab === 'games') renderManagerGamesTab(content);
   else if (activeTab === 'reservations') renderManagerReservationsTab(content); // NEW TAB
   else if (activeTab === 'reports') renderManagerReportsTab(content);
-
-  // ALWAYS RENDER RESERVATIONS AT BOTTOM (Only if NOT in reservations tab to avoid dupes)
-  if (activeTab !== 'reservations') {
-    // Small widgets at bottom
-    renderManagerGameRequests(div.querySelector('#game-requests-list'));
-    renderManagerReservations(div.querySelector('#reservations-list'));
-  } else {
-    // Hide the bottom widget container if we represent the full page
-    const bottomWidget = div.querySelector('#manager-reservations');
-    if (bottomWidget) bottomWidget.style.display = 'none';
-  }
 };
 
 // NEW: Render Reservations
@@ -4649,6 +4622,12 @@ function renderManagerGameRequests(container) {
                 </div>
                 `;
   container.appendChild(div);
+
+  // NEW: Render requests if container exists (Dynamic Injection)
+  const reqContainer = div.querySelector('#manager-requests-container');
+  if (reqContainer) {
+    renderManagerGameRequests(reqContainer);
+  }
 }
 
 function renderManagerTablesTab(container) {
@@ -6804,54 +6783,54 @@ function renderManagerReservations(container) {
 // ==========================================
 // MANAGER RESERVATION LOGIC (v22.4)
 // ==========================================
-window.submitManagerReservation = function() {
-    const name = document.getElementById('res-name').value;
-    const pax = document.getElementById('res-pax').value;
-    const time = document.getElementById('res-time').value;
-    const vip = document.getElementById('res-vip').value;
-    const reason = document.getElementById('res-reason').value;
-    const game = document.getElementById('res-game').value;
+window.submitManagerReservation = function () {
+  const name = document.getElementById('res-name').value;
+  const pax = document.getElementById('res-pax').value;
+  const time = document.getElementById('res-time').value;
+  const vip = document.getElementById('res-vip').value;
+  const reason = document.getElementById('res-reason').value;
+  const game = document.getElementById('res-game').value;
 
-    if (!name || !time) {
-        alert('Por favor complete nombre y hora.');
-        return;
+  if (!name || !time) {
+    alert('Por favor complete nombre y hora.');
+    return;
+  }
+
+  // AUTH GATE FOR NON-VIP
+  if (!vip) {
+    const password = prompt("⚠️ Cliente SIN Categoría VIP.\n\nPara autorizar expcecionalmente esta reservación, ingrese su CONTRASEÑA DE GERENTE:");
+    if (password !== 'admin123') { // Hardcoded for now as requested
+      alert("⛔ CONTRASEÑA INCORRECTA. No se puede crear la reservación.");
+      return;
     }
+  }
 
-    // AUTH GATE FOR NON-VIP
-    if (!vip) {
-        const password = prompt("⚠️ Cliente SIN Categoría VIP.\n\nPara autorizar expcecionalmente esta reservación, ingrese su CONTRASEÑA DE GERENTE:");
-        if (password !== 'admin123') { // Hardcoded for now as requested
-            alert("⛔ CONTRASEÑA INCORRECTA. No se puede crear la reservación.");
-            return;
-        }
-    }
+  const data = {
+    id: Date.now().toString(),
+    customerName: name,
+    pax: pax,
+    time: time,
+    vip: vip,
+    reason: reason,
+    game: reason === 'Partido' ? game : '',
+    date: new Date().toLocaleDateString('en-CA'),
+    status: 'active',
+    branchId: STATE.branch ? STATE.branch.id : 'branch-1'
+  };
 
-    const data = {
-        id: Date.now().toString(),
-        customerName: name,
-        pax: pax,
-        time: time,
-        vip: vip,
-        reason: reason,
-        game: reason === 'Partido' ? game : '',
-        date: new Date().toLocaleDateString('en-CA'),
-        status: 'active',
-        branchId: STATE.branch ? STATE.branch.id : 'branch-1'
-    };
-
-    if(window.db && window.db.addReservation) {
-        window.db.addReservation(data);
-        alert("✅ Reservación creada exitosamente.");
-        toggleReservationForm();
-        // Refresh by re-rendering tab if possible, or reload
-        const container = document.getElementById('content-reservations');
-        if(container && typeof renderManagerReservationsTab === 'function') {
-            renderManagerReservationsTab(container);
-        } else {
-             window.location.reload(); 
-        }
+  if (window.db && window.db.addReservation) {
+    window.db.addReservation(data);
+    alert("✅ Reservación creada exitosamente.");
+    toggleReservationForm();
+    // Refresh by re-rendering tab if possible, or reload
+    const container = document.getElementById('content-reservations');
+    if (container && typeof renderManagerReservationsTab === 'function') {
+      renderManagerReservationsTab(container);
     } else {
-        console.error("DB not linked");
-        alert("Error de base de datos");
+      window.location.reload();
     }
+  } else {
+    console.error("DB not linked");
+    alert("Error de base de datos");
+  }
 };
