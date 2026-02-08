@@ -6244,46 +6244,47 @@ window.submitReservation = function () {
     reason: document.getElementById('res-reason').value,
     game: document.getElementById('res-reason').value === 'Partido' ? document.getElementById('res-game').value : '',
     date: new Date().toLocaleDateString('en-CA') // Today
-  window.db.addReservation(data);
-    document.getElementById('reservation-modal').classList.add('hidden');
   };
+  window.db.addReservation(data);
+  document.getElementById('reservation-modal').classList.add('hidden');
+};
 
-  // Manager Check-In: Assign Table to Reservation
-  window.managerCheckInReservation = function (resId) {
-    const branchId = STATE.branch?.id;
-    const allRes = window.db.getReservations(branchId);
-    const res = allRes.find(r => r.id === resId);
+// Manager Check-In: Assign Table to Reservation
+window.managerCheckInReservation = function (resId) {
+  const branchId = STATE.branch?.id;
+  const allRes = window.db.getReservations(branchId);
+  const res = allRes.find(r => r.id === resId);
 
-    if (!res) {
-      alert('Reservación no encontrada');
-      return;
+  if (!res) {
+    alert('Reservación no encontrada');
+    return;
+  }
+
+  // Get available tables and waiters
+  const availableTables = [];
+  for (let i = 1; i <= 20; i++) {
+    if (!window.db.isTableOccupied(i, branchId)) {
+      availableTables.push(i);
     }
+  }
 
-    // Get available tables and waiters
-    const availableTables = [];
-    for (let i = 1; i <= 20; i++) {
-      if (!window.db.isTableOccupied(i, branchId)) {
-        availableTables.push(i);
-      }
-    }
+  const waiters = window.db.data.users.filter(u => u.role === 'waiter' && u.branchId === branchId);
 
-    const waiters = window.db.data.users.filter(u => u.role === 'waiter' && u.branchId === branchId);
+  if (availableTables.length === 0) {
+    alert('❌ No hay mesas disponibles');
+    return;
+  }
 
-    if (availableTables.length === 0) {
-      alert('❌ No hay mesas disponibles');
-      return;
-    }
+  if (waiters.length === 0) {
+    alert('❌ No hay meseros disponibles');
+    return;
+  }
 
-    if (waiters.length === 0) {
-      alert('❌ No hay meseros disponibles');
-      return;
-    }
-
-    // Create modal
-    const modal = document.createElement('div');
-    modal.id = 'manager-checkin-modal';
-    modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4';
-    modal.innerHTML = `
+  // Create modal
+  const modal = document.createElement('div');
+  modal.id = 'manager-checkin-modal';
+  modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4';
+  modal.innerHTML = `
     <div class="bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-700 shadow-2xl">
       <h3 class="text-xl font-black text-white mb-4">✅ ASIGNAR MESA</h3>
       
@@ -6320,75 +6321,75 @@ window.submitReservation = function () {
     </div>
   `;
 
-    document.body.appendChild(modal);
+  document.body.appendChild(modal);
+};
+
+window.confirmManagerCheckIn = function (resId) {
+  const tableNum = document.getElementById('manager-table-select').value;
+  const waiterId = document.getElementById('manager-waiter-select').value;
+
+  if (!tableNum || !waiterId) {
+    alert('Por favor selecciona mesa y mesero');
+    return;
+  }
+
+  const branchId = STATE.branch?.id;
+  const allRes = window.db.getReservations(branchId);
+  const res = allRes.find(r => r.id === resId);
+
+  if (!res) {
+    alert('Error: Reservación no encontrada');
+    return;
+  }
+
+  // Create visit data
+  const visitData = {
+    table: parseInt(tableNum),
+    waiterId: waiterId,
+    customerName: res.customerName,
+    pax: res.pax,
+    branchId: branchId,
+    status: 'active'
   };
 
-  window.confirmManagerCheckIn = function (resId) {
-    const tableNum = document.getElementById('manager-table-select').value;
-    const waiterId = document.getElementById('manager-waiter-select').value;
+  // Create visit
+  const newVisit = window.db.createVisit(visitData);
 
-    if (!tableNum || !waiterId) {
-      alert('Por favor selecciona mesa y mesero');
-      return;
-    }
+  // Mark reservation as completed
+  window.db.updateReservation(resId, {
+    status: 'completed',
+    completedAt: new Date().toISOString()
+  });
 
-    const branchId = STATE.branch?.id;
-    const allRes = window.db.getReservations(branchId);
-    const res = allRes.find(r => r.id === resId);
+  // Close modal
+  closeManagerCheckInModal();
 
-    if (!res) {
-      alert('Error: Reservación no encontrada');
-      return;
-    }
+  // Refresh Manager dashboard
+  if (window.renderManagerDashboard) {
+    window.renderManagerDashboard('reservations');
+  }
 
-    // Create visit data
-    const visitData = {
-      table: parseInt(tableNum),
-      waiterId: waiterId,
-      customerName: res.customerName,
-      pax: res.pax,
-      branchId: branchId,
-      status: 'active'
-    };
+  alert(`✅ Mesa ${tableNum} asignada a ${res.customerName}`);
+};
 
-    // Create visit
-    const newVisit = window.db.createVisit(visitData);
+window.closeManagerCheckInModal = function () {
+  const modal = document.getElementById('manager-checkin-modal');
+  if (modal) modal.remove();
+};
 
-    // Mark reservation as completed
-    window.db.updateReservation(resId, {
-      status: 'completed',
-      completedAt: new Date().toISOString()
-    });
+// ==========================================
+// MANAGER RESERVATIONS TAB (FULL CRUD)
+// ==========================================
+function renderManagerReservationsTab(container) {
+  // Default Date: Today
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  // Check if a date is already stored in a global/temp state or use today
+  // For now, we'll just re-read the input if it exists, or default
+  let currentDate = todayStr;
+  const existingInput = document.getElementById('manager-date-filter');
+  if (existingInput) currentDate = existingInput.value;
 
-    // Close modal
-    closeManagerCheckInModal();
-
-    // Refresh Manager dashboard
-    if (window.renderManagerDashboard) {
-      window.renderManagerDashboard('reservations');
-    }
-
-    alert(`✅ Mesa ${tableNum} asignada a ${res.customerName}`);
-  };
-
-  window.closeManagerCheckInModal = function () {
-    const modal = document.getElementById('manager-checkin-modal');
-    if (modal) modal.remove();
-  };
-
-  // ==========================================
-  // MANAGER RESERVATIONS TAB (FULL CRUD)
-  // ==========================================
-  function renderManagerReservationsTab(container) {
-    // Default Date: Today
-    const todayStr = new Date().toLocaleDateString('en-CA');
-    // Check if a date is already stored in a global/temp state or use today
-    // For now, we'll just re-read the input if it exists, or default
-    let currentDate = todayStr;
-    const existingInput = document.getElementById('manager-date-filter');
-    if (existingInput) currentDate = existingInput.value;
-
-    container.innerHTML = `
+  container.innerHTML = `
       <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-black text-white italic tracking-tighter">ADMINISTRAR RESERVACIONES</h2>
           <button onclick="toggleReservationForm()" class="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-black shadow-lg flex items-center gap-2 transform active:scale-95 transition">
@@ -6497,79 +6498,79 @@ window.submitReservation = function () {
       </div>
     `;
 
-    // Generate Game Options
-    const gameSelect = container.querySelector('#res-game');
-    if (window.generateGameOptions && gameSelect) {
-      gameSelect.innerHTML = window.generateGameOptions('');
-    }
+  // Generate Game Options
+  const gameSelect = container.querySelector('#res-game');
+  if (window.generateGameOptions && gameSelect) {
+    gameSelect.innerHTML = window.generateGameOptions('');
+  }
 
-    // Re-use the list renderer but point to our new container
-    const listContainer = container.querySelector('#manager-reservations-list');
+  // Re-use the list renderer but point to our new container
+  const listContainer = container.querySelector('#manager-reservations-list');
 
-    const branchId = STATE.branch?.id;
-    // Show ALL future reservations for the tab (or filter by date if we added that feature)
-    // For now, Manager sees all, but let's sort by date/time
-    let reservations = (window.db.getReservations && branchId)
-      ? window.db.getReservations(branchId)
-      : [];
+  const branchId = STATE.branch?.id;
+  // Show ALL future reservations for the tab (or filter by date if we added that feature)
+  // For now, Manager sees all, but let's sort by date/time
+  let reservations = (window.db.getReservations && branchId)
+    ? window.db.getReservations(branchId)
+    : [];
 
-    // FILTER BY SELECTED DATE from Input
-    if (reservations.length > 0) {
-      // Use the input value we captured at the start
-      reservations = reservations.filter(r => r.date === currentDate);
-    }
+  // FILTER BY SELECTED DATE from Input
+  if (reservations.length > 0) {
+    // Use the input value we captured at the start
+    reservations = reservations.filter(r => r.date === currentDate);
+  }
 
-    if (reservations.length === 0) {
-      listContainer.innerHTML = `
+  if (reservations.length === 0) {
+    listContainer.innerHTML = `
       <div class="text-center py-12 opacity-50">
                 <div class="text-6xl mb-4">📭</div>
                 <p class="text-xl text-gray-400">No hay reservaciones para:<br><span class="text-yellow-500 font-bold">${currentDate}</span></p>
             </div>
       `;
-    } else {
-      // Sort: Date then Time
-      reservations.sort((a, b) => {
-        if (a.date !== b.date) return a.date.localeCompare(b.date);
-        return a.time.localeCompare(b.time);
-      });
+  } else {
+    // Sort: Date then Time
+    reservations.sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.time.localeCompare(b.time);
+    });
 
-      const now = new Date();
-      const currentHours = now.getHours();
-      const currentMinutes = now.getMinutes();
-      const currentTimeVal = currentHours * 60 + currentMinutes;
-      // Use the SELECTED DATE for "Today" comparison logic
-      // If selected date != real today, we shouldn't show "late" status based on current time,
-      // but for simplicity we kept the logic. Ideally we check if date === realToday.
-      const realToday = new Date().toLocaleDateString('en-CA');
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTimeVal = currentHours * 60 + currentMinutes;
+    // Use the SELECTED DATE for "Today" comparison logic
+    // If selected date != real today, we shouldn't show "late" status based on current time,
+    // but for simplicity we kept the logic. Ideally we check if date === realToday.
+    const realToday = new Date().toLocaleDateString('en-CA');
 
-      listContainer.innerHTML = reservations.map(r => {
-        // Traffic Light Logic (Same as Hostess)
-        const [resH, resM] = r.time.split(':').map(Number);
-        const resTimeVal = resH * 60 + resM;
-        const diff = currentTimeVal - resTimeVal;
+    listContainer.innerHTML = reservations.map(r => {
+      // Traffic Light Logic (Same as Hostess)
+      const [resH, resM] = r.time.split(':').map(Number);
+      const resTimeVal = resH * 60 + resM;
+      const diff = currentTimeVal - resTimeVal;
 
-        let statusColor = 'border-green-500';
-        let statusIcon = '🟢';
-        let statusText = 'A Tiempo';
+      let statusColor = 'border-green-500';
+      let statusIcon = '🟢';
+      let statusText = 'A Tiempo';
 
-        // Only apply traffic light if looking at TODAY's reservations
-        if (r.date === realToday) {
-          if (diff > 30) {
-            statusColor = 'border-red-600';
-            statusIcon = '🔴';
-            statusText = 'Vencida (>30min)';
-          } else if (diff > 0) {
-            statusColor = 'border-yellow-500';
-            statusIcon = '🟡';
-            statusText = 'Retraso Permitido';
-          }
-        } else if (r.date < realToday) {
-          statusColor = 'border-red-900';
-          statusIcon = '⚫';
-          statusText = 'Fecha Pasada';
+      // Only apply traffic light if looking at TODAY's reservations
+      if (r.date === realToday) {
+        if (diff > 30) {
+          statusColor = 'border-red-600';
+          statusIcon = '🔴';
+          statusText = 'Vencida (>30min)';
+        } else if (diff > 0) {
+          statusColor = 'border-yellow-500';
+          statusIcon = '🟡';
+          statusText = 'Retraso Permitido';
         }
+      } else if (r.date < realToday) {
+        statusColor = 'border-red-900';
+        statusIcon = '⚫';
+        statusText = 'Fecha Pasada';
+      }
 
-        return `
+      return `
       <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${statusColor} shadow-lg relative animate-fade-in group">
                   <div class="flex justify-between items-start mb-2">
                     <div>
@@ -6604,73 +6605,73 @@ window.submitReservation = function () {
                   </button>
       </div>
     `}).join('');
-    }
-  };
+  }
+};
 
-  // NEW: Render Hostess Reservation List
-  window.renderHostessReservationList = function (dateFilter) {
-    const listContainer = document.getElementById('hostess-reservations-list');
-    if (!listContainer) return;
+// NEW: Render Hostess Reservation List
+window.renderHostessReservationList = function (dateFilter) {
+  const listContainer = document.getElementById('hostess-reservations-list');
+  if (!listContainer) return;
 
-    // Default to today if no date provided
-    if (!dateFilter) {
-      dateFilter = new Date().toLocaleDateString('en-CA');
-      const input = document.getElementById('hostess-date-filter');
-      if (input) input.value = dateFilter;
-    }
+  // Default to today if no date provided
+  if (!dateFilter) {
+    dateFilter = new Date().toLocaleDateString('en-CA');
+    const input = document.getElementById('hostess-date-filter');
+    if (input) input.value = dateFilter;
+  }
 
-    const branchId = STATE.branch?.id;
-    let reservations = (window.db.getReservations && branchId)
-      ? window.db.getReservations(branchId)
-      : [];
+  const branchId = STATE.branch?.id;
+  let reservations = (window.db.getReservations && branchId)
+    ? window.db.getReservations(branchId)
+    : [];
 
-    if (reservations.length > 0) {
-      reservations = reservations.filter(r => r.date === dateFilter);
-    }
+  if (reservations.length > 0) {
+    reservations = reservations.filter(r => r.date === dateFilter);
+  }
 
-    if (reservations.length === 0) {
-      listContainer.innerHTML = `
+  if (reservations.length === 0) {
+    listContainer.innerHTML = `
             <div class="text-center py-8 text-gray-500">
                 <div class="text-4xl mb-2">📅</div>
                 <p>No hay reservaciones para: ${dateFilter}</p>
             </div>
         `;
-      return;
+    return;
+  }
+
+  reservations.sort((a, b) => a.time.localeCompare(b.time));
+  const now = new Date();
+  const currentHours = now.getHours();
+  const currentMinutes = now.getMinutes();
+  const currentTimeVal = currentHours * 60 + currentMinutes;
+  const realToday = new Date().toLocaleDateString('en-CA');
+
+  listContainer.innerHTML = reservations.map(r => {
+    const [resH, resM] = r.time.split(':').map(Number);
+    const resTimeVal = resH * 60 + resM;
+    const diff = currentTimeVal - resTimeVal;
+
+    let statusColor = 'border-green-500';
+    let statusIcon = '🟢';
+    let statusText = 'A Tiempo';
+
+    if (r.date === realToday) {
+      if (diff > 30) {
+        statusColor = 'border-red-600';
+        statusIcon = '🔴';
+        statusText = 'Vencida (>30min)';
+      } else if (diff > 0) {
+        statusColor = 'border-yellow-500';
+        statusIcon = '🟡';
+        statusText = 'Retraso Permitido';
+      }
+    } else if (r.date < realToday) {
+      statusColor = 'border-red-900';
+      statusIcon = '⚫';
+      statusText = 'Fecha Pasada';
     }
 
-    reservations.sort((a, b) => a.time.localeCompare(b.time));
-    const now = new Date();
-    const currentHours = now.getHours();
-    const currentMinutes = now.getMinutes();
-    const currentTimeVal = currentHours * 60 + currentMinutes;
-    const realToday = new Date().toLocaleDateString('en-CA');
-
-    listContainer.innerHTML = reservations.map(r => {
-      const [resH, resM] = r.time.split(':').map(Number);
-      const resTimeVal = resH * 60 + resM;
-      const diff = currentTimeVal - resTimeVal;
-
-      let statusColor = 'border-green-500';
-      let statusIcon = '🟢';
-      let statusText = 'A Tiempo';
-
-      if (r.date === realToday) {
-        if (diff > 30) {
-          statusColor = 'border-red-600';
-          statusIcon = '🔴';
-          statusText = 'Vencida (>30min)';
-        } else if (diff > 0) {
-          statusColor = 'border-yellow-500';
-          statusIcon = '🟡';
-          statusText = 'Retraso Permitido';
-        }
-      } else if (r.date < realToday) {
-        statusColor = 'border-red-900';
-        statusIcon = '⚫';
-        statusText = 'Fecha Pasada';
-      }
-
-      return `
+    return `
         <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${statusColor} shadow-lg relative animate-fade-in group">
             <div class="flex justify-between items-start mb-2">
                 <div>
@@ -6697,47 +6698,47 @@ window.submitReservation = function () {
             </button>
         </div>
         `;
-    }).join('');
-  };
+  }).join('');
+};
 
-  // Toggle Helper
-  window.toggleReservationForm = function () {
-    const form = document.getElementById('reservation-form-container');
-    form.classList.toggle('hidden');
+// Toggle Helper
+window.toggleReservationForm = function () {
+  const form = document.getElementById('reservation-form-container');
+  form.classList.toggle('hidden');
 
-    if (!form.classList.contains('hidden')) {
-      // Reset form when opening
-      document.getElementById('res-name').value = '';
-      document.getElementById('res-date').value = new Date().toLocaleDateString('en-CA'); // Default Today
-      document.getElementById('res-pax').value = '2';
-      document.getElementById('res-time').value = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-      document.getElementById('res-phone').value = '';
-      document.getElementById('res-notes').value = '';
+  if (!form.classList.contains('hidden')) {
+    // Reset form when opening
+    document.getElementById('res-name').value = '';
+    document.getElementById('res-date').value = new Date().toLocaleDateString('en-CA'); // Default Today
+    document.getElementById('res-pax').value = '2';
+    document.getElementById('res-time').value = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('res-phone').value = '';
+    document.getElementById('res-notes').value = '';
 
-      // Populate games
-      const gameSelect = document.getElementById('res-game');
-      if (window.generateGameOptions) {
-        gameSelect.innerHTML = window.generateGameOptions('');
-      }
+    // Populate games
+    const gameSelect = document.getElementById('res-game');
+    if (window.generateGameOptions) {
+      gameSelect.innerHTML = window.generateGameOptions('');
     }
-  };
+  }
+};
 
-  // ------ HOSTESS DASHBOARD (TABBED UI) ------
-  window.renderHostessDashboard = function () {
-    const appContainer = document.getElementById('app');
-    appContainer.innerHTML = '';
+// ------ HOSTESS DASHBOARD (TABBED UI) ------
+window.renderHostessDashboard = function () {
+  const appContainer = document.getElementById('app');
+  appContainer.innerHTML = '';
 
-    // FETCH DATA
-    const waitlist = window.db.getWaitlist();
-    const activeVisits = window.db.getVisits().filter(v => v.status === 'seated');
-    const reservations = window.db.getReservations ? window.db.getReservations() : [];
+  // FETCH DATA
+  const waitlist = window.db.getWaitlist();
+  const activeVisits = window.db.getVisits().filter(v => v.status === 'seated');
+  const reservations = window.db.getReservations ? window.db.getReservations() : [];
 
-    // Calculate stats
-    const totalCapacity = 40;
-    const currentCount = activeVisits.reduce((sum, v) => sum + parseInt(v.pax || 0), 0);
+  // Calculate stats
+  const totalCapacity = 40;
+  const currentCount = activeVisits.reduce((sum, v) => sum + parseInt(v.pax || 0), 0);
 
-    const div = document.createElement('div');
-    div.innerHTML = `
+  const div = document.createElement('div');
+  div.innerHTML = `
                 <header class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md">
                   <div>
                     <h1 class="text-2xl font-black text-yellow-500 italic tracking-tighter">RECEPCIÓN</h1>
@@ -6859,9 +6860,9 @@ window.submitReservation = function () {
         ` : `
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             ${activeVisits.map(v => {
-      const waiterName = window.db.data.users.find(w => w.id === v.waiterId)?.name || 'Sin Asignar';
-      const timeSeated = new Date(v.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      return `
+    const waiterName = window.db.data.users.find(w => w.id === v.waiterId)?.name || 'Sin Asignar';
+    const timeSeated = new Date(v.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `
               <div class="table-card bg-gray-900 border-l-4 border-green-500 rounded-r-xl p-4 shadow-lg relative animate-fade-in" data-waiter-id="${v.waiterId}">
                 <div class="flex justify-between items-start mb-2">
                     <div>
@@ -6953,8 +6954,8 @@ window.submitReservation = function () {
                   <select id="wl-waiter-${entry.id}" class="p-2 text-sm bg-gray-900 rounded font-bold border border-green-600">
                     <option value="">Mesero</option>
                     ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w =>
-        `<option value="${w.id}">${w.name}</option>`
-      ).join('')}
+      `<option value="${w.id}">${w.name}</option>`
+    ).join('')}
                   </select>
                 </div>
                 <!-- BOTONES DE ACCIÓN -->
@@ -7020,135 +7021,135 @@ window.submitReservation = function () {
       </div>
       `;
 
-    // Add class for bottom nav padding
-    div.className = 'p-4 max-w-6xl mx-auto has-bottom-nav';
-    appContainer.appendChild(div);
+  // Add class for bottom nav padding
+  div.className = 'p-4 max-w-6xl mx-auto has-bottom-nav';
+  appContainer.appendChild(div);
+}
+
+// ==========================================
+// ==========================================
+// VERSION CHECK & AUTO-RELOAD
+// ==========================================
+const CURRENT_VERSION = '22.45';
+const storedVersion = localStorage.getItem('app_version');
+
+if (storedVersion && storedVersion !== CURRENT_VERSION) {
+  console.log(`🔄 Version mismatch: ${storedVersion} → ${CURRENT_VERSION}. Clearing cache...`);
+
+  // Clear localStorage except auth
+  const authData = localStorage.getItem('adanEvaAuth');
+  localStorage.clear();
+  if (authData) localStorage.setItem('adanEvaAuth', authData);
+
+  // Set new version
+  localStorage.setItem('app_version', CURRENT_VERSION);
+
+  // Force reload
+  window.location.reload(true);
+}
+
+// Set version on first load
+if (!storedVersion) {
+  localStorage.setItem('app_version', CURRENT_VERSION);
+}
+
+// ==========================================
+// EMERGENCY CACHE CLEAR (AVAILABLE IMMEDIATELY)
+// ==========================================
+window.emergencyCacheClear = function () {
+  console.log('🚨 EMERGENCY CACHE CLEAR');
+
+  // Save auth
+  const authData = localStorage.getItem('adanEvaAuth');
+
+  // Nuclear option: clear everything
+  localStorage.clear();
+  sessionStorage.clear();
+
+  // Restore auth
+  if (authData) {
+    localStorage.setItem('adanEvaAuth', authData);
+  }
+  localStorage.setItem('app_version', '22.31');
+
+  // Clear IndexedDB
+  if (window.indexedDB) {
+    indexedDB.databases().then(dbs => {
+      dbs.forEach(db => {
+        indexedDB.deleteDatabase(db.name);
+        console.log('🗑️ Deleted:', db.name);
+      });
+    }).catch(e => console.warn('IndexedDB error:', e));
   }
 
-  // ==========================================
-  // ==========================================
-  // VERSION CHECK & AUTO-RELOAD
-  // ==========================================
-  const CURRENT_VERSION = '22.45';
-  const storedVersion = localStorage.getItem('app_version');
+  alert('✅ Caché eliminado completamente.\n\nRecargando...');
+  setTimeout(() => window.location.reload(true), 500);
+};
 
-  if (storedVersion && storedVersion !== CURRENT_VERSION) {
-    console.log(`🔄 Version mismatch: ${storedVersion} → ${CURRENT_VERSION}. Clearing cache...`);
+// ==========================================
+// INITIALIZATION
+// ==========================================
+window.initApp = async function () {
+  console.log('🚀 Initializing App...');
 
-    // Clear localStorage except auth
-    const authData = localStorage.getItem('adanEvaAuth');
-    localStorage.clear();
-    if (authData) localStorage.setItem('adanEvaAuth', authData);
-
-    // Set new version
-    localStorage.setItem('app_version', CURRENT_VERSION);
-
-    // Force reload
-    window.location.reload(true);
+  // 1. Initialize DB
+  if (!window.db) {
+    console.error('❌ Database not found!');
+    appContainer.innerHTML = '<div class="text-white p-10">Error critic: Base de datos no encontrada.</div>';
+    return;
   }
 
-  // Set version on first load
-  if (!storedVersion) {
-    localStorage.setItem('app_version', CURRENT_VERSION);
-  }
+  // 2. Auth Listener
+  window.db.auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      console.log('👤 User Authenticated:', user.uid);
+      // Check existing user in local DB or fetch
+      const dbUser = window.db.data.users.find(u => u.id === user.uid);
+      if (dbUser) {
+        STATE.user = dbUser;
+        STATE.branch = window.db.data.branches.find(b => b.id === dbUser.branchId);
+        console.log('🏢 Branch:', STATE.branch);
 
-  // ==========================================
-  // EMERGENCY CACHE CLEAR (AVAILABLE IMMEDIATELY)
-  // ==========================================
-  window.emergencyCacheClear = function () {
-    console.log('🚨 EMERGENCY CACHE CLEAR');
-
-    // Save auth
-    const authData = localStorage.getItem('adanEvaAuth');
-
-    // Nuclear option: clear everything
-    localStorage.clear();
-    sessionStorage.clear();
-
-    // Restore auth
-    if (authData) {
-      localStorage.setItem('adanEvaAuth', authData);
-    }
-    localStorage.setItem('app_version', '22.31');
-
-    // Clear IndexedDB
-    if (window.indexedDB) {
-      indexedDB.databases().then(dbs => {
-        dbs.forEach(db => {
-          indexedDB.deleteDatabase(db.name);
-          console.log('🗑️ Deleted:', db.name);
-        });
-      }).catch(e => console.warn('IndexedDB error:', e));
-    }
-
-    alert('✅ Caché eliminado completamente.\n\nRecargando...');
-    setTimeout(() => window.location.reload(true), 500);
-  };
-
-  // ==========================================
-  // INITIALIZATION
-  // ==========================================
-  window.initApp = async function () {
-    console.log('🚀 Initializing App...');
-
-    // 1. Initialize DB
-    if (!window.db) {
-      console.error('❌ Database not found!');
-      appContainer.innerHTML = '<div class="text-white p-10">Error critic: Base de datos no encontrada.</div>';
-      return;
-    }
-
-    // 2. Auth Listener
-    window.db.auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        console.log('👤 User Authenticated:', user.uid);
-        // Check existing user in local DB or fetch
-        const dbUser = window.db.data.users.find(u => u.id === user.uid);
-        if (dbUser) {
-          STATE.user = dbUser;
-          STATE.branch = window.db.data.branches.find(b => b.id === dbUser.branchId);
-          console.log('🏢 Branch:', STATE.branch);
-
-          // Render Dashboard based on Role
-          if (STATE.user.role === 'hostess') {
-            // START LISTENER FOR VISITS
-            window.db.subscribeToVisits((visits) => {
-              if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
-            });
-            renderHostessDashboard();
-          } else if (STATE.user.role === 'manager' || STATE.user.role === 'admin') {
-            if (typeof renderManagerDashboard === 'function') renderManagerDashboard('home');
-          } else if (STATE.user.role === 'waiter') {
-            if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard();
-          } else {
-            appContainer.innerHTML = '<div class="text-white">Rol desconocido</div>';
-          }
+        // Render Dashboard based on Role
+        if (STATE.user.role === 'hostess') {
+          // START LISTENER FOR VISITS
+          window.db.subscribeToVisits((visits) => {
+            if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
+          });
+          renderHostessDashboard();
+        } else if (STATE.user.role === 'manager' || STATE.user.role === 'admin') {
+          if (typeof renderManagerDashboard === 'function') renderManagerDashboard('home');
+        } else if (STATE.user.role === 'waiter') {
+          if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard();
         } else {
-          console.error('User not found in local DB data');
-          if (typeof renderLogin === 'function') renderLogin();
+          appContainer.innerHTML = '<div class="text-white">Rol desconocido</div>';
         }
       } else {
-        console.log('👤 No User. Rendering Login.');
+        console.error('User not found in local DB data');
         if (typeof renderLogin === 'function') renderLogin();
       }
-    });
-  };
-
-  // Start
-  document.addEventListener('DOMContentLoaded', window.initApp);
-
-  // NEW: Render Game Requests
-  function renderManagerGameRequests(container) {
-    if (!container) return;
-
-    const requests = window.db.getDailyInfo().gameRequests || [];
-
-    if (requests.length === 0) {
-      container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
-      return;
+    } else {
+      console.log('👤 No User. Rendering Login.');
+      if (typeof renderLogin === 'function') renderLogin();
     }
+  });
+};
 
-    container.innerHTML = requests.map((r) => `
+// Start
+document.addEventListener('DOMContentLoaded', window.initApp);
+
+// NEW: Render Game Requests
+function renderManagerGameRequests(container) {
+  if (!container) return;
+
+  const requests = window.db.getDailyInfo().gameRequests || [];
+
+  if (requests.length === 0) {
+    container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
+    return;
+  }
+
+  container.innerHTML = requests.map((r) => `
       <div class="bg-gray-800 p-3 rounded-lg border-l-4 border-blue-500 mb-2 flex justify-between items-center animate-fade-in">
         <div>
           <div class="flex items-center gap-2">
@@ -7169,24 +7170,24 @@ window.submitReservation = function () {
         </div>
       </div>
       `).join('');
+}
+
+// NEW: Render Reservations (Real Data)
+function renderManagerReservations(container) {
+  if (!container) return;
+
+  const branchId = STATE.branch?.id;
+  const today = new Date().toISOString().split('T')[0];
+  const reservations = (window.db.getReservations && branchId)
+    ? window.db.getReservations(branchId, today)
+    : [];
+
+  if (reservations.length === 0) {
+    container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay reservaciones para hoy.</p>';
+    return;
   }
 
-  // NEW: Render Reservations (Real Data)
-  function renderManagerReservations(container) {
-    if (!container) return;
-
-    const branchId = STATE.branch?.id;
-    const today = new Date().toISOString().split('T')[0];
-    const reservations = (window.db.getReservations && branchId)
-      ? window.db.getReservations(branchId, today)
-      : [];
-
-    if (reservations.length === 0) {
-      container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay reservaciones para hoy.</p>';
-      return;
-    }
-
-    container.innerHTML = reservations.map(r => `
+  container.innerHTML = reservations.map(r => `
       <div class="bg-gray-800 p-3 rounded-lg border-l-4 ${r.vip ? 'border-yellow-500' : 'border-gray-600'} flex justify-between items-center mb-2">
         <div>
           <div class="flex items-center gap-2">
@@ -7202,190 +7203,190 @@ window.submitReservation = function () {
         </div>
       </div>
       `).join('');
+}
+
+// ==========================================
+// CACHE CLEAR FUNCTION (FOR MOBILE)
+// ==========================================
+window.clearAppCache = function () {
+  if (!confirm('🧹 ¿Limpiar caché y datos locales?\n\nEsto borrará:\n- Datos en caché\n- Configuración local\n\nTu sesión se mantendrá activa.')) {
+    return;
   }
 
-  // ==========================================
-  // CACHE CLEAR FUNCTION (FOR MOBILE)
-  // ==========================================
-  window.clearAppCache = function () {
-    if (!confirm('🧹 ¿Limpiar caché y datos locales?\n\nEsto borrará:\n- Datos en caché\n- Configuración local\n\nTu sesión se mantendrá activa.')) {
+  console.log('🧹 Clearing app cache...');
+
+  // Save auth data
+  const authData = localStorage.getItem('adanEvaAuth');
+
+  // Clear localStorage
+  localStorage.clear();
+  console.log('✅ localStorage cleared');
+
+  // Restore auth
+  if (authData) {
+    localStorage.setItem('adanEvaAuth', authData);
+    localStorage.setItem('app_version', '22.30');
+  }
+
+  // Clear sessionStorage
+  sessionStorage.clear();
+  console.log('✅ sessionStorage cleared');
+
+  // Clear IndexedDB (Firebase offline data)
+  if (window.indexedDB) {
+    indexedDB.databases().then(databases => {
+      databases.forEach(db => {
+        if (db.name.includes('firestore') || db.name.includes('firebase')) {
+          indexedDB.deleteDatabase(db.name);
+          console.log('✅ Deleted IndexedDB:', db.name);
+        }
+      });
+    }).catch(e => console.warn('IndexedDB clear failed:', e));
+  }
+
+  alert('✅ Caché limpiado.\n\nLa página se recargará ahora.');
+
+  // Force reload
+  window.location.reload(true);
+};
+
+// ==========================================
+// MANAGER RESERVATION LOGIC (v22.4)
+// ==========================================
+window.submitManagerReservation = function () {
+  const name = document.getElementById('res-name').value;
+  const date = document.getElementById('res-date').value; // NEW
+  const time = document.getElementById('res-time').value;
+  const pax = document.getElementById('res-pax').value;
+  const phone = document.getElementById('res-phone').value; // NEW
+  const notes = document.getElementById('res-notes').value; // NEW
+  const vip = document.getElementById('res-vip').value;
+  const reason = document.getElementById('res-reason').value;
+  const game = document.getElementById('res-game').value;
+
+  if (!name || !date || !time) {
+    alert('Por favor complete nombre, fecha y hora.');
+    return;
+  }
+
+  // AUTH GATE FOR NON-VIP
+  if (!vip) {
+    const password = prompt("⚠️ Cliente SIN Categoría VIP.\n\nPara autorizar excepcionalmente esta reservación, ingrese su CONTRASEÑA DE GERENTE:");
+
+    // Check against current user's password
+    if (password !== STATE.user.password) {
+      alert("⛔ CONTRASEÑA INCORRECTA. No se puede crear la reservación.");
       return;
     }
+  }
 
-    console.log('🧹 Clearing app cache...');
-
-    // Save auth data
-    const authData = localStorage.getItem('adanEvaAuth');
-
-    // Clear localStorage
-    localStorage.clear();
-    console.log('✅ localStorage cleared');
-
-    // Restore auth
-    if (authData) {
-      localStorage.setItem('adanEvaAuth', authData);
-      localStorage.setItem('app_version', '22.30');
-    }
-
-    // Clear sessionStorage
-    sessionStorage.clear();
-    console.log('✅ sessionStorage cleared');
-
-    // Clear IndexedDB (Firebase offline data)
-    if (window.indexedDB) {
-      indexedDB.databases().then(databases => {
-        databases.forEach(db => {
-          if (db.name.includes('firestore') || db.name.includes('firebase')) {
-            indexedDB.deleteDatabase(db.name);
-            console.log('✅ Deleted IndexedDB:', db.name);
-          }
-        });
-      }).catch(e => console.warn('IndexedDB clear failed:', e));
-    }
-
-    alert('✅ Caché limpiado.\n\nLa página se recargará ahora.');
-
-    // Force reload
-    window.location.reload(true);
+  const data = {
+    id: Date.now().toString(),
+    customerName: name,
+    pax: pax,
+    phone: phone, // NEW
+    time: time,
+    date: date, // NEW (Overrides 'today' default)
+    notes: notes, // NEW
+    vip: vip,
+    reason: reason,
+    game: reason === 'Partido' ? game : '',
+    status: 'active',
+    branchId: STATE.branch ? STATE.branch.id : 'branch-1'
   };
 
-  // ==========================================
-  // MANAGER RESERVATION LOGIC (v22.4)
-  // ==========================================
-  window.submitManagerReservation = function () {
-    const name = document.getElementById('res-name').value;
-    const date = document.getElementById('res-date').value; // NEW
-    const time = document.getElementById('res-time').value;
-    const pax = document.getElementById('res-pax').value;
-    const phone = document.getElementById('res-phone').value; // NEW
-    const notes = document.getElementById('res-notes').value; // NEW
-    const vip = document.getElementById('res-vip').value;
-    const reason = document.getElementById('res-reason').value;
-    const game = document.getElementById('res-game').value;
+  if (window.db && window.db.addReservation) {
+    window.db.addReservation(data);
+    alert("✅ Reservación creada exitosamente.");
+    toggleReservationForm();
 
-    if (!name || !date || !time) {
-      alert('Por favor complete nombre, fecha y hora.');
-      return;
-    }
-
-    // AUTH GATE FOR NON-VIP
-    if (!vip) {
-      const password = prompt("⚠️ Cliente SIN Categoría VIP.\n\nPara autorizar excepcionalmente esta reservación, ingrese su CONTRASEÑA DE GERENTE:");
-
-      // Check against current user's password
-      if (password !== STATE.user.password) {
-        alert("⛔ CONTRASEÑA INCORRECTA. No se puede crear la reservación.");
-        return;
-      }
-    }
-
-    const data = {
-      id: Date.now().toString(),
-      customerName: name,
-      pax: pax,
-      phone: phone, // NEW
-      time: time,
-      date: date, // NEW (Overrides 'today' default)
-      notes: notes, // NEW
-      vip: vip,
-      reason: reason,
-      game: reason === 'Partido' ? game : '',
-      status: 'active',
-      branchId: STATE.branch ? STATE.branch.id : 'branch-1'
-    };
-
-    if (window.db && window.db.addReservation) {
-      window.db.addReservation(data);
-      alert("✅ Reservación creada exitosamente.");
-      toggleReservationForm();
-
-      // Simplified Refresh
-      if (typeof window.renderManagerDashboard === 'function') {
-        window.renderManagerDashboard('reservations');
-      } else {
-        window.location.reload();
-      }
+    // Simplified Refresh
+    if (typeof window.renderManagerDashboard === 'function') {
+      window.renderManagerDashboard('reservations');
     } else {
-      alert("Error de DB");
+      window.location.reload();
     }
-  };
+  } else {
+    alert("Error de DB");
+  }
+};
 
-  // NEW: Render Hostess Reservation List
-  window.renderHostessReservationList = function (dateFilter) {
-    const listContainer = document.getElementById('hostess-reservations-list');
-    if (!listContainer) return;
+// NEW: Render Hostess Reservation List
+window.renderHostessReservationList = function (dateFilter) {
+  const listContainer = document.getElementById('hostess-reservations-list');
+  if (!listContainer) return;
 
-    // Default to today if no date provided
-    if (!dateFilter) {
-      // Use local date string matching Manager's format
-      dateFilter = new Date().toLocaleDateString('en-CA');
+  // Default to today if no date provided
+  if (!dateFilter) {
+    // Use local date string matching Manager's format
+    dateFilter = new Date().toLocaleDateString('en-CA');
 
-      // Update input if exists
-      const input = document.getElementById('hostess-date-filter');
-      if (input) input.value = dateFilter;
-    }
+    // Update input if exists
+    const input = document.getElementById('hostess-date-filter');
+    if (input) input.value = dateFilter;
+  }
 
-    const branchId = STATE.branch?.id;
-    // Get ALL reservations (don't filter by branch yet, reservations don't have branchId)
-    let reservations = window.db.getReservations ? window.db.getReservations() : [];
+  const branchId = STATE.branch?.id;
+  // Get ALL reservations (don't filter by branch yet, reservations don't have branchId)
+  let reservations = window.db.getReservations ? window.db.getReservations() : [];
 
-    // Filter by date and exclude completed/cancelled
-    reservations = reservations.filter(r =>
-      r.date === dateFilter &&
-      r.status !== 'completed' &&
-      r.status !== 'cancelled'
-    );
+  // Filter by date and exclude completed/cancelled
+  reservations = reservations.filter(r =>
+    r.date === dateFilter &&
+    r.status !== 'completed' &&
+    r.status !== 'cancelled'
+  );
 
-    if (reservations.length === 0) {
-      listContainer.innerHTML = `
+  if (reservations.length === 0) {
+    listContainer.innerHTML = `
             <div class="text-center py-8 text-gray-500">
                 <div class="text-4xl mb-2">📅</div>
                 <p>No hay reservaciones para esta fecha</p>
             </div>
         `;
-      return;
+    return;
+  }
+
+  // Sort by time
+  reservations.sort((a, b) => a.time.localeCompare(b.time));
+
+  const now = new Date();
+  const currentHours = now.getHours();
+  const currentMinutes = now.getMinutes();
+  const currentTimeVal = currentHours * 60 + currentMinutes;
+
+  listContainer.innerHTML = reservations.map(r => {
+    // Traffic Light Logic
+    // Parse reservation time "HH:MM"
+    const [resH, resM] = r.time.split(':').map(Number);
+    const resTimeVal = resH * 60 + resM;
+    const diff = currentTimeVal - resTimeVal; // Positive if late
+
+    let statusColor = 'border-green-500'; // Default Green (On Time / Future)
+    let statusIcon = '🟢';
+    let statusText = 'A Tiempo';
+
+    // Logic: 
+    // If diff > 30 mins -> RED (Expired)
+    // If diff > 0 and <= 30 mins -> YELLOW (Delayed but valid)
+    // If diff <= 0 -> GREEN (On Time)
+
+    // Only apply if looking at TODAY
+    const isToday = dateFilter === new Date().toLocaleDateString('en-CA');
+
+    if (isToday) {
+      if (diff > 30) {
+        statusColor = 'border-red-600';
+        statusIcon = '🔴';
+        statusText = 'Vencida (>30min)';
+      } else if (diff > 0) {
+        statusColor = 'border-yellow-500';
+        statusIcon = '🟡';
+        statusText = 'Retraso Permitido';
+      }
     }
 
-    // Sort by time
-    reservations.sort((a, b) => a.time.localeCompare(b.time));
-
-    const now = new Date();
-    const currentHours = now.getHours();
-    const currentMinutes = now.getMinutes();
-    const currentTimeVal = currentHours * 60 + currentMinutes;
-
-    listContainer.innerHTML = reservations.map(r => {
-      // Traffic Light Logic
-      // Parse reservation time "HH:MM"
-      const [resH, resM] = r.time.split(':').map(Number);
-      const resTimeVal = resH * 60 + resM;
-      const diff = currentTimeVal - resTimeVal; // Positive if late
-
-      let statusColor = 'border-green-500'; // Default Green (On Time / Future)
-      let statusIcon = '🟢';
-      let statusText = 'A Tiempo';
-
-      // Logic: 
-      // If diff > 30 mins -> RED (Expired)
-      // If diff > 0 and <= 30 mins -> YELLOW (Delayed but valid)
-      // If diff <= 0 -> GREEN (On Time)
-
-      // Only apply if looking at TODAY
-      const isToday = dateFilter === new Date().toLocaleDateString('en-CA');
-
-      if (isToday) {
-        if (diff > 30) {
-          statusColor = 'border-red-600';
-          statusIcon = '🔴';
-          statusText = 'Vencida (>30min)';
-        } else if (diff > 0) {
-          statusColor = 'border-yellow-500';
-          statusIcon = '🟡';
-          statusText = 'Retraso Permitido';
-        }
-      }
-
-      return `
+    return `
         <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${statusColor} shadow-lg relative animate-fade-in group">
             <div class="flex justify-between items-start mb-2">
                 <div>
@@ -7412,178 +7413,178 @@ window.submitReservation = function () {
             </button>
         </div>
         `;
-    }).join('');
+  }).join('');
+};
+
+// Check-In Reservation (Populate Hostess Form)
+window.checkInReservation = function (resId) {
+  const branchId = STATE.branch?.id;
+  const allRes = window.db.getReservations(branchId);
+  const res = allRes.find(r => r.id === resId);
+
+  if (!res) {
+    alert('Reservación no encontrada');
+    return;
+  }
+
+  // Check if we're in Hostess dashboard
+  const isHostess = document.getElementById('content-checkin') !== null;
+
+  if (!isHostess) {
+    alert('Esta función solo está disponible en el dashboard de Hostess');
+    return;
+  }
+
+  // Switch to Check-In Tab
+  switchHostessTab('checkin');
+
+  // Populate form
+  const firstNameInput = document.getElementById('h-firstname');
+  const lastNameInput = document.getElementById('h-lastname');
+  const lastName2Input = document.getElementById('h-lastname2');
+  const paxDisplay = document.getElementById('h-pax');
+
+  if (!firstNameInput || !lastNameInput || !paxDisplay) {
+    console.error('❌ Hostess form elements not found. Are you in Hostess view?');
+    return alert('Error: Esta función solo está disponible en el dashboard de Hostess');
+  }
+
+  switchHostessTab('checkin');
+
+  firstNameInput.value = res.customerName.split(' ')[0] || '';
+  lastNameInput.value = res.customerName.split(' ')[1] || '';
+
+  // Fill Pax (already declared above)
+  if (paxDisplay) paxDisplay.innerText = res.pax;
+
+  // Fill Search Input as visual cue
+  const searchInput = document.getElementById('customer-search');
+  if (searchInput) searchInput.value = res.customerName;
+
+  // Toast
+  if (window.showToast) window.showToast(`✅ Datos de ${res.customerName} cargados`, 'success');
+};
+
+// Start Hostess Tab Switcher
+window.switchHostessTab = function (tabName) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+
+  const target = document.getElementById('content-' + tabName);
+  const navItem = document.getElementById('tab-' + tabName);
+
+  if (target) target.classList.remove('hidden');
+  if (navItem) navItem.classList.add('active');
+
+  // Init Logic
+  if (tabName === 'reservations') {
+    renderHostessReservationList();
+  }
+};
+
+// ==========================================
+// HOSTESS CHECK-IN PROCESS (FIX: READ FROM DOM + MATERNAL SURNAME)
+// ==========================================
+window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
+  // 1. Get Values (Argument OR DOM)
+  const tableNumber = tableNumberArg || document.getElementById('h-table').value;
+  const waiterId = waiterIdArg || document.getElementById('h-waiter').value;
+
+  // 2. Validate Inputs
+  if (!tableNumber || !waiterId) {
+    alert("Por favor selecciona una Mesa y un Mesero.");
+    return;
+  }
+
+  const branchId = STATE.branch?.id;
+  // Check if table is occupied
+  if (window.db.isTableOccupied(tableNumber, branchId)) {
+    alert(`❌ La Mesa ${tableNumber} ya está ocupada.`);
+    return;
+  }
+
+  // 3. Gather Data from Hostess Form
+  const firstName = document.getElementById('h-firstname').value.toUpperCase();
+  const lastName1 = document.getElementById('h-lastname').value.toUpperCase();
+  const lastName2 = document.getElementById('h-lastname2') ? document.getElementById('h-lastname2').value.toUpperCase() : '';
+
+  // Combine Last Names
+  const fullLastName = `${lastName1} ${lastName2}`.trim();
+
+  const pax = parseInt(document.getElementById('h-pax').innerText) || 2;
+
+  if (!firstName) {
+    alert("Falta el nombre del cliente.");
+    return;
+  }
+
+  // 4. Find or Create Customer
+  // Check by full name composition
+  const fullNameQuery = `${firstName} ${fullLastName}`.trim();
+
+  let customer = window.db.data.customers.find(c =>
+    (c.firstName + ' ' + c.lastName).toLowerCase() === fullNameQuery.toLowerCase()
+  );
+
+  if (!customer) {
+    customer = window.db.createCustomer({
+      firstName,
+      lastName: fullLastName,
+      phone: '',
+      email: '',
+      branchId
+    });
+  } else {
+    // Update existing if needed (optional, maybe just update last visit)
+  }
+
+  // 5. Create Visit
+  const visitData = {
+    branchId,
+    table: tableNumber,
+    waiterId,
+    customerId: customer.id,
+    pax,
+    startTime: new Date().toISOString(),
+    date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
+    orders: [],
+    totalAmount: 0
   };
 
-  // Check-In Reservation (Populate Hostess Form)
-  window.checkInReservation = function (resId) {
-    const branchId = STATE.branch?.id;
-    const allRes = window.db.getReservations(branchId);
-    const res = allRes.find(r => r.id === resId);
+  const newVisit = window.db.createVisit(visitData);
 
-    if (!res) {
-      alert('Reservación no encontrada');
-      return;
+  // 6. If this came from a Reservation, MARK IT AS COMPLETED
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const pendingRes = window.db.getReservations().find(r =>
+    r.customerName.toLowerCase() === fullNameQuery.toLowerCase() &&
+    r.date === todayStr &&
+    r.status !== 'completed' &&
+    r.status !== 'cancelled'
+  );
+
+  if (pendingRes) {
+    // Update reservation status to completed
+    window.db.updateReservation(pendingRes.id, { status: 'completed', completedAt: new Date().toISOString() });
+    console.log('✅ Reservation marked as completed:', pendingRes.id);
+
+    // Refresh reservation list immediately
+    if (window.renderHostessReservationList) {
+      setTimeout(() => {
+        window.renderHostessReservationList();
+      }, 100);
     }
+  }
 
-    // Check if we're in Hostess dashboard
-    const isHostess = document.getElementById('content-checkin') !== null;
+  // 7. Clear Form
+  document.getElementById('h-firstname').value = '';
+  document.getElementById('h-lastname').value = '';
+  if (document.getElementById('h-maternal')) document.getElementById('h-maternal').value = '';
+  document.getElementById('h-table').value = '';
+  document.getElementById('h-waiter').value = '';
+  document.getElementById('h-pax').innerText = '1';
 
-    if (!isHostess) {
-      alert('Esta función solo está disponible en el dashboard de Hostess');
-      return;
-    }
+  // 8. Switch to Tables Tab
+  switchHostessTab('tables');
 
-    // Switch to Check-In Tab
-    switchHostessTab('checkin');
-
-    // Populate form
-    const firstNameInput = document.getElementById('h-firstname');
-    const lastNameInput = document.getElementById('h-lastname');
-    const lastName2Input = document.getElementById('h-lastname2');
-    const paxDisplay = document.getElementById('h-pax');
-
-    if (!firstNameInput || !lastNameInput || !paxDisplay) {
-      console.error('❌ Hostess form elements not found. Are you in Hostess view?');
-      return alert('Error: Esta función solo está disponible en el dashboard de Hostess');
-    }
-
-    switchHostessTab('checkin');
-
-    firstNameInput.value = res.customerName.split(' ')[0] || '';
-    lastNameInput.value = res.customerName.split(' ')[1] || '';
-
-    // Fill Pax (already declared above)
-    if (paxDisplay) paxDisplay.innerText = res.pax;
-
-    // Fill Search Input as visual cue
-    const searchInput = document.getElementById('customer-search');
-    if (searchInput) searchInput.value = res.customerName;
-
-    // Toast
-    if (window.showToast) window.showToast(`✅ Datos de ${res.customerName} cargados`, 'success');
-  };
-
-  // Start Hostess Tab Switcher
-  window.switchHostessTab = function (tabName) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
-
-    const target = document.getElementById('content-' + tabName);
-    const navItem = document.getElementById('tab-' + tabName);
-
-    if (target) target.classList.remove('hidden');
-    if (navItem) navItem.classList.add('active');
-
-    // Init Logic
-    if (tabName === 'reservations') {
-      renderHostessReservationList();
-    }
-  };
-
-  // ==========================================
-  // HOSTESS CHECK-IN PROCESS (FIX: READ FROM DOM + MATERNAL SURNAME)
-  // ==========================================
-  window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
-    // 1. Get Values (Argument OR DOM)
-    const tableNumber = tableNumberArg || document.getElementById('h-table').value;
-    const waiterId = waiterIdArg || document.getElementById('h-waiter').value;
-
-    // 2. Validate Inputs
-    if (!tableNumber || !waiterId) {
-      alert("Por favor selecciona una Mesa y un Mesero.");
-      return;
-    }
-
-    const branchId = STATE.branch?.id;
-    // Check if table is occupied
-    if (window.db.isTableOccupied(tableNumber, branchId)) {
-      alert(`❌ La Mesa ${tableNumber} ya está ocupada.`);
-      return;
-    }
-
-    // 3. Gather Data from Hostess Form
-    const firstName = document.getElementById('h-firstname').value.toUpperCase();
-    const lastName1 = document.getElementById('h-lastname').value.toUpperCase();
-    const lastName2 = document.getElementById('h-lastname2') ? document.getElementById('h-lastname2').value.toUpperCase() : '';
-
-    // Combine Last Names
-    const fullLastName = `${lastName1} ${lastName2}`.trim();
-
-    const pax = parseInt(document.getElementById('h-pax').innerText) || 2;
-
-    if (!firstName) {
-      alert("Falta el nombre del cliente.");
-      return;
-    }
-
-    // 4. Find or Create Customer
-    // Check by full name composition
-    const fullNameQuery = `${firstName} ${fullLastName}`.trim();
-
-    let customer = window.db.data.customers.find(c =>
-      (c.firstName + ' ' + c.lastName).toLowerCase() === fullNameQuery.toLowerCase()
-    );
-
-    if (!customer) {
-      customer = window.db.createCustomer({
-        firstName,
-        lastName: fullLastName,
-        phone: '',
-        email: '',
-        branchId
-      });
-    } else {
-      // Update existing if needed (optional, maybe just update last visit)
-    }
-
-    // 5. Create Visit
-    const visitData = {
-      branchId,
-      table: tableNumber,
-      waiterId,
-      customerId: customer.id,
-      pax,
-      startTime: new Date().toISOString(),
-      date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
-      orders: [],
-      totalAmount: 0
-    };
-
-    const newVisit = window.db.createVisit(visitData);
-
-    // 6. If this came from a Reservation, MARK IT AS COMPLETED
-    const todayStr = new Date().toLocaleDateString('en-CA');
-    const pendingRes = window.db.getReservations().find(r =>
-      r.customerName.toLowerCase() === fullNameQuery.toLowerCase() &&
-      r.date === todayStr &&
-      r.status !== 'completed' &&
-      r.status !== 'cancelled'
-    );
-
-    if (pendingRes) {
-      // Update reservation status to completed
-      window.db.updateReservation(pendingRes.id, { status: 'completed', completedAt: new Date().toISOString() });
-      console.log('✅ Reservation marked as completed:', pendingRes.id);
-
-      // Refresh reservation list immediately
-      if (window.renderHostessReservationList) {
-        setTimeout(() => {
-          window.renderHostessReservationList();
-        }, 100);
-      }
-    }
-
-    // 7. Clear Form
-    document.getElementById('h-firstname').value = '';
-    document.getElementById('h-lastname').value = '';
-    if (document.getElementById('h-maternal')) document.getElementById('h-maternal').value = '';
-    document.getElementById('h-table').value = '';
-    document.getElementById('h-waiter').value = '';
-    document.getElementById('h-pax').innerText = '1';
-
-    // 8. Switch to Tables Tab
-    switchHostessTab('tables');
-
-    alert(`✅ Mesa ${tableNumber} asignada a ${fullNameQuery}`);
-  };
+  alert(`✅ Mesa ${tableNumber} asignada a ${fullNameQuery}`);
+};
