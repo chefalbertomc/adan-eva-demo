@@ -2270,23 +2270,16 @@ class Store {
         info.reservations.push(newRes);
         this._save();
 
-        // Sync to config/reservations (or allGames for simplicity if preferred, but separate is better)
-        // Let's stick to 'allGames' for now as the daily sync hub, or create 'config/reservations'
-        // Using 'allGames' so we don't multiply listener sources for Manager
-        this.updateDailyGames(info.games); // Trigger sync
-
-        // Also direct sync specifically for reservations if we want speed
-        // Also direct sync specifically for reservations - RE-ENABLED (Sanitized)
+        // SYNC TO FIREBASE - Use 'reservations' collection (NOT config/allGames)
         if (window.dbFirestore && window.FB) {
             const { doc, setDoc } = window.FB;
-            const docRef = doc(window.dbFirestore, 'config', 'allGames');
-            const cleanReservations = JSON.parse(JSON.stringify(info.reservations));
-            setDoc(docRef, { reservations: cleanReservations }, { merge: true })
+            setDoc(doc(window.dbFirestore, 'reservations', newRes.id), newRes)
                 .then(() => {
-                    console.log('🎟️ Reservation synced:', newRes.customerName);
-                    if (typeof showToast === 'function') showToast('Reservación Guardada', 'success');
-                });
+                    console.log('🎟️ Reservation synced to cloud:', newRes.customerName);
+                })
+                .catch(e => console.error('🔥 Reservation sync error:', e));
         }
+
         return newRes;
     }
 
@@ -2297,13 +2290,12 @@ class Store {
         info.reservations = info.reservations.filter(r => r.id !== resId);
         this._save();
 
-        // Sync
-        // Sync - RE-ENABLED (Sanitized)
+        // SYNC TO FIREBASE - Delete from reservations collection
         if (window.dbFirestore && window.FB) {
-            const { doc, setDoc } = window.FB;
-            const docRef = doc(window.dbFirestore, 'config', 'allGames');
-            const cleanReservations = JSON.parse(JSON.stringify(info.reservations));
-            setDoc(docRef, { reservations: cleanReservations }, { merge: true });
+            const { doc, deleteDoc } = window.FB;
+            deleteDoc(doc(window.dbFirestore, 'reservations', resId))
+                .then(() => console.log('🗑️ Reservation deleted from cloud'))
+                .catch(e => console.error('🔥 Reservation delete error:', e));
         }
     }
 
