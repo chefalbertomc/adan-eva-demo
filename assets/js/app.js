@@ -7185,7 +7185,7 @@ window.renderHostessDashboard = function () {
                 <div class="border-t border-gray-800 pt-3 mt-2">
                     <div class="font-bold text-white text-lg truncate mb-1">${custName}</div>
                     ${v.vip ? `<div class="inline-block bg-yellow-600/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded border border-yellow-600/50 mb-2 font-bold tracking-wider">VIP ${v.vip.toUpperCase()}</div>` : ''}
-                    ${v.reason && v.reason !== 'Casual' ? `<div class="text-[11px] text-yellow-400 font-bold mt-1 mb-1 truncate">📌 ${v.reason}${v.gameName ? ': ' + v.gameName : ''}</div>` : ''}
+                    ${v.reason && v.reason !== 'Casual' ? `<div id="motivo-badge-${v.id}" class="text-[11px] text-yellow-400 font-bold mt-1 mb-1 truncate">📌 ${v.reason}${v.gameName ? ': ' + v.gameName : ''}</div>` : '<div id="motivo-badge-${v.id}" class="hidden text-[11px] text-yellow-400 font-bold mt-1 mb-1 truncate"></div>'}
                     
                     <button onclick="document.getElementById('edit-visit-${v.id}').classList.toggle('hidden')" class="w-full text-xs bg-gray-800 hover:bg-gray-700 text-gray-400 py-2 rounded mt-2 border border-gray-700 transition">
                        ⚡ GESTIONAR
@@ -7965,22 +7965,33 @@ window.updateHostessVisitReason = function (visitId) {
   const gameName = document.getElementById(`h-selected-game-${visitId}`).value;
   const league = document.getElementById(`h-selected-league-${visitId}`).value;
 
+  // Validate: if Partido selected but no game chosen, warn
+  if (reason === 'Partido' && !gameName) {
+    if (window.showToast) window.showToast('⚠️ Selecciona un partido primero', 'warning');
+    return;
+  }
+
+  // Save to DB
   window.db.updateVisitDetails(visitId, {
     reason: reason,
     gameName: gameName,
     league: league
   });
 
-  document.getElementById(`edit-visit-${visitId}`).classList.add('hidden');
+  // Update the badge on the card in-place (no full re-render)
+  const motivoBadgeId = `motivo-badge-${visitId}`;
+  let badge = document.getElementById(motivoBadgeId);
+  if (badge) {
+    if (reason && reason !== 'Casual') {
+      badge.textContent = `📌 ${reason}${gameName ? ': ' + gameName : ''}`;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
 
   if (window.showToast) {
     window.showToast('✅ Motivo de visita guardado', 'success');
-  }
-
-  // Refresh dashboard to reflect changes if necessary
-  if (typeof window.renderHostessDashboard === 'function') {
-    window.renderHostessDashboard();
-    window.switchHostessTab('tables');
   }
 };
 
