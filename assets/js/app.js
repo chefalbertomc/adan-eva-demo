@@ -7407,8 +7407,8 @@ window.renderHostessDashboard = function () {
 // ==========================================
 // VERSION CHECK & AUTO-RELOAD
 // ==========================================
-const CURRENT_VERSION = '22.49';
-console.log("🚀 App Loaded: v22.49");
+const CURRENT_VERSION = '22.50';
+console.log("🚀 App Loaded: v22.50");
 const storedVersion = localStorage.getItem('app_version');
 
 if (storedVersion && storedVersion !== CURRENT_VERSION) {
