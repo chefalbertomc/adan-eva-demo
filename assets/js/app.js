@@ -5928,6 +5928,16 @@ function renderEnrichCustomer(params) {
   const favDrink = getFavorite('bebidas');
   const favSalsa = getFavorite('alimentos', 'Salsas');
 
+  // Lógica de separación de apellidos si es un cliente antiguo que lo tiene todo en lastName
+  let displayLastName1 = customer.lastName || '';
+  let displayLastName2 = customer.lastName2 || '';
+
+  if (displayLastName1.includes(' ') && !displayLastName2) {
+    const parts = displayLastName1.split(' ');
+    displayLastName1 = parts.shift();
+    displayLastName2 = parts.join(' ');
+  }
+
   // Checar Alertas de Información Faltante
   const missingInfo = [];
   if (!customer.phone) missingInfo.push('Teléfono');
@@ -5958,9 +5968,10 @@ function renderEnrichCustomer(params) {
                 
                   <!-- LEFT COLUMN: Profile Form -->
                   <div class="lg:col-span-2">
-                      <form id="customer-form" onsubmit="handleEnrichSubmit(event, '${customerId}', '${visitId}')" class="space-y-6 bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-2xl relative">
+                      <form id="customer-form" onsubmit="handleEnrichSubmit(event, '${customerId}', '${visitId}')" class="space-y-6 bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-2xl">
                         
-                        <div class="absolute top-4 right-4">
+                        <div class="flex justify-between items-center mb-6 pb-2 border-b border-gray-700">
+                            <h3 class="text-white font-bold flex items-center gap-2"><span class="text-xl">👤</span> Información Personal</h3>
                             <button type="button" id="toggle-edit-btn" onclick="toggleCustomerEditMode()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-4 rounded-full text-sm shadow transition">
                                 ✏️ EDITAR PERFIL
                             </button>
@@ -5968,7 +5979,6 @@ function renderEnrichCustomer(params) {
 
                         <!-- Personal Info -->
                         <div>
-                          <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2 flex items-center gap-2"><span class="text-xl">👤</span> Información Personal</h3>
                           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Nombre(s)</label>
@@ -5976,18 +5986,18 @@ function renderEnrichCustomer(params) {
                             </div>
                             <div>
                               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Apellido Paterno</label>
-                              <input name="lastName" disabled required value="${customer.lastName || ''}" type="text" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
+                              <input name="lastName" disabled required value="${displayLastName1}" type="text" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
                             </div>
                              <div>
                               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Apellido Materno</label>
-                              <input name="lastName2" disabled value="${customer.lastName2 || ''}" type="text" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
+                              <input name="lastName2" disabled value="${displayLastName2}" type="text" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
                             </div>
                           </div>
                         </div>
 
                         <!-- Contact Info -->
                         <div>
-                          <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2 flex items-center gap-2"><span class="text-xl">📞</span> Contacto & Demografía</h3>
+                          <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2 flex items-center gap-2 mt-6"><span class="text-xl">📞</span> Contacto & Demografía</h3>
                           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Teléfono</label>
@@ -6004,6 +6014,10 @@ function renderEnrichCustomer(params) {
                             <div>
                               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Ciudad</label>
                               <input name="city" disabled value="${customer.city || ''}" type="text" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
+                            </div>
+                            <div class="md:col-span-2">
+                              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Colonia</label>
+                              <input name="colony" disabled value="${customer.colony || ''}" type="text" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
                             </div>
                           </div>
                         </div>
@@ -6147,6 +6161,7 @@ window.handleEnrichSubmit = function (e, customerId, visitId) {
     email: formData.get('email'),
     birthday: formData.get('birthday'),
     city: formData.get('city'),
+    colony: formData.get('colony'),
     team: formData.get('team'),
     notes: formData.get('notes')
   };
