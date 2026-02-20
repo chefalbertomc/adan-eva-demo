@@ -5875,6 +5875,13 @@ window.showQRreviews = renderReviewsQR;
 window.showQRReviews = renderReviewsQR;
 
 // === VIEW: ENRICH CUSTOMER ===
+window.injectMockHistoryForCustomer = function (customerId, visitId) {
+  if (confirm('¿Estás seguro de inyectar 1 año de historial de prueba (20 visitas) para este cliente?')) {
+    window.db.devInjectMockHistory(customerId);
+    renderEnrichCustomer({ customerId, visitId });
+    showToast('Dato inyectado exitosamente');
+  }
+};
 function renderEnrichCustomer(params) {
   const { customerId, visitId } = params;
   const customer = window.db.getCustomerById(customerId);
@@ -6069,7 +6076,13 @@ function renderEnrichCustomer(params) {
                                 <div class="text-xs text-gray-500 uppercase font-bold mb-1">Salsa Favorita</div>
                                 <div class="text-white font-bold bg-black p-2 rounded border border-gray-800">${favSalsa}</div>
                             </div>
+                             </div>
                          </div>
+                      </div>
+                      <div class="mt-4 text-center">
+                          <button type="button" onclick="injectMockHistoryForCustomer('${customerId}', '${visitId}')" class="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-500 py-1 px-3 rounded-full border border-gray-700 transition uppercase tracking-widest font-bold">
+                              🎁 Inyectar Historial (Test)
+                          </button>
                       </div>
                   </div>
                 </div>

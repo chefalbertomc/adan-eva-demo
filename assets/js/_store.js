@@ -1366,6 +1366,65 @@ class Store {
         return this.data.orders.filter(o => o.visitId === visitId);
     }
 
+    // --- DEV TOOLS ---
+    devInjectMockHistory(customerId) {
+        // --- MOCK 1 YEAR HISTORY ---
+        const favItems = [
+            { id: 'F141', price: 219 }, // Boneless Medium
+            { id: 'F030', price: 189 }, // Stadium Burger
+            { id: 'B116', price: 75 },  // Heineken Botella
+            { id: 'F092', price: 0 }    // Mango Habanero (Salsa)
+        ];
+
+        let currentMockDate = new Date();
+        currentMockDate.setFullYear(currentMockDate.getFullYear() - 1); // Start 1 year ago
+        let count = 0;
+
+        for (let i = 0; i < 20; i++) {
+            // Random days jump 5-20 days
+            currentMockDate.setDate(currentMockDate.getDate() + Math.floor(Math.random() * 15) + 5);
+            if (currentMockDate >= new Date()) break;
+
+            const visitId = 'v_mock_dyn_' + Date.now() + '_' + i;
+            const pax = Math.floor(Math.random() * 4) + 2;
+
+            // Random hour between 18 and 23
+            currentMockDate.setHours(18 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 59), 0, 0);
+
+            this.data.visits.push({
+                id: visitId,
+                customerId: customerId,
+                branchId: 'juriquilla',
+                table: Math.floor(Math.random() * 20) + 110, // 110-130
+                pax: pax,
+                status: 'closed',
+                waiterId: 'wj1',
+                date: currentMockDate.toISOString().split('T')[0],
+                startTime: currentMockDate.toISOString(),
+                reason: i % 3 === 0 ? 'Partido' : 'Casual',
+                totalAmount: favItems.reduce((acc, item) => acc + item.price, 0) + 75 // Adding 1 extra drink
+            });
+
+            this.data.orders.push({
+                id: 'o_mock_dyn_' + Date.now() + '_' + i,
+                visitId: visitId,
+                items: [
+                    { itemId: 'F141', name: 'Boneless Medium', quantity: 1, price: 219 },
+                    { itemId: 'F030', name: 'Stadium Burger', quantity: 1, price: 189 },
+                    { itemId: 'B116', name: 'Heineken', quantity: 3, price: 75 },
+                    { itemId: 'F092', name: 'Mango Habanero', quantity: 1, price: 0 }
+                ],
+                timestamp: currentMockDate.toISOString(),
+                status: 'delivered'
+            });
+            count++;
+        }
+
+        this._save();
+        console.log(`✅ ${count} mock visits and orders injected for customer ${customerId}`);
+        return true;
+    }
+
     // New Hostess Management
     getActiveVisitsByBranch(branchId) {
         return this.data.visits
@@ -1530,7 +1589,7 @@ class Store {
         const m = (today.getMonth() + 1).toString().padStart(2, '0');
         const d = today.getDate().toString().padStart(2, '0');
         // Match MM-DD in birthday string YYYY-MM-DD
-        return this.data.customers.filter(c => c.birthday && c.birthday.endsWith(`${m} -${d} `));
+        return this.data.customers.filter(c => c.birthday && c.birthday.endsWith(`${m} - ${d} `));
     }
 
     getRetentionAlerts() {
@@ -1860,7 +1919,7 @@ class Store {
 
         let customers = this.data.customers.filter(c => {
             if (!c.birthday) return false;
-            const match = c.birthday.includes(`-${m}-`);
+            const match = c.birthday.includes(`- ${m} - `);
             if (!match) return false;
 
             // Filter by branch if specified
@@ -2411,7 +2470,7 @@ class Store {
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
-            finalDate = `${year}-${month}-${day}`;
+            finalDate = `${year} - ${month} - ${day}`;
         }
 
         // Validation / Defaults
@@ -2454,7 +2513,7 @@ class Store {
         });
 
         if (matchedReqs.length > 0) {
-            console.log(`✅ Auto-resolving ${matchedReqs.length} pending requests for "${gameFullName}"`);
+            console.log(`✅ Auto - resolving ${matchedReqs.length} pending requests for "${gameFullName}"`);
             info.gameRequests = pendingRequests.filter(r => !matchedReqs.includes(r));
         } else {
             if (!info.gameRequests) info.gameRequests = []; // Ensure array exists
@@ -2515,7 +2574,7 @@ class Store {
         const normalized = teamName.trim();
 
         if (!window.KNOWN_TEAMS.includes(normalized)) {
-            console.log(`🧠 Learning new team: ${normalized}`);
+            console.log(`🧠 Learning new team: ${normalized} `);
             window.KNOWN_TEAMS.push(normalized);
             window.KNOWN_TEAMS.sort();
 
@@ -2721,16 +2780,16 @@ class Store {
             const dailyInfo = this.getDailyInfo();
             const drinkPromo = dailyInfo.promos.find(p => p.title.toLowerCase().includes('cerveza') || p.title.toLowerCase().includes('bebida'));
             if (drinkPromo) {
-                suggestions.push(`Ofrecer "${drinkPromo.title}" - cliente suele pedir ${topDrink}`);
+                suggestions.push(`Ofrecer "${drinkPromo.title}" - cliente suele pedir ${topDrink} `);
             } else {
-                suggestions.push(`Cliente prefiere ${topDrink}`);
+                suggestions.push(`Cliente prefiere ${topDrink} `);
             }
         }
 
         // Based on top food
         if (customer.topFood && customer.topFood.length > 0) {
             const topFood = customer.topFood[0];
-            suggestions.push(`Suele pedir ${topFood}`);
+            suggestions.push(`Suele pedir ${topFood} `);
         }
 
         // Based on team (if there's a game today)
@@ -2740,7 +2799,7 @@ class Store {
                 g.homeTeam === customer.team || g.awayTeam === customer.team
             );
             if (game) {
-                suggestions.push(`¡Su equipo juega hoy! ${game.homeTeam} vs ${game.awayTeam} a las ${game.time}`);
+                suggestions.push(`¡Su equipo juega hoy! ${game.homeTeam} vs ${game.awayTeam} a las ${game.time} `);
             }
         }
 
@@ -2838,7 +2897,7 @@ class Store {
         const newGames = oldGames.filter(g => g.date !== today);
         const afterCount = newGames.length;
 
-        console.log(`🗑️ Cleared ${beforeCount - afterCount} games from ${today}`);
+        console.log(`🗑️ Cleared ${beforeCount - afterCount} games from ${today} `);
 
         // Use centralized updater (handles Firebase sync to allGames)
         this.updateDailyGames(newGames);
