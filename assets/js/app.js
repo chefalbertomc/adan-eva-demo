@@ -4762,11 +4762,15 @@ function renderManagerTablesTab(container) {
     const customer = v.customer; // Customer is already included in the visit object
     const waiter = window.db.data.users.find(u => u.id === v.waiterId);
 
-    // Time
-    const startTime = new Date(v.date);
-    const diffMins = Math.floor((new Date() - startTime) / 60000);
-    const timeElapsed = diffMins > 60 ? `${Math.floor(diffMins / 60)}h ${diffMins % 60}m` : `${diffMins}m`;
-    const timeSeated = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // Time logic mimicking Hostess
+    const timeToFormat = v.startTime || v.entryTime || v.date;
+    const startTimeDate = new Date(timeToFormat);
+    const diffMins = Math.floor((new Date() - startTimeDate) / 60000);
+    const timeElapsed = isNaN(diffMins) ? '' : (diffMins > 60 ? `${Math.floor(diffMins / 60)}h ${diffMins % 60}m` : `${diffMins}m`);
+    const timeSeated = timeToFormat ? startTimeDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'NA';
+
+    // Customer name format
+    const custName = customer ? (customer.firstName + ' ' + (customer.lastName || '')).trim() : (v.customerName || 'Cliente');
 
     // DEBUG: Log visit data to see what fields are available
     console.log('Visit data for table', v.table, ':', {
@@ -4830,29 +4834,35 @@ function renderManagerTablesTab(container) {
     return `
                 <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg border-l-4 ${isProspect ? 'border-purple-500' : 'border-green-500'} relative group" data-waiter-id="${v.waiterId}">
                   <div class="p-4">
-                    <div class="flex justify-between items-start">
+                    <div class="flex justify-between items-start mb-2">
                       <div>
                         <div class="flex items-center gap-2">
-                          <h3 class="text-3xl font-black text-white leading-none">Mesa ${v.table}</h3>
+                          <span class="text-3xl font-black text-white shadow-text">#${v.table}</span>
                           ${isProspect ? '<span class="text-lg animate-pulse" title="Cliente Prospecto">⭐</span>' : ''}
                         </div>
-                        <div class="flex items-center gap-2">
-                          <div class="text-gray-300 font-bold text-lg truncate">${customer ? customer.firstName + ' ' + customer.lastName : 'Cliente'}</div>
-                          <button onclick="event.stopPropagation(); navigateTo('enrich-customer', {customerId: '${v.customerId}', visitId: '${v.id}'})"
-                            class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 transition shadow"
-                            title="Editar información del cliente">
-                            📝 Editar
-                          </button>
+                        <div class="text-xs text-gray-400 font-mono mt-1">
+                            🕒 ${timeSeated}
+                            ${timeElapsed ? `<span class="ml-2 text-yellow-500 font-bold">⏱️ ${timeElapsed}</span>` : ''}
                         </div>
                       </div>
                       <div class="text-right">
-                        <div class="text-xs font-mono text-gray-400 bg-black/30 px-2 py-1 rounded inline-block">
-                           🕒 ${timeSeated}
-                           <span class="ml-1 text-yellow-500 font-bold">⏱️ ${timeElapsed}</span>
+                        <div class="bg-gray-700 px-2 py-1 rounded text-xs text-gray-300 border border-gray-600 mb-1 inline-block">
+                           👤 ${(waiter?.name || 'S/A').split(' ')[0]}
                         </div>
-                        <div class="text-[10px] text-gray-500 mt-1 uppercase tracking-wider">${waiter?.name || 'S/A'}</div>
+                        <div class="text-xl font-bold text-white">${v.pax || 0} <span class="text-sm font-normal text-gray-500">pax</span></div>
                       </div>
                     </div>
+                    
+                    <!-- Customer Details -->
+                    <div class="border-t border-gray-700 pt-3 mt-2 flex justify-between items-center">
+                      <div class="font-bold text-white text-lg truncate">${custName}</div>
+                      <button onclick="event.stopPropagation(); navigateTo('enrich-customer', {customerId: '${v.customerId}', visitId: '${v.id}'})"
+                        class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 flex-shrink-0 rounded text-xs font-bold flex items-center gap-1 transition shadow border border-gray-600"
+                        title="Editar información del cliente">
+                        📝 Editar
+                      </button>
+                    </div>
+                    ${v.vip ? `<div class="inline-block bg-yellow-600/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded border border-yellow-600/50 mt-1 font-bold tracking-wider">VIP ${v.vip.toUpperCase()}</div>` : ''}
 
                     <!-- VISIT DETAILS -->
                     ${reasonDisplay}
