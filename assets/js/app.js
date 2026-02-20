@@ -920,13 +920,38 @@ function selectCustomer(id) {
   const c = window.db.data.customers.find(x => x.id === id);
   if (c) {
     document.getElementById('h-firstname').value = c.firstName;
-    document.getElementById('h-lastname').value = c.lastName;
-    document.getElementById('h-lastname2').value = c.lastName2 || '';
+
+    let lastName1 = c.lastName || '';
+    let lastName2 = c.lastName2 || '';
+
+    // Si no hay apellido materno explícito, pero el paterno tiene espacios, separarlos
+    if (!lastName2 && lastName1.includes(' ')) {
+      const parts = lastName1.split(' ');
+      lastName1 = parts[0];
+      lastName2 = parts.slice(1).join(' ');
+    }
+
+    document.getElementById('h-lastname').value = lastName1;
+    document.getElementById('h-lastname2').value = lastName2;
+
     selectedCustomer = c;
     document.getElementById('search-results').classList.add('hidden');
-    alert(`Cliente seleccionado: ${c.firstName} ${c.lastName} ${c.lastName2 || ''}`);
+
+    if (window.showToast) {
+      window.showToast(`✅ Cliente cargado: ${c.firstName} ${lastName1} ${lastName2}`, 'success');
+    }
   }
 }
+
+window.adjustPax = function (delta) {
+  const paxEl = document.getElementById('h-pax');
+  if (!paxEl) return;
+  let current = parseInt(paxEl.innerText) || 1;
+  current += delta;
+  if (current < 1) current = 1;
+  if (current > 50) current = 50;
+  paxEl.innerText = current;
+};
 
 // === NUEVO FLUJO: CHECK-IN SIN PROMPTS ===
 function doCheckIn() {
