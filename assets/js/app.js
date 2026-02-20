@@ -7527,62 +7527,64 @@ function renderManagerGameRequests(container) {
   const requests = window.db.getDailyInfo().gameRequests || [];
 
   if (requests.length === 0) {
-    container.innerHTML = '<p class="text-gray-600 text-xs italic text-center py-4">No hay solicitudes activas.</p>';
+    container.innerHTML = '';
     return;
   }
 
-  container.innerHTML = requests.map((r) => `
-      <div class="bg-gray-800 p-3 rounded-lg border-l-4 border-blue-500 mb-2 animate-fade-in">
-        <div class="flex justify-between items-start mb-2">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="text-blue-400 font-bold text-[10px] uppercase tracking-wider">SOLICITUD DE PARTIDO</span>
+  container.innerHTML = `
+    <div class="card mb-4 bg-orange-900/20 border border-orange-500/50 shadow-lg">
+      <h2 class="text-lg font-bold text-orange-400 flex items-center gap-2 mb-3">🔔 Solicitudes de Partido (<span class="text-white">${requests.length}</span>)</h2>
+      <div class="space-y-3">
+        ${requests.map((r) => `
+          <div class="bg-black/40 p-3 rounded-lg border border-orange-500/30">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <div class="font-bold text-white text-base">${r.gameName || r.name}</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">Solicitado: ${r.createdAt ? new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+              </div>
+              <button onclick="window.db.removeGameRequest('${r.id}'); renderManagerDashboard('games');" class="text-red-400 hover:text-red-300 p-1 rounded transition text-sm">✕</button>
             </div>
-            <div class="font-bold text-white text-base">${r.gameName}</div>
-            <div class="text-xs text-secondary mt-0.5">Mesa ${r.tableName || '?'} (${r.waiterName || 'Hostess'})</div>
-          </div>
-          <button onclick="window.db.removeGameRequest('${r.id}'); renderManagerGameRequests(document.getElementById('game-requests-container'));" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 p-2 rounded-full transition-colors flex-shrink-0">
-            ✕
-          </button>
-        </div>
 
-        <!-- Quick Add Form -->
-        <div id="quick-add-${r.id}" class="hidden bg-black/40 p-2 rounded border border-blue-800 mt-2 space-y-2">
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="text-[9px] text-gray-500 uppercase font-bold block mb-1">Fecha</label>
-              <input type="date" id="req-date-${r.id}" value="${new Date().toLocaleDateString('en-CA')}" class="w-full bg-black text-white rounded p-1.5 text-sm border border-gray-700 focus:border-blue-500">
+            <!-- Quick Add Form -->
+            <div id="quick-add-${r.id}" class="hidden bg-black/40 p-2 rounded border border-orange-800 mt-2 space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[9px] text-gray-500 uppercase font-bold block mb-1">Fecha</label>
+                  <input type="date" id="req-date-${r.id}" value="${new Date().toLocaleDateString('en-CA')}" class="w-full bg-black text-white rounded p-1.5 text-sm border border-gray-700 focus:border-orange-500">
+                </div>
+                <div>
+                  <label class="text-[9px] text-gray-500 uppercase font-bold block mb-1">Hora</label>
+                  <input type="time" id="req-time-${r.id}" class="w-full bg-black text-white rounded p-1.5 text-sm border border-gray-700 focus:border-orange-500">
+                </div>
+              </div>
+              <select id="req-league-${r.id}" class="w-full bg-black text-white rounded p-1.5 text-sm border border-gray-700 focus:border-orange-500">
+                <option value="Liga MX">⚽ Liga MX</option>
+                <option value="NFL">🏈 NFL</option>
+                <option value="NBA">🏀 NBA</option>
+                <option value="MLB">⚾ MLB</option>
+                <option value="Champions">⚽ Champions</option>
+                <option value="MLS">⚽ MLS</option>
+                <option value="UFC">🥊 UFC</option>
+                <option value="Boxeo">🥊 Boxeo</option>
+                <option value="F1">🏎️ F1</option>
+                <option value="Tenis">🎾 Tenis</option>
+                <option value="Otro">Otro</option>
+              </select>
+              <button onclick="window.addRequestedGame('${r.id}', '${(r.gameName || r.name || '').replace(/'/g, "\\'")}')" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded text-sm transition">
+                ✅ Agregar a Partidos de Hoy
+              </button>
             </div>
-            <div>
-              <label class="text-[9px] text-gray-500 uppercase font-bold block mb-1">Hora</label>
-              <input type="time" id="req-time-${r.id}" class="w-full bg-black text-white rounded p-1.5 text-sm border border-gray-700 focus:border-blue-500">
-            </div>
-          </div>
-          <select id="req-league-${r.id}" class="w-full bg-black text-white rounded p-1.5 text-sm border border-gray-700 focus:border-blue-500">
-            <option value="Liga MX">⚽ Liga MX</option>
-            <option value="NFL">🏈 NFL</option>
-            <option value="NBA">🏀 NBA</option>
-            <option value="MLB">⚾ MLB</option>
-            <option value="Champions">⚽ Champions</option>
-            <option value="MLS">⚽ MLS</option>
-            <option value="UFC">🥊 UFC</option>
-            <option value="Boxeo">🥊 Boxeo</option>
-            <option value="F1">🏎️ F1</option>
-            <option value="Tenis">🎾 Tenis</option>
-            <option value="Otro">Otro</option>
-          </select>
-          <button onclick="window.addRequestedGame('${r.id}', '${r.gameName.replace(/'/g, '\\\'')}')" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded text-sm transition">
-            ✅ Agregar a Partidos
-          </button>
-        </div>
 
-        <button onclick="document.getElementById('quick-add-${r.id}').classList.toggle('hidden')" 
-                class="w-full mt-2 bg-blue-900/40 hover:bg-blue-900/70 text-blue-300 font-bold py-1.5 rounded text-xs border border-blue-800 transition">
-          📅 Agregar al Calendario
-        </button>
+            <button onclick="document.getElementById('quick-add-${r.id}').classList.toggle('hidden')"
+                    class="w-full mt-2 bg-orange-900/40 hover:bg-orange-900/70 text-orange-300 font-bold py-1.5 rounded text-xs border border-orange-800 transition">
+              📅 Agregar al Calendario
+            </button>
+          </div>
+        `).join('')}
       </div>
-      `).join('');
+    </div>`;
 }
+
 
 window.addRequestedGame = function (reqId, gameName) {
   const date = document.getElementById('req-date-' + reqId)?.value;
