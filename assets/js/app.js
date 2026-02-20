@@ -7111,6 +7111,37 @@ window.renderHostessDashboard = function () {
                 </div>
               </div>
 
+              <!-- Motivo de Visita & Partido -->
+              <div class="mt-4 bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <label class="text-[10px] text-gray-400 mb-2 block uppercase font-bold tracking-widest">Paso 3: Motivo de Visita</label>
+                <select id="h-reason" onchange="window.handleHostessReasonChange(this)" class="w-full bg-black text-white border-2 border-gray-600 rounded-lg p-3 font-bold text-base focus:border-yellow-500 mb-3">
+                  <option value="Casual">Casual</option>
+                  <option value="Comer">🍽️ A Comer / Cenar</option>
+                  <option value="Beber">🍻 A Beber</option>
+                  <option value="Partido">⚽ Ver un Partido</option>
+                  <option value="Cumpleaños">🎂 Cumpleaños</option>
+                  <option value="Negocios">💼 Negocios</option>
+                </select>
+
+                <!-- Flujo de Partido (Oculto por defecto) -->
+                <div id="h-game-flow" class="hidden animate-fade-in space-y-3">
+                  <div class="bg-blue-900/20 border-2 border-blue-500 p-3 rounded-lg">
+                    <label class="text-[10px] uppercase font-bold text-blue-300 block mb-2">Selecciona el Partido:</label>
+                    <div id="h-games-container" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      <!-- Partidos inyectados por JS -->
+                    </div>
+                  </div>
+                  
+                  <!-- Variables ocultas para guardar la selección -->
+                  <input type="hidden" id="h-selected-game" value="">
+                  <input type="hidden" id="h-selected-league" value="">
+                  
+                  <button onclick="window.requestManagerGameRegistrationHostess()" class="w-full bg-gray-700 hover:bg-gray-600 border border-gray-500 text-gray-300 py-2 rounded text-xs font-bold transition">
+                    ➕ El partido no está en la lista (Avisar a Gerente)
+                  </button>
+                </div>
+              </div>
+
               <button onclick="processHostessCheckIn()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-5 rounded-xl uppercase tracking-widest text-lg shadow-lg transform active:scale-95 transition mt-4">
                 ✅ INGRESAR MESA
               </button>
@@ -7770,6 +7801,92 @@ window.checkInReservation = function (resId) {
   if (window.showToast) window.showToast(`✅ Datos de ${res.customerName} cargados`, 'success');
 };
 
+// ==========================================
+// HOSTESS CHECK-IN: REASON & GAME FLOW
+// ==========================================
+window.handleHostessReasonChange = function (selectElement) {
+  const reason = selectElement.value;
+  const gameFlow = document.getElementById('h-game-flow');
+
+  if (reason === 'Partido') {
+    gameFlow.classList.remove('hidden');
+    window.renderTodaysGamesForHostess();
+  } else {
+    gameFlow.classList.add('hidden');
+    document.getElementById('h-selected-game').value = '';
+    document.getElementById('h-selected-league').value = '';
+  }
+};
+
+window.renderTodaysGamesForHostess = function () {
+  const container = document.getElementById('h-games-container');
+  if (!container) return;
+
+  const dailyInfo = window.db.getDailyInfo() || {};
+  const allGames = dailyInfo.games || [];
+  const today = new Date().toLocaleDateString('en-CA');
+  const games = allGames.filter(g => g.date === today);
+
+  if (games.length === 0) {
+    container.innerHTML = `
+      <div class="text-center text-gray-400 py-3 bg-black/50 rounded border border-gray-700">
+        <p class="text-xs">📭 No hay partidos registrados hoy</p>
+      </div>`;
+    return;
+  }
+
+  // Sort games by time
+  games.sort((a, b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
+
+  let html = '';
+  games.forEach((game, index) => {
+    html += `
+      <button type="button" onclick="window.selectHostessGame('${game.awayTeam} @ ${game.homeTeam}', '${game.league}', this)"
+        class="hostess-game-btn w-full p-3 bg-black border border-gray-700 hover:border-blue-400 rounded text-left transition text-xs flex justify-between items-center group">
+        <div>
+          <span class="text-blue-400 font-bold">[${game.league}]</span>
+          <span class="text-white ml-1">${game.awayTeam} vs ${game.homeTeam}</span>
+        </div>
+        <div class="text-gray-500 font-mono">${game.time}</div>
+      </button>`;
+  });
+
+  container.innerHTML = html;
+};
+
+window.selectHostessGame = function (gameName, league, btnElement) {
+  // Update hidden inputs
+  document.getElementById('h-selected-game').value = gameName;
+  document.getElementById('h-selected-league').value = league;
+
+  // Highlight visually
+  const allBtns = document.querySelectorAll('.hostess-game-btn');
+  allBtns.forEach(btn => {
+    btn.classList.remove('border-yellow-500', 'bg-blue-900/40', 'ring-2', 'ring-yellow-500/50');
+    btn.classList.add('border-gray-700', 'bg-black');
+  });
+
+  btnElement.classList.remove('border-gray-700', 'bg-black');
+  btnElement.classList.add('border-yellow-500', 'bg-blue-900/40', 'ring-2', 'ring-yellow-500/50');
+};
+
+window.requestManagerGameRegistrationHostess = function () {
+  const manualGame = prompt('📝 Ingresa el partido que vienen a ver:\n\nEjemplo: América vs Chivas (Liga MX)');
+  if (!manualGame || !manualGame.trim()) return;
+
+  document.getElementById('h-selected-game').value = manualGame.trim();
+  document.getElementById('h-selected-league').value = 'Pendiente/Otro';
+
+  // Remove selection from list
+  document.querySelectorAll('.hostess-game-btn').forEach(btn => {
+    btn.classList.remove('border-yellow-500', 'bg-blue-900/40', 'ring-2', 'ring-yellow-500/50');
+    btn.classList.add('border-gray-700', 'bg-black');
+  });
+
+  if (window.showToast) window.showToast('✅ Partido manual asignado. Puedes continuar.', 'success');
+};
+
+
 // Start Hostess Tab Switcher
 window.switchHostessTab = function (tabName) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -7843,7 +7960,12 @@ window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
     // Update existing if needed (optional, maybe just update last visit)
   }
 
-  // 5. Create Visit
+  // 5. Extraer Razón y Partido (NUEVO)
+  const reasonSelect = document.getElementById('h-reason') ? document.getElementById('h-reason').value : '';
+  const selectedGame = document.getElementById('h-selected-game') ? document.getElementById('h-selected-game').value : '';
+  const selectedLeague = document.getElementById('h-selected-league') ? document.getElementById('h-selected-league').value : '';
+
+  // 6. Create Visit
   const visitData = {
     branchId,
     table: tableNumber,
@@ -7852,13 +7974,16 @@ window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
     pax,
     startTime: new Date().toISOString(),
     date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
+    reason: reasonSelect,     // <-- INYECTADO AQUI
+    gameName: selectedGame,   // <-- INYECTADO AQUI
+    league: selectedLeague,   // <-- INYECTADO AQUI
     orders: [],
     totalAmount: 0
   };
 
   const newVisit = window.db.createVisit(visitData);
 
-  // 6. If this came from a Reservation, MARK IT AS COMPLETED
+  // 7. If this came from a Reservation, MARK IT AS COMPLETED
   const todayStr = new Date().toLocaleDateString('en-CA');
   const pendingRes = window.db.getReservations().find(r =>
     r.customerName.toLowerCase() === fullNameQuery.toLowerCase() &&
@@ -7880,13 +8005,18 @@ window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
     }
   }
 
-  // 7. Clear Form
+  // 8. Clear Form
   document.getElementById('h-firstname').value = '';
   document.getElementById('h-lastname').value = '';
-  if (document.getElementById('h-maternal')) document.getElementById('h-maternal').value = '';
+  if (document.getElementById('h-lastname2')) document.getElementById('h-lastname2').value = '';
   document.getElementById('h-table').value = '';
   document.getElementById('h-waiter').value = '';
   document.getElementById('h-pax').innerText = '1';
+  if (document.getElementById('h-reason')) document.getElementById('h-reason').value = 'Casual';
+  if (document.getElementById('h-game-flow')) document.getElementById('h-game-flow').classList.add('hidden');
+  if (document.getElementById('h-selected-game')) document.getElementById('h-selected-game').value = '';
+  if (document.getElementById('h-selected-league')) document.getElementById('h-selected-league').value = '';
+
 
   // 8. Re-render and Switch to Tables Tab
   if (typeof window.renderHostessDashboard === 'function') {
