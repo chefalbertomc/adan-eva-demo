@@ -473,7 +473,9 @@ function renderHostessDashboard() {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             ${activeVisits.map(v => {
     const waiterName = waiters.find(w => w.id === v.waiterId)?.name || 'Sin Asignar';
-    const timeSeated = new Date(v.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeToFormat = v.startTime || v.entryTime || v.date;
+    const timeSeated = timeToFormat ? new Date(timeToFormat).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'NA';
+    const custName = v.customer ? (v.customer.firstName + ' ' + (v.customer.lastName || '')).trim() : (v.customerName || 'Cliente');
     return `
               <div class="table-card bg-gray-900 border-l-4 border-green-500 rounded-r-xl p-4 shadow-lg relative animate-fade-in" data-waiter-id="${v.waiterId}">
                 <div class="flex justify-between items-start mb-2">
@@ -490,7 +492,7 @@ function renderHostessDashboard() {
                 </div>
                 
                 <div class="border-t border-gray-800 pt-3 mt-2">
-                    <div class="font-bold text-white text-lg truncate mb-1">${v.customerName}</div>
+                    <div class="font-bold text-white text-lg truncate mb-1">${custName}</div>
                     ${v.vip ? `<div class="inline-block bg-yellow-600/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded border border-yellow-600/50 mb-2 font-bold tracking-wider">VIP ${v.vip.toUpperCase()}</div>` : ''}
                     
                     <button onclick="document.getElementById('edit-visit-${v.id}').classList.toggle('hidden')" class="w-full text-xs bg-gray-800 hover:bg-gray-700 text-gray-400 py-2 rounded mt-2 border border-gray-700 transition">
@@ -6861,7 +6863,9 @@ window.renderHostessDashboard = function () {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             ${activeVisits.map(v => {
     const waiterName = window.db.data.users.find(w => w.id === v.waiterId)?.name || 'Sin Asignar';
-    const timeSeated = new Date(v.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeToFormat = v.startTime || v.entryTime || v.date;
+    const timeSeated = timeToFormat ? new Date(timeToFormat).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'NA';
+    const custName = v.customer ? (v.customer.firstName + ' ' + (v.customer.lastName || '')).trim() : (v.customerName || 'Cliente');
     return `
               <div class="table-card bg-gray-900 border-l-4 border-green-500 rounded-r-xl p-4 shadow-lg relative animate-fade-in" data-waiter-id="${v.waiterId}">
                 <div class="flex justify-between items-start mb-2">
@@ -6878,7 +6882,7 @@ window.renderHostessDashboard = function () {
                 </div>
                 
                 <div class="border-t border-gray-800 pt-3 mt-2">
-                    <div class="font-bold text-white text-lg truncate mb-1">${v.customerName}</div>
+                    <div class="font-bold text-white text-lg truncate mb-1">${custName}</div>
                     ${v.vip ? `<div class="inline-block bg-yellow-600/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded border border-yellow-600/50 mb-2 font-bold tracking-wider">VIP ${v.vip.toUpperCase()}</div>` : ''}
                     
                     <button onclick="document.getElementById('edit-visit-${v.id}').classList.toggle('hidden')" class="w-full text-xs bg-gray-800 hover:bg-gray-700 text-gray-400 py-2 rounded mt-2 border border-gray-700 transition">
