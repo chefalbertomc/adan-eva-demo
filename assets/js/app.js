@@ -475,13 +475,22 @@ function renderHostessDashboard() {
     const waiterName = waiters.find(w => w.id === v.waiterId)?.name || 'Sin Asignar';
     const timeToFormat = v.startTime || v.entryTime || v.date;
     const timeSeated = timeToFormat ? new Date(timeToFormat).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'NA';
+
+    // Calcular tiempo transcurrido
+    const startTimeDate = new Date(timeToFormat);
+    const diffMins = Math.floor((new Date() - startTimeDate) / 60000);
+    const timeElapsed = isNaN(diffMins) ? '' : (diffMins > 60 ? `${Math.floor(diffMins / 60)}h ${diffMins % 60}m` : `${diffMins}m`);
+
     const custName = v.customer ? (v.customer.firstName + ' ' + (v.customer.lastName || '')).trim() : (v.customerName || 'Cliente');
     return `
               <div class="table-card bg-gray-900 border-l-4 border-green-500 rounded-r-xl p-4 shadow-lg relative animate-fade-in" data-waiter-id="${v.waiterId}">
                 <div class="flex justify-between items-start mb-2">
                     <div>
                         <span class="text-3xl font-black text-white shadow-text">#${v.table}</span>
-                        <div class="text-xs text-gray-400 font-mono mt-1">🕒 ${timeSeated}</div>
+                        <div class="text-xs text-gray-400 font-mono mt-1">
+                            🕒 ${timeSeated}
+                            ${timeElapsed ? `<span class="ml-2 text-yellow-500 font-bold">⏱️ ${timeElapsed}</span>` : ''}
+                        </div>
                     </div>
                     <div class="text-right">
                         <div class="bg-gray-800 px-2 py-1 rounded text-xs text-gray-300 border border-gray-700 mb-1 inline-block">
@@ -6890,13 +6899,22 @@ window.renderHostessDashboard = function () {
     const waiterName = window.db.data.users.find(w => w.id === v.waiterId)?.name || 'Sin Asignar';
     const timeToFormat = v.startTime || v.entryTime || v.date;
     const timeSeated = timeToFormat ? new Date(timeToFormat).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'NA';
+
+    // Calcular tiempo transcurrido
+    const startTimeDate = new Date(timeToFormat);
+    const diffMins = Math.floor((new Date() - startTimeDate) / 60000);
+    const timeElapsed = isNaN(diffMins) ? '' : (diffMins > 60 ? `${Math.floor(diffMins / 60)}h ${diffMins % 60}m` : `${diffMins}m`);
+
     const custName = v.customer ? (v.customer.firstName + ' ' + (v.customer.lastName || '')).trim() : (v.customerName || 'Cliente');
     return `
               <div class="table-card bg-gray-900 border-l-4 border-green-500 rounded-r-xl p-4 shadow-lg relative animate-fade-in" data-waiter-id="${v.waiterId}">
                 <div class="flex justify-between items-start mb-2">
                     <div>
                         <span class="text-3xl font-black text-white shadow-text">#${v.table}</span>
-                        <div class="text-xs text-gray-400 font-mono mt-1">🕒 ${timeSeated}</div>
+                        <div class="text-xs text-gray-400 font-mono mt-1">
+                            🕒 ${timeSeated}
+                            ${timeElapsed ? `<span class="ml-2 text-yellow-500 font-bold">⏱️ ${timeElapsed}</span>` : ''}
+                        </div>
                     </div>
                     <div class="text-right">
                         <div class="bg-gray-800 px-2 py-1 rounded text-xs text-gray-300 border border-gray-700 mb-1 inline-block">
