@@ -6094,14 +6094,14 @@ function renderEnrichCustomer(params) {
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm text-gray-300">
-                            <thead class="bg-gray-800 text-gray-400 text-xs uppercase tracking-wider">
+                            <thead class="bg-gray-800 text-gray-400 text-xs uppercase tracking-wider text-left">
                                 <tr>
-                                    <th class="px-6 py-4">Fecha</th>
-                                    <th class="px-6 py-4">Hora</th>
-                                    <th class="px-6 py-4">Mesa</th>
-                                    <th class="px-6 py-4">Pax</th>
-                                    <th class="px-6 py-4">Motivo / Partido</th>
-                                    <th class="px-6 py-4 text-right">Consumo</th>
+                                    <th class="px-6 py-4 font-bold">Fecha</th>
+                                    <th class="px-6 py-4 font-bold">Hora</th>
+                                    <th class="px-6 py-4 font-bold">Mesa</th>
+                                    <th class="px-6 py-4 font-bold">Pax</th>
+                                    <th class="px-6 py-4 font-bold">Motivo / Partido</th>
+                                    <th class="px-6 py-4 font-bold text-right">Consumo</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-800">

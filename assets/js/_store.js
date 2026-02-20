@@ -1380,6 +1380,16 @@ class Store {
         currentMockDate.setFullYear(currentMockDate.getFullYear() - 1); // Start 1 year ago
         let count = 0;
 
+        const games = [
+            'Super Bowl LVIII',
+            'América vs Chivas',
+            'Real Madrid vs Barça',
+            'Final Champions',
+            'Pumas vs Cruz Azul',
+            'UFC 300',
+            'F1 Gran Premio México'
+        ];
+
         for (let i = 0; i < 20; i++) {
             // Random days jump 5-20 days
             currentMockDate.setDate(currentMockDate.getDate() + Math.floor(Math.random() * 15) + 5);
@@ -1391,6 +1401,8 @@ class Store {
             // Random hour between 18 and 23
             currentMockDate.setHours(18 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 59), 0, 0);
 
+            const isGame = i % 3 === 0;
+
             this.data.visits.push({
                 id: visitId,
                 customerId: customerId,
@@ -1401,7 +1413,8 @@ class Store {
                 waiterId: 'wj1',
                 date: currentMockDate.toISOString().split('T')[0],
                 startTime: currentMockDate.toISOString(),
-                reason: i % 3 === 0 ? 'Partido' : 'Casual',
+                reason: isGame ? 'Partido' : 'Casual',
+                gameName: isGame ? games[Math.floor(Math.random() * games.length)] : null,
                 totalAmount: favItems.reduce((acc, item) => acc + item.price, 0) + 75 // Adding 1 extra drink
             });
 
