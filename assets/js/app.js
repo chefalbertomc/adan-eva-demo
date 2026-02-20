@@ -4869,7 +4869,7 @@ function renderManagerTablesTab(container) {
                     ${v.vip ? `<div class="inline-block bg-yellow-600/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded border border-yellow-600/50 mt-1 font-bold tracking-wider">VIP ${v.vip.toUpperCase()}</div>` : ''}
 
                     <!-- VISIT DETAILS -->
-                    ${reasonDisplay}
+                    <div id="mgr-reason-${v.id}">${reasonDisplay}</div>
 
                     <!-- ACTION BUTTONS -->
                     <div class="mt-4">
@@ -7263,9 +7263,7 @@ window.renderHostessDashboard = function () {
                                </div>
                             </div>
                             
-                            <button onclick="window.updateHostessVisitReason('${v.id}')" class="w-full mt-2 bg-yellow-600 hover:bg-yellow-500 text-black py-2 rounded font-bold text-xs uppercase tracking-wide">
-                              💾 Guardar Motivo
-                            </button>
+
                         </div>
                     </div>
 
@@ -7854,10 +7852,35 @@ window.handleHostessReasonChange = function (selectElement, visitId) {
   if (reason === 'Partido') {
     gameFlow.classList.remove('hidden');
     window.renderTodaysGamesForHostess(visitId);
+    // Auto-save happens in selectHostessGame on game click
   } else {
     gameFlow.classList.add('hidden');
-    document.getElementById(`h-selected-game-${visitId}`).value = '';
-    document.getElementById(`h-selected-league-${visitId}`).value = '';
+    document.getElementById('h-selected-game-' + visitId).value = '';
+    document.getElementById('h-selected-league-' + visitId).value = '';
+
+    // AUTO-SAVE non-Partido reason immediately
+    window.db.updateVisitDetails(visitId, { reason: reason, gameName: '', league: '', selectedGame: '' });
+
+    // Update Hostess badge in-place
+    const hBadge = document.getElementById('motivo-badge-' + visitId);
+    if (hBadge) {
+      if (reason && reason !== 'Casual') {
+        hBadge.textContent = '\uD83D\uDCCC ' + reason;
+        hBadge.classList.remove('hidden');
+      } else {
+        hBadge.classList.add('hidden');
+      }
+    }
+    // Update Gerente badge in-place
+    const mgrDiv = document.getElementById('mgr-reason-' + visitId);
+    if (mgrDiv && reason && reason !== 'Casual') {
+      const emojiMap = { 'Cumplea\u00f1os': '\uD83C\uDF82', 'Negocios': '\uD83D\uDCBC', 'Beber': '\uD83C\uDF7B', 'Comer': '\uD83C\uDF7D' };
+      const emoji = emojiMap[reason] || '\uD83C\uDF7D';
+      mgrDiv.innerHTML = '<div class="mt-3 bg-white/5 p-3 rounded-lg border border-white/10"><div class="text-sm font-bold text-white">' + emoji + ' ' + reason.toUpperCase() + '</div></div>';
+    } else if (mgrDiv) {
+      mgrDiv.innerHTML = '';
+    }
+    if (window.showToast) window.showToast('\u2705 Motivo: ' + reason, 'success');
   }
 };
 
@@ -7915,6 +7938,19 @@ window.selectHostessGame = function (gameName, league, btnElement, visitId) {
 
   btnElement.classList.remove('border-gray-700', 'bg-black');
   btnElement.classList.add('border-yellow-500', 'bg-blue-900/40', 'ring-2', 'ring-yellow-500/50');
+
+  // AUTO-SAVE to DB immediately
+  window.db.updateVisitDetails(visitId, { gameName: gameName, league: league, reason: 'Partido', selectedGame: gameName });
+
+  // Update Hostess badge in-place
+  const hBadge = document.getElementById('motivo-badge-' + visitId);
+  if (hBadge) { hBadge.textContent = '\uD83D\uDCCC Partido: ' + gameName; hBadge.classList.remove('hidden'); }
+
+  // Update Gerente card in-place
+  const mgrDiv = document.getElementById('mgr-reason-' + visitId);
+  if (mgrDiv) mgrDiv.innerHTML = '<div class="mt-3 bg-white/5 p-3 rounded-lg border border-white/10"><div class="text-[10px] text-green-400 font-bold uppercase tracking-widest">PARTIDO</div><div class="text-sm font-black text-white leading-tight mt-0.5">' + gameName + '</div></div>';
+
+  if (window.showToast) window.showToast('\u2705 Partido: ' + gameName, 'success');
 };
 
 window.saveManualGameHostess = function (visitId) {
