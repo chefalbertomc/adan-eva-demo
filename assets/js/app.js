@@ -7975,11 +7975,6 @@ window.saveManualGameHostess = function (visitId) {
   // Construct game string
   const manualGameStr = isIndividual ? home : `${away} @ ${home}`;
 
-  // Notify manager
-  window.db.addGameRequest(manualGameStr);
-
-  document.getElementById(`h-selected-game-${visitId}`).value = manualGameStr;
-  document.getElementById(`h-selected-league-${visitId}`).value = league;
 
   // Remove selection from previous list buttons to show manual is active
   document.querySelectorAll(`.hostess-game-btn-${visitId}`).forEach(btn => {
@@ -7990,7 +7985,21 @@ window.saveManualGameHostess = function (visitId) {
   // Hide the form visually again
   document.getElementById(`manual-game-form-${visitId}`).classList.add('hidden');
 
-  if (window.showToast) window.showToast(`✅ Partido vinculado: ${manualGameStr}`, 'success');
+  // AUTO-SAVE to DB
+  window.db.updateVisitDetails(visitId, { gameName: manualGameStr, league: league, reason: 'Partido', selectedGame: manualGameStr });
+
+  // Notify manager about unknown game
+  window.db.addGameRequest(manualGameStr);
+
+  // Update Hostess badge in-place
+  const hBadge = document.getElementById('motivo-badge-' + visitId);
+  if (hBadge) { hBadge.textContent = '\uD83D\uDCCC Partido: ' + manualGameStr; hBadge.classList.remove('hidden'); }
+
+  // Update Gerente badge in-place
+  const mgrDiv = document.getElementById('mgr-reason-' + visitId);
+  if (mgrDiv) mgrDiv.innerHTML = '<div class="mt-3 bg-white/5 p-3 rounded-lg border border-white/10"><div class="text-[10px] text-green-400 font-bold uppercase tracking-widest">PARTIDO</div><div class="text-sm font-black text-white leading-tight mt-0.5">' + manualGameStr + '</div></div>';
+
+  if (window.showToast) window.showToast('\u2705 Partido vinculado: ' + manualGameStr, 'success');
 };
 
 window.updateHostessVisitReason = function (visitId) {
