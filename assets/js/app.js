@@ -6096,11 +6096,11 @@ function renderEnrichCustomer(params) {
                         <table class="w-full text-left text-sm text-gray-300">
                             <thead class="bg-gray-800 text-gray-400 text-xs uppercase tracking-wider">
                                 <tr>
-                                    <th class="px-6 py-4 font-bold text-left">Fecha</th>
-                                    <th class="px-6 py-4 font-bold text-left">Hora</th>
-                                    <th class="px-6 py-4 font-bold text-left">Mesa</th>
-                                    <th class="px-6 py-4 font-bold text-left">Pax</th>
-                                    <th class="px-6 py-4 font-bold text-left w-1/4">Motivo / Partido</th>
+                                    <th class="px-6 py-4 font-bold text-center">Fecha</th>
+                                    <th class="px-6 py-4 font-bold text-center">Hora</th>
+                                    <th class="px-6 py-4 font-bold text-center">Mesa</th>
+                                    <th class="px-6 py-4 font-bold text-center">Pax</th>
+                                    <th class="px-6 py-4 font-bold text-center w-1/4">Motivo / Partido</th>
                                     <th class="px-6 py-4 font-bold text-right">Consumo</th>
                                 </tr>
                             </thead>
@@ -6112,12 +6112,12 @@ function renderEnrichCustomer(params) {
                                 ` : allVisits.map(v => {
     const d = new Date(v.startTime || v.entryTime || v.date);
     return `
-                                    <tr class="hover:bg-gray-800/50 transition">
-                                        <td class="px-6 py-4 font-mono text-left">${d.toLocaleDateString()}</td>
-                                        <td class="px-6 py-4 font-mono text-left">${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                        <td class="px-6 py-4 font-bold text-white text-left">#${v.table}</td>
-                                        <td class="px-6 py-4 text-left">${v.pax || '?'} <span class="text-xs text-gray-500">pax</span></td>
-                                        <td class="px-6 py-4 text-left">
+                                    <tr class="hover:bg-gray-800/50 transition text-center">
+                                        <td class="px-6 py-4 font-mono">${d.toLocaleDateString()}</td>
+                                        <td class="px-6 py-4 font-mono">${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                        <td class="px-6 py-4 font-bold text-white">#${v.table}</td>
+                                        <td class="px-6 py-4">${v.pax || '?'} <span class="text-xs text-gray-500">pax</span></td>
+                                        <td class="px-6 py-4">
                                             ${v.reason === 'Partido' ? `<span class="bg-blue-900 text-blue-100 px-2 py-1 rounded text-xs border border-blue-700">⚽ Partido: ${v.gameName || 'No Especificado'}</span>` : (v.reason ? `<span class="bg-black text-gray-300 px-2 py-1 rounded text-xs border border-gray-700">${v.reason}</span>` : '-')}
                                         </td>
                                         <td class="px-6 py-4 text-right font-bold text-green-400">$${(v.totalAmount || 0).toLocaleString()}</td>
