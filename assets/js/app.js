@@ -102,8 +102,12 @@ window.KNOWN_TEAMS = [
 
 // Helper to refresh datalist from _store or initialization
 window.updateTeamDatalist = function () {
-  const dataList = document.getElementById('team-suggestions');
-  if (!dataList) return;
+  let dataList = document.getElementById('team-suggestions');
+  if (!dataList) {
+    dataList = document.createElement('datalist');
+    dataList.id = 'team-suggestions';
+    document.body.appendChild(dataList);
+  }
 
   // Merge potential duplicates and sort
   const uniqueTeams = [...new Set(window.KNOWN_TEAMS)].sort();
@@ -7181,6 +7185,7 @@ window.renderHostessDashboard = function () {
                 <div class="border-t border-gray-800 pt-3 mt-2">
                     <div class="font-bold text-white text-lg truncate mb-1">${custName}</div>
                     ${v.vip ? `<div class="inline-block bg-yellow-600/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded border border-yellow-600/50 mb-2 font-bold tracking-wider">VIP ${v.vip.toUpperCase()}</div>` : ''}
+                    ${v.reason && v.reason !== 'Casual' ? `<div class="text-[11px] text-yellow-400 font-bold mt-1 mb-1 truncate">📌 ${v.reason}${v.gameName ? ': ' + v.gameName : ''}</div>` : ''}
                     
                     <button onclick="document.getElementById('edit-visit-${v.id}').classList.toggle('hidden')" class="w-full text-xs bg-gray-800 hover:bg-gray-700 text-gray-400 py-2 rounded mt-2 border border-gray-700 transition">
                        ⚡ GESTIONAR
@@ -7381,6 +7386,19 @@ window.renderHostessDashboard = function () {
   // Add class for bottom nav padding
   div.className = 'p-4 max-w-6xl mx-auto has-bottom-nav';
   appContainer.appendChild(div);
+
+  // POST-RENDER INITIALIZATION
+  // Render datalist globally for manual game inputs
+  window.updateTeamDatalist();
+
+  // Initialize game options for active tables if they already selected Partido
+  activeVisits.forEach(v => {
+    if (v.reason === 'Partido') {
+      setTimeout(() => {
+        window.renderTodaysGamesForHostess(v.id);
+      }, 0);
+    }
+  });
 }
 
 // ==========================================
@@ -7920,6 +7938,9 @@ window.saveManualGameHostess = function (visitId) {
 
   // Construct game string
   const manualGameStr = isIndividual ? home : `${away} @ ${home}`;
+
+  // Notify manager
+  window.db.addGameRequest(manualGameStr);
 
   document.getElementById(`h-selected-game-${visitId}`).value = manualGameStr;
   document.getElementById(`h-selected-league-${visitId}`).value = league;
