@@ -1733,7 +1733,7 @@ window.requestGameToManager = function (visitId) {
   const input = div.querySelector('input');
   const gameName = input.value.trim();
   if (gameName) {
-    window.db.addGameRequest(gameName);
+    window.db.requestGame(gameName);
     alert(`✅ Solicitud enviada al Gerente para: "${gameName}"\n\nEl partido quedará registrado provisionalmente en esta mesa.`);
   } else {
     alert('Escribe el nombre del partido primero.');
@@ -7989,7 +7989,7 @@ window.saveManualGameHostess = function (visitId) {
   window.db.updateVisitDetails(visitId, { gameName: manualGameStr, league: league, reason: 'Partido', selectedGame: manualGameStr });
 
   // Notify manager about unknown game
-  window.db.addGameRequest(manualGameStr);
+  window.db.requestGame(manualGameStr);
 
   // Update Hostess badge in-place
   const hBadge = document.getElementById('motivo-badge-' + visitId);
