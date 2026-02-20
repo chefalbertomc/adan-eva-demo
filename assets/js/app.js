@@ -4766,6 +4766,7 @@ function renderManagerTablesTab(container) {
     const startTime = new Date(v.date);
     const diffMins = Math.floor((new Date() - startTime) / 60000);
     const timeElapsed = diffMins > 60 ? `${Math.floor(diffMins / 60)}h ${diffMins % 60}m` : `${diffMins}m`;
+    const timeSeated = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     // DEBUG: Log visit data to see what fields are available
     console.log('Visit data for table', v.table, ':', {
@@ -4845,7 +4846,10 @@ function renderManagerTablesTab(container) {
                         </div>
                       </div>
                       <div class="text-right">
-                        <div class="text-xs font-mono text-gray-400 bg-black/30 px-2 py-1 rounded inline-block">⏱ ${timeElapsed}</div>
+                        <div class="text-xs font-mono text-gray-400 bg-black/30 px-2 py-1 rounded inline-block">
+                           🕒 ${timeSeated}
+                           <span class="ml-1 text-yellow-500 font-bold">⏱️ ${timeElapsed}</span>
+                        </div>
                         <div class="text-[10px] text-gray-500 mt-1 uppercase tracking-wider">${waiter?.name || 'S/A'}</div>
                       </div>
                     </div>
