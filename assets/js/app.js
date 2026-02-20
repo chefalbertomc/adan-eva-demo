@@ -7528,27 +7528,109 @@ function renderManagerGameRequests(container) {
   }
 
   container.innerHTML = requests.map((r) => `
-      <div class="bg-gray-800 p-3 rounded-lg border-l-4 border-blue-500 mb-2 flex justify-between items-center animate-fade-in">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="text-blue-400 font-bold text-[10px] uppercase tracking-wider">SOLICITUD DE PARTIDO</span>
-            <span class="text-xs text-gray-500">• ${r.time}</span>
+      <div class="bg-gray-800 p-3 rounded-lg border-l-4 border-blue-500 mb-2 animate-fade-in">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-blue-400 font-bold text-[10px] uppercase tracking-wider">SOLICITUD DE PARTIDO</span>
+            </div>
+            <div class="font-bold text-white text-base">${r.gameName}</div>
+            <div class="text-xs text-secondary mt-0.5">Mesa ${r.tableName || '?'} (${r.waiterName || 'Hostess'})</div>
           </div>
-          <div class="font-bold text-white text-base">
-            ${r.gameName}
-          </div>
-          <div class="text-xs text-secondary mt-1">
-            Mesa ${r.tableName} (${r.waiterName})
-          </div>
-        </div>
-        <div>
-          <button onclick="window.db.removeGameRequest('${r.id}')" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 p-2 rounded-full transition-colors">
+          <button onclick="window.db.removeGameRequest('${r.id}'); renderManagerGameRequests(document.getElementById('game-requests-container'));" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 p-2 rounded-full transition-colors flex-shrink-0">
             ✕
           </button>
         </div>
+
+        <!-- Quick Add Form -->
+        <div id="quick-add-${r.id}" class="hidden bg-black/40 p-2 rounded border border-blue-800 mt-2 space-y-2">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[9px] text-gray-500 uppercase font-bold block mb-1">Fecha</label>
+              <input type="date" id="req-date-${r.id}" value="${new Date().toLocaleDateString('en-CA')}" class="w-full bg-black text-white rounded p-1.5 text-sm border border-gray-700 focus:border-blue-500">
+            </div>
+            <div>
+              <label class="text-[9px] text-gray-500 uppercase font-bold block mb-1">Hora</label>
+              <input type="time" id="req-time-${r.id}" class="w-full bg-black text-white rounded p-1.5 text-sm border border-gray-700 focus:border-blue-500">
+            </div>
+          </div>
+          <select id="req-league-${r.id}" class="w-full bg-black text-white rounded p-1.5 text-sm border border-gray-700 focus:border-blue-500">
+            <option value="Liga MX">⚽ Liga MX</option>
+            <option value="NFL">🏈 NFL</option>
+            <option value="NBA">🏀 NBA</option>
+            <option value="MLB">⚾ MLB</option>
+            <option value="Champions">⚽ Champions</option>
+            <option value="MLS">⚽ MLS</option>
+            <option value="UFC">🥊 UFC</option>
+            <option value="Boxeo">🥊 Boxeo</option>
+            <option value="F1">🏎️ F1</option>
+            <option value="Tenis">🎾 Tenis</option>
+            <option value="Otro">Otro</option>
+          </select>
+          <button onclick="window.addRequestedGame('${r.id}', '${r.gameName.replace(/'/g, '\\\'')}')" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded text-sm transition">
+            ✅ Agregar a Partidos
+          </button>
+        </div>
+
+        <button onclick="document.getElementById('quick-add-${r.id}').classList.toggle('hidden')" 
+                class="w-full mt-2 bg-blue-900/40 hover:bg-blue-900/70 text-blue-300 font-bold py-1.5 rounded text-xs border border-blue-800 transition">
+          📅 Agregar al Calendario
+        </button>
       </div>
       `).join('');
 }
+
+window.addRequestedGame = function (reqId, gameName) {
+  const date = document.getElementById('req-date-' + reqId)?.value;
+  const time = document.getElementById('req-time-' + reqId)?.value;
+  const league = document.getElementById('req-league-' + reqId)?.value;
+
+  if (!date || !time) {
+    if (window.showToast) window.showToast('⚠️ Falta la fecha u hora', 'warning');
+    return;
+  }
+
+  // Parse team names: handles "Away @ Home" or "Home vs Away" format
+  let homeTeam = gameName;
+  let awayTeam = '';
+  if (gameName.includes(' @ ')) {
+    const parts = gameName.split(' @ ');
+    awayTeam = parts[0].trim();
+    homeTeam = parts[1].trim();
+  } else if (gameName.includes(' vs ')) {
+    const parts = gameName.split(' vs ');
+    homeTeam = parts[0].trim();
+    awayTeam = parts[1].trim();
+  }
+
+  // Individual sports
+  const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
+  const isIndividual = individualSports.includes(league);
+
+  const gameData = {
+    league,
+    date,
+    time,
+    homeTeam: isIndividual ? '' : homeTeam,
+    awayTeam: isIndividual ? '' : awayTeam,
+    match: isIndividual ? gameName : undefined
+  };
+
+  if (!isIndividual) {
+    gameData.homeTeam = homeTeam;
+    gameData.awayTeam = awayTeam;
+  }
+
+  window.db.addGame(gameData);
+  window.db.removeGameRequest(reqId);
+
+  if (window.showToast) window.showToast('✅ Partido "' + gameName + '" agregado al calendario', 'success');
+
+  // Refresh games tab
+  renderManagerDashboard('games');
+};
+
+
 
 // NEW: Render Reservations (Real Data)
 function renderManagerReservations(container) {
