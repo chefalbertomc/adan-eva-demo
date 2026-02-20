@@ -4859,7 +4859,7 @@ function renderManagerTablesTab(container) {
                       <button onclick="event.stopPropagation(); navigateTo('enrich-customer', {customerId: '${v.customerId}', visitId: '${v.id}'})"
                         class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 flex-shrink-0 rounded text-xs font-bold flex items-center gap-1 transition shadow border border-gray-600"
                         title="Editar información del cliente">
-                        📝 Editar
+                        📝 Info
                       </button>
                     </div>
                     ${v.vip ? `<div class="inline-block bg-yellow-600/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded border border-yellow-600/50 mt-1 font-bold tracking-wider">VIP ${v.vip.toUpperCase()}</div>` : ''}
@@ -4867,8 +4867,39 @@ function renderManagerTablesTab(container) {
                     <!-- VISIT DETAILS -->
                     ${reasonDisplay}
 
-                    <!-- ACTION BUTTON -->
+                    <!-- ACTION BUTTONS -->
                     <div class="mt-4">
+                       <button onclick="document.getElementById('mgr-edit-visit-${v.id}').classList.toggle('hidden')" class="w-full text-xs bg-gray-800 hover:bg-gray-700 text-gray-400 py-2 rounded mb-2 border border-gray-700 transition">
+                         ⚡ GESTIONAR
+                       </button>
+
+                       <!-- Hidden Manager Editor -->
+                       <div id="mgr-edit-visit-${v.id}" class="hidden mb-2 space-y-2 bg-black/20 p-2 rounded border border-gray-800">
+                          <!-- Cambio Mesa -->
+                          <div class="bg-black/40 p-3 rounded-lg border border-gray-800">
+                              <div class="text-[10px] text-gray-500 uppercase font-bold mb-2">Cambiar Mesa</div>
+                              <div class="flex gap-2">
+                                 <input type="number" id="new-table-${v.id}" placeholder="#" class="bg-gray-900 text-white border border-gray-700 rounded p-3 w-full text-center font-bold text-lg" min="1">
+                                 <button onclick="doChangeTable('${v.id}')" class="bg-blue-600 text-white rounded px-4 font-bold hover:bg-blue-500 text-xl">✓</button>
+                              </div>
+                          </div>
+                          <!-- Cambio Mesero -->
+                           <div class="bg-black/40 p-3 rounded-lg border border-gray-800">
+                              <div class="text-[10px] text-gray-500 uppercase font-bold mb-2">Cambiar Mesero</div>
+                              <div class="flex gap-2">
+                                 <select id="new-waiter-${v.id}" class="bg-gray-900 text-white border border-gray-700 rounded p-3 w-full text-sm font-bold truncate">
+                                    ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w => `<option value="${w.id}" ${w.id === v.waiterId ? 'selected' : ''}>${w.name}</option>`).join('')}
+                                 </select>
+                                 <button onclick="doChangeWaiter('${v.id}')" class="bg-blue-600 text-white rounded px-4 font-bold hover:bg-blue-500 text-xl">✓</button>
+                              </div>
+                          </div>
+                       </div>
+
+                       <button onclick="window.confirmAndRelease('${v.id}')"
+                          class="w-full bg-red-900/50 hover:bg-red-800 text-red-200 border border-red-700/50 font-bold py-3 rounded-lg mb-2 uppercase tracking-widest transition-all shadow-md text-xs">
+                          🆓 FINALIZAR VISITA / LIBERAR MESA
+                       </button>
+
                       <button onclick="navigateTo('waiter-detail', {visitId: '${v.id}'})"
                         class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1">
                         <span class="text-2xl">🍽️</span>
