@@ -7114,10 +7114,14 @@ window.initApp = async function () {
         // Render Dashboard based on Role
         if (STATE.user.role === 'hostess') {
           // START LISTENER FOR VISITS
-          window.db.subscribeToVisits((visits) => {
-            if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
-          });
-          renderHostessDashboard();
+          if (typeof window.db.addListener === 'function') {
+            window.db.addListener(() => {
+              if (typeof window.renderHostessDashboard === 'function') window.renderHostessDashboard();
+              else if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
+            });
+          }
+          if (typeof window.renderHostessDashboard === 'function') window.renderHostessDashboard();
+          else if (typeof renderHostessDashboard === 'function') renderHostessDashboard();
         } else if (STATE.user.role === 'manager' || STATE.user.role === 'admin') {
           if (typeof renderManagerDashboard === 'function') renderManagerDashboard('home');
         } else if (STATE.user.role === 'waiter') {
@@ -7583,7 +7587,12 @@ window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
   document.getElementById('h-waiter').value = '';
   document.getElementById('h-pax').innerText = '1';
 
-  // 8. Switch to Tables Tab
+  // 8. Re-render and Switch to Tables Tab
+  if (typeof window.renderHostessDashboard === 'function') {
+    window.renderHostessDashboard();
+  } else if (typeof renderHostessDashboard === 'function') {
+    renderHostessDashboard();
+  }
   switchHostessTab('tables');
 
   alert(`✅ Mesa ${tableNumber} asignada a ${fullNameQuery}`);
