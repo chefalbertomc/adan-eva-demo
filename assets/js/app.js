@@ -75,8 +75,8 @@ window.addEventListener('db-daily-update', (event) => {
 });
 
 window.KNOWN_TEAMS = [
-  // LIGA MX (COMPLETA)
-  "Club América", "Chivas Guadalajara", "Cruz Azul", "Pumas UNAM", "Tigres UANL", "Rayados Monterrey", "Toluca", "Santos Laguna", "Pachuca", "León", "Atlas", "Querétaro", "Puebla", "Atlético San Luis", "Mazatlán FC", "Necaxa", "Xolos Tijuana", "Juárez Bravos",
+  // LIGA MX (CLAUSURA 2026)
+  "América", "Chivas", "Cruz Azul", "Pumas", "Tigres", "Monterrey", "Toluca", "Santos Laguna", "Pachuca", "León", "Atlas", "Querétaro", "Puebla", "Atlético San Luis", "Mazatlán FC", "Necaxa", "Xolos Tijuana", "Juárez FC",
 
   // LIGA INGLESA (PREMIER LEAGUE)
   "Manchester City", "Arsenal", "Liverpool", "Aston Villa", "Tottenham Hotspur", "Manchester United", "Newcastle United", "West Ham United", "Chelsea", "Bournemouth", "Wolverhampton", "Brighton", "Fulham", "Crystal Palace", "Brentford", "Nottingham Forest", "Everton", "Luton Town", "Burnley", "Sheffield United", "Leicester City", "Leeds United", "Southampton",
@@ -4941,37 +4941,47 @@ window.filterManagerTables = function (waiterId) {
 
 // --- LOGO DATABASE ---
 window.TEAM_LOGOS = {
-  // LIGA MX
+  // LIGA MX (CLAUSURA 2026) — IDs verificados en espn.com/soccer/teams
+  "América": "https://a.espncdn.com/i/teamlogos/soccer/500/227.png",
   "Club América": "https://a.espncdn.com/i/teamlogos/soccer/500/227.png",
   "America": "https://a.espncdn.com/i/teamlogos/soccer/500/227.png",
-  "Chivas Guadalajara": "https://a.espncdn.com/i/teamlogos/soccer/500/232.png",
-  "Chivas": "https://a.espncdn.com/i/teamlogos/soccer/500/232.png",
-  "Cruz Azul": "https://a.espncdn.com/i/teamlogos/soccer/500/229.png",
-  "Pumas UNAM": "https://a.espncdn.com/i/teamlogos/soccer/500/231.png",
-  "Pumas": "https://a.espncdn.com/i/teamlogos/soccer/500/231.png",
-  "Tigres UANL": "https://a.espncdn.com/i/teamlogos/soccer/500/226.png",
-  "Tigres": "https://a.espncdn.com/i/teamlogos/soccer/500/226.png",
-  "Rayados Monterrey": "https://a.espncdn.com/i/teamlogos/soccer/500/228.png",
-  "Monterrey": "https://a.espncdn.com/i/teamlogos/soccer/500/228.png",
-  "Toluca": "https://a.espncdn.com/i/teamlogos/soccer/500/236.png",
-  "Santos Laguna": "https://a.espncdn.com/i/teamlogos/soccer/500/234.png",
-  "Santos": "https://a.espncdn.com/i/teamlogos/soccer/500/234.png",
-  "Pachuca": "https://a.espncdn.com/i/teamlogos/soccer/500/230.png",
-  "León": "https://a.espncdn.com/i/teamlogos/soccer/500/238.png",
-  "Leon": "https://a.espncdn.com/i/teamlogos/soccer/500/238.png",
-  "Atlas": "https://a.espncdn.com/i/teamlogos/soccer/500/224.png",
-  "Querétaro": "https://a.espncdn.com/i/teamlogos/soccer/500/10951.png",
-  "Queretaro": "https://a.espncdn.com/i/teamlogos/soccer/500/10951.png",
-  "Puebla": "https://a.espncdn.com/i/teamlogos/soccer/500/237.png",
-  "Atlético San Luis": "https://a.espncdn.com/i/teamlogos/soccer/500/18848.png",
-  "San Luis": "https://a.espncdn.com/i/teamlogos/soccer/500/18848.png",
-  "Mazatlán FC": "https://a.espncdn.com/i/teamlogos/soccer/500/20658.png",
-  "Mazatlan": "https://a.espncdn.com/i/teamlogos/soccer/500/20658.png",
-  "Necaxa": "https://a.espncdn.com/i/teamlogos/soccer/500/225.png",
-  "Xolos Tijuana": "https://a.espncdn.com/i/teamlogos/soccer/500/10938.png",
-  "Tijuana": "https://a.espncdn.com/i/teamlogos/soccer/500/10938.png",
-  "Juárez Bravos": "https://a.espncdn.com/i/teamlogos/soccer/500/17926.png",
-  "Juarez": "https://a.espncdn.com/i/teamlogos/soccer/500/17926.png",
+  "Chivas": "https://a.espncdn.com/i/teamlogos/soccer/500/219.png",
+  "Chivas Guadalajara": "https://a.espncdn.com/i/teamlogos/soccer/500/219.png",
+  "Guadalajara": "https://a.espncdn.com/i/teamlogos/soccer/500/219.png",
+  "Cruz Azul": "https://a.espncdn.com/i/teamlogos/soccer/500/218.png",
+  "Pumas": "https://a.espncdn.com/i/teamlogos/soccer/500/233.png",
+  "Pumas UNAM": "https://a.espncdn.com/i/teamlogos/soccer/500/233.png",
+  "UNAM": "https://a.espncdn.com/i/teamlogos/soccer/500/233.png",
+  "Tigres": "https://a.espncdn.com/i/teamlogos/soccer/500/232.png",
+  "Tigres UANL": "https://a.espncdn.com/i/teamlogos/soccer/500/232.png",
+  "Monterrey": "https://a.espncdn.com/i/teamlogos/soccer/500/220.png",
+  "Rayados": "https://a.espncdn.com/i/teamlogos/soccer/500/220.png",
+  "Rayados Monterrey": "https://a.espncdn.com/i/teamlogos/soccer/500/220.png",
+  "Toluca": "https://a.espncdn.com/i/teamlogos/soccer/500/223.png",
+  "Santos Laguna": "https://a.espncdn.com/i/teamlogos/soccer/500/225.png",
+  "Santos": "https://a.espncdn.com/i/teamlogos/soccer/500/225.png",
+  "Pachuca": "https://a.espncdn.com/i/teamlogos/soccer/500/234.png",
+  "León": "https://a.espncdn.com/i/teamlogos/soccer/500/228.png",
+  "Leon": "https://a.espncdn.com/i/teamlogos/soccer/500/228.png",
+  "Atlas": "https://a.espncdn.com/i/teamlogos/soccer/500/216.png",
+  "Querétaro": "https://a.espncdn.com/i/teamlogos/soccer/500/222.png",
+  "Queretaro": "https://a.espncdn.com/i/teamlogos/soccer/500/222.png",
+  "Gallos": "https://a.espncdn.com/i/teamlogos/soccer/500/222.png",
+  "Gallos Blancos": "https://a.espncdn.com/i/teamlogos/soccer/500/222.png",
+  "Puebla": "https://a.espncdn.com/i/teamlogos/soccer/500/231.png",
+  "Atlético San Luis": "https://a.espncdn.com/i/teamlogos/soccer/500/15720.png",
+  "San Luis": "https://a.espncdn.com/i/teamlogos/soccer/500/15720.png",
+  "Mazatlán FC": "https://a.espncdn.com/i/teamlogos/soccer/500/20702.png",
+  "Mazatlan": "https://a.espncdn.com/i/teamlogos/soccer/500/20702.png",
+  "Mazatlán": "https://a.espncdn.com/i/teamlogos/soccer/500/20702.png",
+  "Necaxa": "https://a.espncdn.com/i/teamlogos/soccer/500/229.png",
+  "Xolos Tijuana": "https://a.espncdn.com/i/teamlogos/soccer/500/10125.png",
+  "Xolos": "https://a.espncdn.com/i/teamlogos/soccer/500/10125.png",
+  "Tijuana": "https://a.espncdn.com/i/teamlogos/soccer/500/10125.png",
+  "Juárez FC": "https://a.espncdn.com/i/teamlogos/soccer/500/17851.png",
+  "Juárez Bravos": "https://a.espncdn.com/i/teamlogos/soccer/500/17851.png",
+  "Juarez": "https://a.espncdn.com/i/teamlogos/soccer/500/17851.png",
+  "Bravos": "https://a.espncdn.com/i/teamlogos/soccer/500/17851.png",
 
   // LOCALES QUERÉTARO (LMB/LFA)
   "Conspiradores": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Conspiradores_de_Quer%C3%A9taro_logo.svg/1200px-Conspiradores_de_Quer%C3%A9taro_logo.svg.png",
@@ -5032,24 +5042,23 @@ window.getTeamLogo = function (teamName) {
   if (foundKey) return window.TEAM_LOGOS[foundKey];
 
   // 2. Partial Match Strategy (Manual Overrides for common aliases)
-  if (lower.includes('america') && lower.includes('club')) return window.TEAM_LOGOS["Club América"];
-  if (lower === 'america') return window.TEAM_LOGOS["Club América"];
-  if (lower.includes('guadalajara') || lower === 'chivas') return window.TEAM_LOGOS["Chivas Guadalajara"];
+  if (lower.includes('america')) return window.TEAM_LOGOS["América"];
+  if (lower.includes('guadalajara') || lower.includes('chivas')) return window.TEAM_LOGOS["Chivas"];
   if (lower.includes('cruz azul') || lower === 'cruzazul') return window.TEAM_LOGOS["Cruz Azul"];
-  if (lower.includes('pumas') || lower === 'unam') return window.TEAM_LOGOS["Pumas UNAM"];
-  if (lower.includes('tigres')) return window.TEAM_LOGOS["Tigres UANL"];
-  if (lower.includes('monterrey') || lower === 'rayados') return window.TEAM_LOGOS["Rayados Monterrey"];
+  if (lower.includes('pumas') || lower === 'unam') return window.TEAM_LOGOS["Pumas"];
+  if (lower.includes('tigres')) return window.TEAM_LOGOS["Tigres"];
+  if (lower.includes('monterrey') || lower.includes('rayados')) return window.TEAM_LOGOS["Monterrey"];
   if (lower.includes('santos')) return window.TEAM_LOGOS["Santos Laguna"];
-  if (lower.includes('leon')) return window.TEAM_LOGOS["León"];
+  if (lower.includes('le\u00f3n') || lower === 'leon') return window.TEAM_LOGOS["León"];
   if (lower.includes('pachuca')) return window.TEAM_LOGOS["Pachuca"];
   if (lower.includes('toluca')) return window.TEAM_LOGOS["Toluca"];
   if (lower.includes('atlas')) return window.TEAM_LOGOS["Atlas"];
-  if (lower.includes('queretaro') || lower.includes('gallos')) return window.TEAM_LOGOS["Querétaro"];
+  if (lower.includes('quer\u00e9taro') || lower.includes('queretaro') || lower.includes('gallos')) return window.TEAM_LOGOS["Querétaro"];
   if (lower.includes('necaxa')) return window.TEAM_LOGOS["Necaxa"];
-  if (lower.includes('mazatlan')) return window.TEAM_LOGOS["Mazatlán FC"];
+  if (lower.includes('mazatl\u00e1n') || lower.includes('mazatlan')) return window.TEAM_LOGOS["Mazatlán FC"];
   if (lower.includes('tijuana') || lower.includes('xolos')) return window.TEAM_LOGOS["Xolos Tijuana"];
-  if (lower.includes('juarez') || lower.includes('bravos')) return window.TEAM_LOGOS["Juárez Bravos"];
-  if (lower.includes('san luis')) return window.TEAM_LOGOS["Atlético San Luis"];
+  if (lower.includes('ju\u00e1rez') || lower.includes('juarez') || lower.includes('bravos')) return window.TEAM_LOGOS["Juárez FC"];
+  if (lower.includes('san luis') || lower.includes('atl\u00e9tico san luis')) return window.TEAM_LOGOS["Atlético San Luis"];
   if (lower.includes('puebla')) return window.TEAM_LOGOS["Puebla"];
 
   return null;
@@ -5325,7 +5334,7 @@ function renderGameControlCard(game) {
                           ${game.league} • ${game.time}
                         </div>
                         <div class="text-xl font-black text-white leading-none">
-                          ${game.homeTeam} vs ${game.awayTeam}
+                          ${game.match || ((game.homeTeam || game.awayTeam) ? `${game.homeTeam} vs ${game.awayTeam}` : 'Sin nombre')}
                         </div>
                       </div>
                     </div>
@@ -7616,13 +7625,12 @@ window.addRequestedGame = function (reqId, gameName) {
   const gameData = {
     league,
     date,
-    time,
-    homeTeam: isIndividual ? '' : homeTeam,
-    awayTeam: isIndividual ? '' : awayTeam,
-    match: isIndividual ? gameName : undefined
+    time
   };
 
-  if (!isIndividual) {
+  if (isIndividual) {
+    gameData.match = gameName;
+  } else {
     gameData.homeTeam = homeTeam;
     gameData.awayTeam = awayTeam;
   }
