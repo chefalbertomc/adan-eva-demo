@@ -1819,22 +1819,32 @@ function renderWaiterDashboard() {
         const timeElapsed = hours > 0 ? `${hours}h ${mins}m` : `${mins} min`;
         const timeColor = diffMins > 120 ? '#EF4444' : diffMins > 60 ? '#F59E0B' : '#22C55E';
 
-        // Determine Sport Icon
+        // Determine Sport Icon + Favorite Team Logo
         let sportIcon = '📺';
+        let gameLogoHTML = '';
         if (v.reason === 'Partido' && v.selectedGame) {
           const game = window.db.getMatches().find(m => (m.match || (m.homeTeam + ' vs ' + m.awayTeam)) === v.selectedGame);
           if (game && game.league) sportIcon = window.getSportIcon(game.league);
         }
+        // If customer is following their favorite team → show ONLY that team logo
+        if (v.isFavoriteTeamMatch && v.watchedTeam) {
+          const favLogo = window.getTeamLogo(v.watchedTeam);
+          gameLogoHTML = favLogo
+            ? `<img src="${favLogo}" class="w-12 h-12 object-contain rounded border-2 border-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.5)] p-0.5 bg-black">`
+            : `<div class="text-3xl filter drop-shadow-md">${sportIcon}</div>`;
+        } else {
+          gameLogoHTML = `<div class="text-4xl filter drop-shadow-md">${sportIcon}</div>`;
+        }
 
         const reasonDisplay = v.reason === 'Partido'
           ? `<div class="flex items-start gap-3">
-                  <div class="text-4xl filter drop-shadow-md">${sportIcon}</div>
+                  <div>${gameLogoHTML}</div>
                   <div class="flex-1">
                     <div class="text-sm text-green-400 font-bold uppercase tracking-widest mb-1">PARTIDO</div>
                     <div class="text-2xl font-black text-white leading-tight">
                       ${v.selectedGame || 'Sin partido asig.'}
                     </div>
-                    ${v.isFavoriteTeamMatch ? '<div class="mt-2 inline-block bg-yellow-500 text-black text-xs font-black px-2 py-1 rounded shadow-lg animate-pulse">🌟 EQUIPO FAVORITO</div>' : ''}
+                    ${v.isFavoriteTeamMatch && v.watchedTeam ? `<div class="mt-2 inline-block bg-yellow-500 text-black text-xs font-black px-2 py-1 rounded shadow-lg">⭐ ${v.watchedTeam}</div>` : ''}
                   </div>
                 </div>`
           : (v.reason === 'Cumpleaños' ? '🎂 CUMPLEAÑOS' : (v.reason === 'Negocios' ? '💼 NEGOCIOS' : (v.reason || '🍽️ COMER')));
@@ -4799,32 +4809,27 @@ function renderManagerTablesTab(container) {
         }
 
         reasonDisplay = `
-                <div class="mt-3 bg-white/5 p-3 rounded-lg border border-white/10">
+                <div class="mt-3 bg-white/5 p-3 rounded-lg border ${v.isFavoriteTeamMatch ? 'border-yellow-500/40' : 'border-white/10'}">
                   <div class="flex items-start gap-2">
                     <div class="flex items-center gap-1">
                       ${(() => {
-            if (!v.selectedGame) return `<div class="text-2xl">${sportIcon}</div>`;
-            const game = window.db.getMatches().find(m => (m.match || (m.homeTeam + ' vs ' + m.awayTeam)) === v.selectedGame);
-            if (game) {
-              const l1 = window.getTeamLogo(game.homeTeam);
-              const l2 = window.getTeamLogo(game.awayTeam);
-              if (l1 || l2) {
-                return `
-                                    <img src="${l1 || ''}" class="w-6 h-6 object-contain ${!l1 ? 'hidden' : ''}" style="max-width: 24px;">
-                                    <span class="text-[10px] text-gray-500">vs</span>
-                                    <img src="${l2 || ''}" class="w-6 h-6 object-contain ${!l2 ? 'hidden' : ''}" style="max-width: 24px;">
-                                 `;
-              }
+            // If customer follows a favorite team → show ONLY that team's logo
+            if (v.isFavoriteTeamMatch && v.watchedTeam) {
+              const favLogo = window.getTeamLogo(v.watchedTeam);
+              return favLogo
+                ? `<img src="${favLogo}" class="w-10 h-10 object-contain rounded border-2 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.4)] p-0.5 bg-black">`
+                : `<div class="text-2xl">${sportIcon}</div>`;
             }
+            // No favorite team → just sport icon
             return `<div class="text-2xl filter drop-shadow-md">${sportIcon}</div>`;
           })()}
                     </div>
                     <div class="flex-1">
-                      <div class="text-[10px] text-green-400 font-bold uppercase tracking-widest">PARTIDO</div>
+                      <div class="text-[10px] ${v.isFavoriteTeamMatch ? 'text-yellow-400' : 'text-green-400'} font-bold uppercase tracking-widest">${v.isFavoriteTeamMatch ? '⭐ EQUIPO FAVORITO' : 'PARTIDO'}</div>
                       <div class="text-sm font-black text-white leading-tight mt-0.5">
-                        ${v.selectedGame || 'Seleccionar Partido...'}
+                        ${v.isFavoriteTeamMatch && v.watchedTeam ? v.watchedTeam : (v.selectedGame || 'Seleccionar Partido...')}
                       </div>
-                      ${v.isFavoriteTeamMatch ? '<div class="mt-1 inline-block bg-yellow-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded shadow animate-pulse">🌟 EQUIPO FAVORITO</div>' : ''}
+                      ${v.selectedGame && v.isFavoriteTeamMatch ? `<div class="text-[9px] text-gray-500 mt-0.5">${v.selectedGame}</div>` : ''}
                     </div>
                   </div>
                 </div>
@@ -7274,7 +7279,13 @@ window.renderHostessDashboard = function () {
                                       Vincular Partido
                                   </button>
                                </div>
-                            </div>
+                                <!-- Panel: ¿Equipo Favorito? (aparece al seleccionar un partido) -->
+                                <div id="h-fav-team-panel-${v.id}" class="hidden animate-fade-in mt-2 border border-yellow-500/30 bg-yellow-900/10 rounded-lg p-2">
+                                  <div class="text-[10px] text-yellow-400 font-bold uppercase tracking-widest mb-2">⭐ ¿Viene a ver a su equipo favorito?</div>
+                                  <div id="h-fav-team-btns-${v.id}" class="flex gap-2"></div>
+                                  <button onclick="window.selectHostessFavoriteTeam('', '${v.id}')" class="mt-2 w-full text-[10px] text-gray-500 hover:text-white py-1 rounded border border-gray-700 hover:border-gray-500 transition">No, solo ve el partido</button>
+                                </div>
+                             </div>
                             
 
                         </div>
@@ -8035,18 +8046,96 @@ window.selectHostessGame = function (gameName, league, btnElement, visitId) {
   btnElement.classList.remove('border-gray-700', 'bg-black');
   btnElement.classList.add('border-yellow-500', 'bg-blue-900/40', 'ring-2', 'ring-yellow-500/50');
 
-  // AUTO-SAVE to DB immediately
-  window.db.updateVisitDetails(visitId, { gameName: gameName, league: league, reason: 'Partido', selectedGame: gameName });
+  // AUTO-SAVE to DB immediately (reset favorites until user picks)
+  window.db.updateVisitDetails(visitId, {
+    gameName, league, reason: 'Partido', selectedGame: gameName,
+    isFavoriteTeamMatch: false, watchedTeam: ''
+  });
 
-  // Update Hostess badge in-place
+  // Show ¿Equipo Favorito? panel
+  const favPanel = document.getElementById(`h-fav-team-panel-${visitId}`);
+  const favBtns = document.getElementById(`h-fav-team-btns-${visitId}`);
+  if (favPanel && favBtns) {
+    // Parse team names from "Away @ Home" format
+    let teamA = '', teamB = '';
+    if (gameName.includes(' @ ')) {
+      [teamA, teamB] = gameName.split(' @ ').map(t => t.trim());
+    } else if (gameName.includes(' vs ')) {
+      [teamA, teamB] = gameName.split(' vs ').map(t => t.trim());
+    } else {
+      // Individual sport (F1, UFC) — no teams
+      favPanel.classList.add('hidden');
+      return;
+    }
+
+    const logoA = window.getTeamLogo(teamA);
+    const logoB = window.getTeamLogo(teamB);
+
+    favBtns.innerHTML = `
+      <button onclick="window.selectHostessFavoriteTeam('${teamA}', '${visitId}')"
+        class="flex-1 flex flex-col items-center gap-1 p-2 bg-black border border-gray-700 hover:border-yellow-500 rounded text-xs font-bold text-white transition h-fav-btn-${visitId}">
+        ${logoA ? `<img src="${logoA}" class="w-8 h-8 object-contain">` : '<span class="text-xl">🏠</span>'}
+        <span class="truncate max-w-full text-[10px]">${teamA}</span>
+      </button>
+      <button onclick="window.selectHostessFavoriteTeam('${teamB}', '${visitId}')"
+        class="flex-1 flex flex-col items-center gap-1 p-2 bg-black border border-gray-700 hover:border-yellow-500 rounded text-xs font-bold text-white transition h-fav-btn-${visitId}">
+        ${logoB ? `<img src="${logoB}" class="w-8 h-8 object-contain">` : '<span class="text-xl">✈️</span>'}
+        <span class="truncate max-w-full text-[10px]">${teamB}</span>
+      </button>`;
+
+    favPanel.classList.remove('hidden');
+  }
+
+  // Update Hostess badge
   const hBadge = document.getElementById('motivo-badge-' + visitId);
-  if (hBadge) { hBadge.textContent = '\uD83D\uDCCC Partido: ' + gameName; hBadge.classList.remove('hidden'); }
+  if (hBadge) { hBadge.textContent = '\u{1F4CC} Partido: ' + gameName; hBadge.classList.remove('hidden'); }
 
   // Update Gerente card in-place
   const mgrDiv = document.getElementById('mgr-reason-' + visitId);
   if (mgrDiv) mgrDiv.innerHTML = '<div class="mt-3 bg-white/5 p-3 rounded-lg border border-white/10"><div class="text-[10px] text-green-400 font-bold uppercase tracking-widest">PARTIDO</div><div class="text-sm font-black text-white leading-tight mt-0.5">' + gameName + '</div></div>';
 
   if (window.showToast) window.showToast('\u2705 Partido: ' + gameName, 'success');
+};
+
+// Called when hostess picks the team the customer is following
+window.selectHostessFavoriteTeam = function (teamName, visitId) {
+  const isFav = !!teamName;
+  window.db.updateVisitDetails(visitId, {
+    isFavoriteTeamMatch: isFav,
+    watchedTeam: teamName
+  });
+
+  // Visual feedback on buttons
+  document.querySelectorAll(`.h-fav-btn-${visitId}`).forEach(btn => {
+    btn.classList.remove('border-yellow-500', 'ring-2', 'ring-yellow-500/30');
+    btn.classList.add('border-gray-700');
+  });
+
+  if (isFav) {
+    // Find and highlight the clicked button
+    const allFavBtns = document.querySelectorAll(`#h-fav-team-btns-${visitId} button`);
+    allFavBtns.forEach(btn => {
+      if (btn.textContent.includes(teamName)) {
+        btn.classList.add('border-yellow-500', 'ring-2', 'ring-yellow-500/30');
+        btn.classList.remove('border-gray-700');
+      }
+    });
+
+    // Update manager card with team logo
+    const logo = window.getTeamLogo(teamName);
+    const mgrDiv = document.getElementById('mgr-reason-' + visitId);
+    if (mgrDiv) {
+      const logoHtml = logo ? `<img src="${logo}" class="w-8 h-8 object-contain inline-block mr-2">` : '⭐';
+      mgrDiv.innerHTML = `<div class="mt-3 bg-white/5 p-3 rounded-lg border border-yellow-500/30 flex items-center gap-2">${logoHtml}<div><div class="text-[10px] text-yellow-400 font-bold uppercase tracking-widest">EQUIPO FAVORITO</div><div class="text-sm font-black text-white leading-tight mt-0.5">${teamName}</div></div></div>`;
+    }
+
+    if (window.showToast) window.showToast(`⭐ Favorito: ${teamName}`, 'success');
+  } else {
+    if (window.showToast) window.showToast('✅ Solo ve el partido', 'info');
+    // Hide the panel
+    const favPanel = document.getElementById(`h-fav-team-panel-${visitId}`);
+    if (favPanel) favPanel.classList.add('hidden');
+  }
 };
 
 window.saveManualGameHostess = function (visitId) {
