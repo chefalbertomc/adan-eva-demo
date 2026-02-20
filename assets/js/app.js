@@ -337,7 +337,7 @@ function renderHostessDashboard() {
 
   // FETCH DATA
   const waitlist = window.db.getWaitlist();
-  const activeVisits = window.db.getVisits().filter(v => v.status === 'seated');
+  const activeVisits = window.db.getVisits().filter(v => ['seated', 'active'].includes(v.status));
   // FIX: Define reservations variable to prevent crash
   const reservations = window.db.getReservations ? window.db.getReservations() : [];
 
@@ -6730,7 +6730,7 @@ window.renderHostessDashboard = function () {
 
   // FETCH DATA
   const waitlist = window.db.getWaitlist();
-  const activeVisits = window.db.getVisits().filter(v => v.status === 'seated');
+  const activeVisits = window.db.getVisits().filter(v => ['seated', 'active'].includes(v.status));
   const reservations = window.db.getReservations ? window.db.getReservations() : [];
 
   // Calculate stats
