@@ -334,9 +334,60 @@ const GENERATE_DATA = () => {
 
     // NO HISTORICAL VISITS FOR NOW TO AVOID CONFUSION, OR MINIMAL STATIC ONES
     const visits = [];
+    const orders = [];
+
+    // --- MOCK 1 YEAR HISTORY FOR C001 (Juan Perez) ---
+    const favItems = [
+        { id: 'F141', price: 219 }, // Boneless Medium
+        { id: 'F030', price: 189 }, // Stadium Burger
+        { id: 'B116', price: 75 },  // Heineken Botella
+        { id: 'F092', price: 0 }    // Mango Habanero (Salsa)
+    ];
+
+    let currentMockDate = new Date();
+    currentMockDate.setFullYear(currentMockDate.getFullYear() - 1); // Start 1 year ago
+
+    for (let i = 0; i < 20; i++) {
+        // Random days jump 5-20 days
+        currentMockDate.setDate(currentMockDate.getDate() + Math.floor(Math.random() * 15) + 5);
+        if (currentMockDate >= new Date()) break;
+
+        const visitId = `v_mock_${i}`;
+        const pax = Math.floor(Math.random() * 4) + 2;
+
+        // Random hour between 18 and 23
+        currentMockDate.setHours(18 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 59), 0, 0);
+
+        visits.push({
+            id: visitId,
+            customerId: 'C001',
+            branchId: 'juriquilla',
+            table: Math.floor(Math.random() * 20) + 110, // 110-130
+            pax: pax,
+            status: 'closed',
+            waiterId: 'wj1',
+            date: currentMockDate.toISOString().split('T')[0],
+            startTime: currentMockDate.toISOString(),
+            reason: i % 3 === 0 ? 'Partido' : 'Casual',
+            totalAmount: favItems.reduce((acc, item) => acc + item.price, 0) + 75 // Adding 1 extra drink
+        });
+
+        orders.push({
+            id: `o_mock_${i}`,
+            visitId: visitId,
+            items: [
+                { itemId: 'F141', name: 'Boneless Medium', quantity: 1, price: 219 },
+                { itemId: 'F030', name: 'Stadium Burger', quantity: 1, price: 189 },
+                { itemId: 'B116', name: 'Heineken', quantity: 3, price: 75 },
+                { itemId: 'F092', name: 'Mango Habanero', quantity: 1, price: 0 }
+            ],
+            timestamp: currentMockDate.toISOString(),
+            status: 'delivered'
+        });
+    }
 
     // console.log('✅ Generated 20 STATIC customers for consistent testing.');
-    return { customers, visits };
+    return { customers, visits, orders };
 };
 
 const MOCK = GENERATE_DATA();
@@ -375,7 +426,7 @@ const INITIAL_DATA = {
     menu: MENU_DATA,
 
     // ORDERS - Sistema de órdenes
-    orders: [],
+    orders: MOCK.orders || [],
 
     users: [
         // Super Admin
@@ -689,7 +740,7 @@ class Store {
 
     // --- DATA VERSION ---
     // Increment this to force a reset of localStorage on all devices
-    static DATA_VERSION = 5;
+    static DATA_VERSION = 6;
 
     _load() {
         const stored = localStorage.getItem(STORE_KEY);
@@ -719,6 +770,7 @@ class Store {
         if (!data.customers || data.customers.length === 0) {
             data.customers = MOCK.customers;
             data.visits = MOCK.visits;
+            data.orders = MOCK.orders || [];
         }
         return data;
     }
