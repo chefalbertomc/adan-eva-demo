@@ -64,6 +64,10 @@ window.addEventListener('db-daily-update', (event) => {
     }
     window.PREV_REQ_COUNT = currentRequests.length;
 
+    // Refresh game requests panel if admin is on the games tab right now
+    const reqContainer = document.getElementById('manager-requests-container');
+    if (reqContainer) renderManagerGameRequests(reqContainer);
+
     // B. Check for Game Assignments on Tables (Simple Check)
     // This is harder to track diffs without heavy state, but we can check if a "recent" change happened
     // For now, let's just log it. A full "Waiter requested X" requires dedicated event log in DB.
@@ -5108,7 +5112,7 @@ function renderManagerGamesTab(container) {
                   </div>
 
                   <!-- 1. SOLICITUDES HOSTESS -->
-                  ${(window.db.getDailyInfo().gameRequests || []).length > 0 ? '<div id="manager-requests-container"></div>' : ''}
+                  <div id="manager-requests-container"></div>
 
                   <!-- 2. PROGRAMAR EVENTOS (INDEPENDIENTE) -->
                   <div class="card bg-gradient-to-br from-purple-900/40 to-blue-900/40 border-2 border-purple-500/50 shadow-2xl">
