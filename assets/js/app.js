@@ -5885,72 +5885,222 @@ function renderEnrichCustomer(params) {
     return;
   }
 
+  // Cálculos Históricos
+  const allVisits = window.db.data.visits.filter(v => v.customerId === customerId && v.status === 'closed').sort((a, b) => new Date(b.date) - new Date(a.date));
+  const visitCount = allVisits.length;
+
+  let customerType = '⭐ NUEVO';
+  if (visitCount > 10) customerType = '👑 LEAL';
+  else if (visitCount > 3) customerType = '💎 FRECUENTE';
+  else if (visitCount > 0) customerType = '👋 RECURRENTE';
+
+  // Obtener consumos de sus visitas para calcular favoritos (Avanzado)
+  const itemCounts = {};
+  allVisits.forEach(v => {
+    const orders = window.db.getOrdersByVisit(v.id);
+    orders.forEach(o => {
+      o.items.forEach(item => {
+        itemCounts[item.itemId] = (itemCounts[item.itemId] || 0) + item.quantity;
+      });
+    });
+  });
+
+  // Helper para buscar el ítem más repetido de una categoría
+  const getFavorite = (menuPath, categoryMatch = null) => {
+    let favName = 'No hay datos';
+    let max = 0;
+    const itemsToCheck = categoryMatch
+      ? window.db.data.menu[menuPath].filter(m => m.category === categoryMatch)
+      : window.db.data.menu[menuPath];
+
+    if (!itemsToCheck) return favName;
+
+    itemsToCheck.forEach(m => {
+      if (itemCounts[m.id] > max) {
+        max = itemCounts[m.id];
+        favName = m.name;
+      }
+    });
+    return favName;
+  };
+
+  const favFood = getFavorite('alimentos');
+  const favDrink = getFavorite('bebidas');
+  const favSalsa = getFavorite('alimentos', 'Salsas');
+
+  // Checar Alertas de Información Faltante
+  const missingInfo = [];
+  if (!customer.phone) missingInfo.push('Teléfono');
+  if (!customer.email) missingInfo.push('Correo Electrónico');
+  if (!customer.birthday) missingInfo.push('Cumpleaños');
+
   const div = document.createElement('div');
-  div.className = 'p-4 max-w-2xl mx-auto pb-20';
+  div.className = 'p-4 max-w-4xl mx-auto pb-20 fade-in';
 
   div.innerHTML = `
                 <header class="flex justify-between items-center mb-6 sticky top-0 bg-black z-10 py-4 border-b border-gray-800">
-                  <h2 class="text-2xl text-purple-400 font-bold flex items-center gap-2">💎 ENRIQUECER PERFIL</h2>
-                  <button onclick="renderManagerDashboard()" class="text-gray-400 font-bold hover:text-white">← Volver</button>
+                  <h2 class="text-2xl text-purple-400 font-bold flex items-center gap-2">💎 INFO DEL CLIENTE</h2>
+                  <button onclick="renderManagerDashboard()" class="text-gray-400 font-bold hover:text-white border border-gray-600 px-3 py-1 rounded transition">← Volver al Panel</button>
                 </header>
-
-                <form onsubmit="handleEnrichSubmit(event, '${customerId}', '${visitId}')" class="space-y-6 bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-2xl">
-
-                  <!-- Personal Info -->
-                  <div>
-                    <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2">Información Personal</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                      <div>
-                        <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Nombre</label>
-                        <input name="firstName" required value="${customer.firstName || ''}" type="text" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
-                      </div>
-                      <div>
-                        <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Apellido</label>
-                        <input name="lastName" value="${customer.lastName || ''}" type="text" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Contact Info -->
-                  <div>
-                    <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2">Contacto & Demografía</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Teléfono</label>
-                        <input name="phone" value="${customer.phone || ''}" type="tel" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
-                      </div>
-                      <div>
-                        <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Email</label>
-                        <input name="email" value="${customer.email || ''}" type="email" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
-                      </div>
-                      <div>
-                        <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Cumpleaños</label>
-                        <input name="birthday" value="${customer.birthday || ''}" type="date" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
-                      </div>
-                      <div>
-                        <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Ciudad</label>
-                        <input name="city" value="${customer.city || ''}" type="text" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Preferences -->
-                  <div>
-                    <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2">Preferencias</h3>
+                
+                ${missingInfo.length > 0 ? `
+                  <div class="bg-red-900/40 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg shadow-lg flex items-start gap-3">
+                    <span class="text-2xl mt-1">⚠️</span>
                     <div>
-                      <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Equipo Favorito</label>
-                      <input name="team" value="${customer.team || ''}" list="team-suggestions" type="text" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none" placeholder="Ej: Dallas Cowboys">
-                    </div>
-                    <div class="mt-4">
-                      <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Notas / Comentarios</label>
-                      <textarea name="notes" rows="3" class="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none">${customer.notes || ''}</textarea>
+                        <h4 class="text-white font-bold text-lg">Perfil Incompleto</h4>
+                        <p class="text-red-200 text-sm">Falta registrar: <span class="font-black">${missingInfo.join(', ')}</span>.</p>
+                        <p class="text-red-300 text-xs italic mt-1">Presiona "Editar Perfil" para completarlo.</p>
                     </div>
                   </div>
+                ` : ''}
 
-                  <button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-black py-4 rounded-lg mt-8 text-lg shadow-lg transform active:scale-95 transition-all">
-                    💾 GUARDAR CAMBIOS
-                  </button>
-                </form>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                  <!-- LEFT COLUMN: Profile Form -->
+                  <div class="lg:col-span-2">
+                      <form id="customer-form" onsubmit="handleEnrichSubmit(event, '${customerId}', '${visitId}')" class="space-y-6 bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-2xl relative">
+                        
+                        <div class="absolute top-4 right-4">
+                            <button type="button" id="toggle-edit-btn" onclick="toggleCustomerEditMode()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-4 rounded-full text-sm shadow transition">
+                                ✏️ EDITAR PERFIL
+                            </button>
+                        </div>
+
+                        <!-- Personal Info -->
+                        <div>
+                          <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2 flex items-center gap-2"><span class="text-xl">👤</span> Información Personal</h3>
+                          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Nombre(s)</label>
+                              <input name="firstName" disabled required value="${customer.firstName || ''}" type="text" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
+                            </div>
+                            <div>
+                              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Apellido Paterno</label>
+                              <input name="lastName" disabled required value="${customer.lastName || ''}" type="text" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
+                            </div>
+                             <div>
+                              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Apellido Materno</label>
+                              <input name="lastName2" disabled value="${customer.lastName2 || ''}" type="text" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Contact Info -->
+                        <div>
+                          <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2 flex items-center gap-2"><span class="text-xl">📞</span> Contacto & Demografía</h3>
+                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Teléfono</label>
+                              <input name="phone" disabled value="${customer.phone || ''}" type="tel" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all" ${!customer.phone ? 'placeholder="Requerido"' : ''}>
+                            </div>
+                            <div>
+                              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Email</label>
+                              <input name="email" disabled value="${customer.email || ''}" type="email" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
+                            </div>
+                            <div>
+                              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Cumpleaños</label>
+                              <input name="birthday" disabled value="${customer.birthday || ''}" type="date" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
+                            </div>
+                            <div>
+                              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Ciudad</label>
+                              <input name="city" disabled value="${customer.city || ''}" type="text" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all">
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Preferences -->
+                        <div>
+                          <h3 class="text-white font-bold mb-4 border-b border-gray-700 pb-2 flex items-center gap-2"><span class="text-xl">❤️</span> Preferencias Manuales</h3>
+                          <div>
+                            <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Equipo Favorito</label>
+                            <input name="team" disabled value="${customer.team || ''}" list="team-suggestions" type="text" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all" placeholder="Ej: Dallas Cowboys">
+                          </div>
+                          <div class="mt-4">
+                            <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Notas / Comentarios Internos</label>
+                            <textarea name="notes" disabled rows="3" class="customer-field disabled:opacity-50 w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none transition-all" placeholder="Alergias, trato especial, etc...">${customer.notes || ''}</textarea>
+                          </div>
+                        </div>
+
+                        <button type="submit" id="save-customer-btn" class="hidden w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-lg mt-8 text-lg shadow-lg transform active:scale-95 transition-all">
+                          💾 GUARDAR CAMBIOS
+                        </button>
+                      </form>
+                  </div>
+
+                  <!-- RIGHT COLUMN: Historical Analytics -->
+                  <div class="space-y-6">
+                      <!-- Loyalty Badge -->
+                      <div class="bg-gradient-to-br from-gray-800 to-black p-6 rounded-xl border border-gray-700 text-center shadow-lg">
+                          <div class="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-2">Nivel de Cliente</div>
+                          <div class="text-2xl font-black text-white bg-white/10 py-2 rounded mb-2">${customerType}</div>
+                          <div class="text-purple-400 font-bold"><span class="text-3xl">${visitCount}</span> Visitas Históricas</div>
+                      </div>
+
+                      <!-- AI Favorites Box -->
+                      <div class="bg-gray-900 border border-gray-700 p-5 rounded-xl shadow-lg">
+                         <h3 class="text-white font-black uppercase tracking-wider mb-4 border-b border-gray-800 pb-2 flex items-center gap-2">
+                            <span class="text-lg">🤖</span> Inteligencia de Consumo
+                         </h3>
+                         
+                         <div class="space-y-4">
+                            <div>
+                                <div class="text-xs text-gray-500 uppercase font-bold mb-1">Platillo Favorito</div>
+                                <div class="text-white font-bold bg-black p-2 rounded border border-gray-800">${favFood}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-500 uppercase font-bold mb-1">Bebida Favorita</div>
+                                <div class="text-white font-bold bg-black p-2 rounded border border-gray-800">${favDrink}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-500 uppercase font-bold mb-1">Salsa Favorita</div>
+                                <div class="text-white font-bold bg-black p-2 rounded border border-gray-800">${favSalsa}</div>
+                            </div>
+                         </div>
+                      </div>
+                  </div>
+                </div>
+
+                <!-- Visitas Históricas Table -->
+                <div class="mt-8 bg-gray-900 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
+                    <div class="bg-black py-4 px-6 border-b border-gray-800">
+                        <h3 class="text-white font-black text-xl flex items-center gap-2"><span>📜</span> Historial Completo de Visitas</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-300">
+                            <thead class="bg-gray-800 text-gray-400 text-xs uppercase tracking-wider">
+                                <tr>
+                                    <th class="px-6 py-4">Fecha</th>
+                                    <th class="px-6 py-4">Hora</th>
+                                    <th class="px-6 py-4">Mesa</th>
+                                    <th class="px-6 py-4">Pax</th>
+                                    <th class="px-6 py-4">Motivo</th>
+                                    <th class="px-6 py-4 text-right">Consumo</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-800">
+                                ${allVisits.length === 0 ? `
+                                    <tr>
+                                        <td colspan="6" class="px-6 py-8 text-center text-gray-500 italic">No hay visitas cerradas registradas para este cliente aún.</td>
+                                    </tr>
+                                ` : allVisits.map(v => {
+    const d = new Date(v.startTime || v.entryTime || v.date);
+    return `
+                                    <tr class="hover:bg-gray-800/50 transition">
+                                        <td class="px-6 py-4 font-mono">${d.toLocaleDateString()}</td>
+                                        <td class="px-6 py-4 font-mono">${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                        <td class="px-6 py-4 font-bold text-white">#${v.table}</td>
+                                        <td class="px-6 py-4">${v.pax || '?'} <span class="text-xs text-gray-500">pax</span></td>
+                                        <td class="px-6 py-4">
+                                            ${v.reason ? `<span class="bg-black px-2 py-1 rounded text-xs border border-gray-700">${v.reason}</span>` : '-'}
+                                        </td>
+                                        <td class="px-6 py-4 text-right font-bold text-green-400">$${(v.totalAmount || 0).toLocaleString()}</td>
+                                    </tr>
+                                    `;
+  }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
                 `;
 
   appContainer.innerHTML = '';
@@ -5960,12 +6110,39 @@ function renderEnrichCustomer(params) {
   if (window.updateTeamDatalist) window.updateTeamDatalist();
 }
 
+// Logic to toggle fields
+window.toggleCustomerEditMode = function () {
+  const fields = document.querySelectorAll('.customer-field');
+  const saveBtn = document.getElementById('save-customer-btn');
+  const editBtn = document.getElementById('toggle-edit-btn');
+
+  // Check current state (using the first field)
+  const isEditing = !fields[0].disabled;
+
+  if (isEditing) {
+    // Cancel edit mode
+    fields.forEach(f => f.disabled = true);
+    saveBtn.classList.add('hidden');
+    editBtn.innerHTML = '✏️ EDITAR PERFIL';
+    editBtn.classList.replace('bg-red-600', 'bg-blue-600');
+    editBtn.classList.replace('hover:bg-red-500', 'hover:bg-blue-500');
+  } else {
+    // Enable edit mode
+    fields.forEach(f => f.disabled = false);
+    saveBtn.classList.remove('hidden');
+    editBtn.innerHTML = '❌ CANCELAR EDICIÓN';
+    editBtn.classList.replace('bg-blue-600', 'bg-red-600');
+    editBtn.classList.replace('hover:bg-blue-500', 'hover:bg-red-500');
+  }
+}
+
 window.handleEnrichSubmit = function (e, customerId, visitId) {
   e.preventDefault();
   const formData = new FormData(e.target);
   const updates = {
-    firstName: formData.get('firstName'),
-    lastName: formData.get('lastName'),
+    firstName: formData.get('firstName').trim(),
+    lastName: formData.get('lastName').trim(),
+    lastName2: formData.get('lastName2') ? formData.get('lastName2').trim() : '',
     phone: formData.get('phone'),
     email: formData.get('email'),
     birthday: formData.get('birthday'),
@@ -5981,7 +6158,7 @@ window.handleEnrichSubmit = function (e, customerId, visitId) {
       window.db.markProspectAsReviewed(visitId);
     }
     showToast('✅ Cliente actualizado correctamente', 'success');
-    renderManagerDashboard(); // Go back to dashboard
+    renderEnrichCustomer({ customerId, visitId }); // Reload same page natively in read-only
   } else {
     alert('Error al actualizar cliente');
   }
