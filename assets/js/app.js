@@ -6100,7 +6100,7 @@ function renderEnrichCustomer(params) {
                                     <th class="px-6 py-4">Hora</th>
                                     <th class="px-6 py-4">Mesa</th>
                                     <th class="px-6 py-4">Pax</th>
-                                    <th class="px-6 py-4">Motivo</th>
+                                    <th class="px-6 py-4">Motivo / Partido</th>
                                     <th class="px-6 py-4 text-right">Consumo</th>
                                 </tr>
                             </thead>
@@ -6118,7 +6118,7 @@ function renderEnrichCustomer(params) {
                                         <td class="px-6 py-4 font-bold text-white">#${v.table}</td>
                                         <td class="px-6 py-4">${v.pax || '?'} <span class="text-xs text-gray-500">pax</span></td>
                                         <td class="px-6 py-4">
-                                            ${v.reason ? `<span class="bg-black px-2 py-1 rounded text-xs border border-gray-700">${v.reason}</span>` : '-'}
+                                            ${v.reason === 'Partido' ? `<span class="bg-blue-900 text-blue-100 px-2 py-1 rounded text-xs border border-blue-700">⚽ Partido: ${v.gameName || 'No Especificado'}</span>` : (v.reason ? `<span class="bg-black text-gray-300 px-2 py-1 rounded text-xs border border-gray-700">${v.reason}</span>` : '-')}
                                         </td>
                                         <td class="px-6 py-4 text-right font-bold text-green-400">$${(v.totalAmount || 0).toLocaleString()}</td>
                                     </tr>
@@ -6151,15 +6151,19 @@ window.toggleCustomerEditMode = function () {
     fields.forEach(f => f.disabled = true);
     saveBtn.classList.add('hidden');
     editBtn.innerHTML = '✏️ EDITAR PERFIL';
-    editBtn.classList.replace('bg-red-600', 'bg-blue-600');
-    editBtn.classList.replace('hover:bg-red-500', 'hover:bg-blue-500');
+
+    // Change editBtn color to blue
+    editBtn.classList.remove('bg-red-600', 'hover:bg-red-500');
+    editBtn.classList.add('bg-blue-600', 'hover:bg-blue-500');
   } else {
     // Enable edit mode
     fields.forEach(f => f.disabled = false);
     saveBtn.classList.remove('hidden');
     editBtn.innerHTML = '❌ CANCELAR EDICIÓN';
-    editBtn.classList.replace('bg-blue-600', 'bg-red-600');
-    editBtn.classList.replace('hover:bg-blue-500', 'hover:bg-red-500');
+
+    // Change editBtn color to red
+    editBtn.classList.remove('bg-blue-600', 'hover:bg-blue-500');
+    editBtn.classList.add('bg-red-600', 'hover:bg-red-500');
   }
 }
 
