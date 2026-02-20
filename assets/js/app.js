@@ -7225,9 +7225,37 @@ window.renderHostessDashboard = function () {
                                </div>
                                <input type="hidden" id="h-selected-game-${v.id}" value="${v.gameName || ''}">
                                <input type="hidden" id="h-selected-league-${v.id}" value="${v.league || ''}">
-                               <button onclick="window.requestManagerGameRegistrationHostess('${v.id}')" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-400 py-1.5 rounded text-xs font-bold border border-gray-600">
-                                  ➕ Solicitar / Escribir Manual
+                               
+                               <!-- Botón para Mostrar Formulario Manual -->
+                               <button onclick="document.getElementById('manual-game-form-${v.id}').classList.toggle('hidden')" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-400 py-1.5 rounded text-xs font-bold border border-gray-600 mb-2">
+                                  ➕ El partido no está en la lista (Manual)
                                </button>
+
+                               <!-- Formulario Detallado Manual (Oculto) -->
+                               <div id="manual-game-form-${v.id}" class="hidden bg-gray-900 border border-yellow-700/50 p-2 text-xs rounded-lg space-y-2 mt-2">
+                                  <label class="text-[10px] text-yellow-500 font-bold uppercase block mb-1">Registro Manual</label>
+                                  
+                                  <select id="manual-league-${v.id}" class="w-full bg-black text-white p-2 rounded border border-gray-700 focus:border-yellow-500">
+                                      <option value="Liga MX">⚽ Liga MX</option>
+                                      <option value="NFL">🏈 NFL</option>
+                                      <option value="NBA">🏀 NBA</option>
+                                      <option value="MLB">⚾ MLB</option>
+                                      <option value="Champions">⚽ Champions</option>
+                                      <option value="MLS">⚽ MLS</option>
+                                      <option value="UFC">🥊 UFC</option>
+                                      <option value="Boxeo">🥊 Boxeo</option>
+                                      <option value="F1">🏎️ F1</option>
+                                      <option value="Tenis">🎾 Tenis</option>
+                                      <option value="Otro">Otro</option>
+                                  </select>
+
+                                  <input type="text" id="manual-home-${v.id}" list="team-suggestions" placeholder="Local / Principal" class="w-full bg-black text-white p-2 rounded border border-gray-700 focus:border-yellow-500">
+                                  <input type="text" id="manual-away-${v.id}" list="team-suggestions" placeholder="Visitante (si aplica)" class="w-full bg-black text-white p-2 rounded border border-gray-700 focus:border-yellow-500">
+                                  
+                                  <button onclick="window.saveManualGameHostess('${v.id}')" class="w-full bg-blue-600/50 hover:bg-blue-600 text-white font-bold py-2 rounded mt-1 transition">
+                                      Vincular Partido
+                                  </button>
+                               </div>
                             </div>
                             
                             <button onclick="window.updateHostessVisitReason('${v.id}')" class="w-full mt-2 bg-yellow-600 hover:bg-yellow-500 text-black py-2 rounded font-bold text-xs uppercase tracking-wide">
@@ -7871,20 +7899,41 @@ window.selectHostessGame = function (gameName, league, btnElement, visitId) {
   btnElement.classList.add('border-yellow-500', 'bg-blue-900/40', 'ring-2', 'ring-yellow-500/50');
 };
 
-window.requestManagerGameRegistrationHostess = function (visitId) {
-  const manualGame = prompt('📝 Ingresa el partido que vienen a ver:\n\nEjemplo: América vs Chivas (Liga MX)');
-  if (!manualGame || !manualGame.trim()) return;
+window.saveManualGameHostess = function (visitId) {
+  const league = document.getElementById(`manual-league-${visitId}`).value;
+  const home = document.getElementById(`manual-home-${visitId}`).value.trim();
+  const away = document.getElementById(`manual-away-${visitId}`).value.trim();
 
-  document.getElementById(`h-selected-game-${visitId}`).value = manualGame.trim();
-  document.getElementById(`h-selected-league-${visitId}`).value = 'Pendiente/Otro';
+  // Individual sports (no home/away concept)
+  const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
+  const isIndividual = individualSports.includes(league);
 
-  // Remove selection from list
+  if (isIndividual && !home) {
+    alert('Por favor escribe el nombre del evento principal en "Local" (ej: Hamilton vs Verstappen)');
+    return;
+  }
+
+  if (!isIndividual && (!home || !away)) {
+    alert('Por favor completa Equipo Local y Equipo Visitante');
+    return;
+  }
+
+  // Construct game string
+  const manualGameStr = isIndividual ? home : `${away} @ ${home}`;
+
+  document.getElementById(`h-selected-game-${visitId}`).value = manualGameStr;
+  document.getElementById(`h-selected-league-${visitId}`).value = league;
+
+  // Remove selection from previous list buttons to show manual is active
   document.querySelectorAll(`.hostess-game-btn-${visitId}`).forEach(btn => {
     btn.classList.remove('border-yellow-500', 'bg-blue-900/40', 'ring-2', 'ring-yellow-500/50');
     btn.classList.add('border-gray-700', 'bg-black');
   });
 
-  if (window.showToast) window.showToast('✅ Partido manual asignado a la mesa.', 'success');
+  // Hide the form visually again
+  document.getElementById(`manual-game-form-${visitId}`).classList.add('hidden');
+
+  if (window.showToast) window.showToast(`✅ Partido vinculado: ${manualGameStr}`, 'success');
 };
 
 window.updateHostessVisitReason = function (visitId) {
