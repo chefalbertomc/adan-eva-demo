@@ -4793,13 +4793,15 @@ window.renderInvUI = function () {
              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">🔍</div>
          </div>
       </div>
-      <div class="p-4 pb-40">
+      <div class="p-4">
         <h2 class="text-2xl font-black text-yellow-500 uppercase tracking-tighter mb-4 flex items-center gap-2">
           🏷️ ${category}
         </h2>
         <div id="inv-state-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
           ${window._renderStateInvListHTML()}
         </div>
+        <!-- Spacer invisible para barra de navegación -->
+        <div class="h-48 w-full"></div>
       </div>
     `;
   }
