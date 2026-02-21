@@ -4831,7 +4831,7 @@ function renderManagerTablesTab(container) {
                     <div class="flex justify-between items-start mb-2">
                       <div>
                         <div class="flex items-center gap-2">
-                          <span class="text-3xl font-black text-white shadow-text">#${v.table}</span>
+                          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Mesa</span><span class="text-3xl font-black text-white shadow-text leading-none">${v.table}</span>
                           ${isProspect ? '<span class="text-lg animate-pulse" title="Cliente Prospecto">⭐</span>' : ''}
                         </div>
                         <div class="text-xs text-gray-400 font-mono mt-1">
@@ -7169,7 +7169,7 @@ window.renderHostessDashboard = function () {
               <div class="table-card bg-gray-900 border-l-4 border-green-500 rounded-r-xl p-4 shadow-lg relative animate-fade-in" data-waiter-id="${v.waiterId}">
                 <div class="flex justify-between items-start mb-2">
                     <div>
-                        <span class="text-3xl font-black text-white shadow-text">#${v.table}</span>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Mesa</span><span class="text-3xl font-black text-white shadow-text leading-none">${v.table}</span>
                         <div class="text-xs text-gray-400 font-mono mt-1">
                             🕒 ${timeSeated}
                             ${timeElapsed ? `<span class="ml-2 text-yellow-500 font-bold">⏱️ ${timeElapsed}</span>` : ''}
