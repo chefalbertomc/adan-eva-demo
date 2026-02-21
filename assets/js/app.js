@@ -4855,7 +4855,13 @@ function renderManagerTablesTab(container) {
                     
                     <!-- Customer Details -->
                     <div class="border-t border-gray-700 pt-3 mt-2 flex justify-between items-center">
-                      <div class="font-bold text-white text-lg truncate">${custName}</div>
+                      <div class="font-bold text-white text-lg truncate flex items-center gap-2">
+                        ${v.isFavoriteTeamMatch && v.watchedTeam ? (() => {
+        const fl = window.getTeamLogo(v.watchedTeam);
+        return fl ? `<img src="${fl}" style="width:28px;height:28px;max-width:28px;max-height:28px;" class="object-contain rounded border border-yellow-500 bg-black flex-shrink-0" title="${v.watchedTeam}">` : '';
+      })() : `<div id="mgr-fav-logo-${v.id}" class="flex-shrink-0"></div>`}
+                        <span class="truncate">${custName}</span>
+                      </div>
                       <button onclick="event.stopPropagation(); navigateTo('enrich-customer', {customerId: '${v.customerId}', visitId: '${v.id}'})"
                         class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 flex-shrink-0 rounded text-xs font-bold flex items-center gap-1 transition shadow border border-gray-600"
                         title="Editar información del cliente">
@@ -7184,17 +7190,17 @@ window.renderHostessDashboard = function () {
                            👤 ${waiterName.split(' ')[0]}
                         </div>
                         <div class="text-xl font-bold text-white">${v.pax} <span class="text-sm font-normal text-gray-500">pax</span></div>
-                        ${v.isFavoriteTeamMatch && v.watchedTeam ? (() => {
-        const fl = window.getTeamLogo(v.watchedTeam);
-        return fl
-          ? `<img src="${fl}" style="width:38px;height:38px;max-width:38px;max-height:38px;" class="object-contain mt-1 rounded border border-yellow-500 bg-black block ml-auto" title="${v.watchedTeam}">`
-          : `<div class="text-xl mt-1 text-right">⭐</div>`;
-      })() : '<div id="h-fav-logo-' + v.id + '"></div>'}
                     </div>
                 </div>
                 
                 <div class="border-t border-gray-800 pt-3 mt-2">
-                    <div class="font-bold text-white text-lg truncate mb-1">${custName}</div>
+                    <div class="font-bold text-white text-lg truncate mb-1 flex items-center gap-2">
+                      ${v.isFavoriteTeamMatch && v.watchedTeam ? (() => {
+                        const fl = window.getTeamLogo(v.watchedTeam);
+                        return fl ? `<img src="${fl}" style="width:28px;height:28px;max-width:28px;max-height:28px;" class="object-contain rounded border border-yellow-500 bg-black flex-shrink-0" title="${v.watchedTeam}">` : '';
+                      })() : `<div id="h-fav-logo-${v.id}" class="flex-shrink-0"></div>`}
+                      <span class="truncate">${custName}</span>
+                    </div>
                     ${v.vip ? `<div class="inline-block bg-yellow-600/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded border border-yellow-600/50 mb-2 font-bold tracking-wider">VIP ${v.vip.toUpperCase()}</div>` : ''}
                     ${v.reason && v.reason !== 'Casual' ? `<div id="motivo-badge-${v.id}" class="text-[11px] text-yellow-400 font-bold mt-1 mb-1 truncate">📌 ${v.reason}${v.gameName ? ': ' + v.gameName : ''}</div>` : '<div id="motivo-badge-${v.id}" class="hidden text-[11px] text-yellow-400 font-bold mt-1 mb-1 truncate"></div>'}
                     
