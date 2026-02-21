@@ -4722,6 +4722,8 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
 
 // --- MANAGER TABS IMPLEMENTATION ---
 
+window.INV_STATE = { tab: 'Alimento', category: null, query: '' };
+
 function renderManagerMenuTab(container) {
   const menu = window.db.getMenu();
   const allItems = [
@@ -4731,17 +4733,111 @@ function renderManagerMenuTab(container) {
   window.TEMP_INVENTORY = allItems;
 
   const div = document.createElement('div');
+  div.id = 'inv-manager-container';
   div.className = 'animate-fade-in pb-20';
-  div.innerHTML = `
-    <div class="mb-6 sticky top-[72px] z-40 bg-gray-900 py-2">
-      <input type="text" id="inv-search" oninput="filterInventory(this.value)" placeholder="🔍 Buscar platillo o bebida..." class="w-full p-4 bg-gray-800 focus:bg-gray-700 rounded-xl border border-gray-600 text-white text-lg font-bold shadow-lg transition-colors outline-none focus:border-yellow-500">
-    </div>
-    <div id="inv-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      ${_renderInventoryItemsHTML(allItems)}
-    </div>
-  `;
   container.innerHTML = '';
   container.appendChild(div);
+
+  // Reset state on open
+  window.INV_STATE = { tab: 'Alimento', category: null, query: '' };
+  window.renderInvUI();
+}
+
+window.renderInvUI = function() {
+  const container = document.getElementById('inv-manager-container');
+  if(!container) return;
+
+  const { tab, category, query } = window.INV_STATE;
+  const allItems = window.TEMP_INVENTORY || [];
+
+  let html = `
+    <!-- Top Tabs (Alimentos / Bebidas) -->
+    <div class="flex gap-2 p-3 bg-gray-900 sticky top-[72px] z-40 border-b border-gray-700 shadow-xl">
+      <button onclick="window.INV_STATE.tab='Alimento'; window.INV_STATE.category=null; window.renderInvUI();" class="flex-1 py-3 rounded-lg font-bold text-center transition-all ${tab === 'Alimento' ? 'bg-orange-600 text-white shadow-lg scale-105' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}">🍔 ALIMENTOS</button>
+      <button onclick="window.INV_STATE.tab='Bebida'; window.INV_STATE.category=null; window.renderInvUI();" class="flex-1 py-3 rounded-lg font-bold text-center transition-all ${tab === 'Bebida' ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}">🍹 BEBIDAS</button>
+    </div>
+  `;
+
+  const typeItems = allItems.filter(i => i.type === tab);
+
+  if (!category) {
+    // CATEGORY VIEW
+    const cats = [...new Set(typeItems.map(i => i.category || 'Otros'))].sort();
+    
+    html += `
+      <div class="p-4">
+        <h2 class="text-xl font-black text-white mb-4 uppercase tracking-wider text-center border-b border-gray-700 pb-2">Selecciona Categoría</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          ${cats.map(c => {
+            const count = typeItems.filter(i => (i.category || 'Otros') === c).length;
+            return `
+              <button onclick="window.INV_STATE.category='${c}'; window.renderInvUI();" class="bg-gray-800 hover:bg-yellow-600 hover:text-black border border-gray-700 p-4 rounded-xl font-bold uppercase tracking-wide text-sm flex flex-col items-center justify-center gap-2 transition-all shadow-lg active:scale-95">
+                <span>🏷️ ${c}</span>
+                <span class="text-[10px] bg-black/40 px-2 py-1 rounded-full text-white">${count} items</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+
+  } else {
+    // ITEMS VIEW
+    html += `
+      <div class="p-4 sticky top-[138px] z-30 bg-gray-900 border-b border-gray-800 shadow-xl flex gap-2">
+         <button onclick="window.INV_STATE.category=null; window.INV_STATE.query=''; window.renderInvUI();" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-1 transition shadow-lg">
+           ← 
+         </button>
+         <div class="relative flex-1">
+             <input type="text" id="inv-state-search" oninput="window.INV_STATE.query=this.value; window.renderInvListOnly();" placeholder="Buscar en ${category}..." value="${query}" class="w-full pl-10 pr-3 py-3 bg-gray-800 focus:bg-gray-700 rounded-lg border border-gray-600 text-white text-base font-bold outline-none focus:border-yellow-500 shadow-inner transition-colors">
+             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">🔍</div>
+         </div>
+      </div>
+      <div class="p-4">
+        <h2 class="text-2xl font-black text-yellow-500 uppercase tracking-tighter mb-4 flex items-center gap-2">
+          🏷️ ${category}
+        </h2>
+        <div id="inv-state-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          ${window._renderStateInvListHTML()}
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+window.renderInvListOnly = function() {
+  const listContainer = document.getElementById('inv-state-list');
+  if(listContainer) {
+      listContainer.innerHTML = window._renderStateInvListHTML();
+  }
+}
+
+window._renderStateInvListHTML = function() {
+  const { tab, category, query } = window.INV_STATE;
+  const allItems = window.TEMP_INVENTORY || [];
+  
+  let items = allItems.filter(i => i.type === tab && (i.category || 'Otros') === category);
+  if (query) {
+      const q = query.toLowerCase();
+      items = items.filter(i => i.name.toLowerCase().includes(q));
+  }
+
+  if (items.length === 0) return '<div class="col-span-full text-center text-gray-500 py-8 text-lg font-bold">No se encontraron productos</div>';
+
+  return items.sort((a,b)=> a.name.localeCompare(b.name)).map(item => `
+        <div class="inv-item bg-gray-800 p-4 rounded-xl flex justify-between items-center border-l-4 ${item.available ? 'border-green-500' : 'border-red-600'} shadow-lg hover:bg-gray-750 transition-all group">
+          <div class="flex-1 pr-4">
+            <div class="font-bold text-white text-lg leading-tight mb-1 group-hover:text-yellow-400 transition-colors">${item.name}</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer shrink-0">
+            <input type="checkbox" class="sr-only peer" onchange="window.handleAvailabilityToggle('${item.id}', this)" ${item.available ? 'checked' : ''}>
+              <div class="w-14 h-7 bg-red-900/80 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600 peer-checked:after:bg-white shadow-inner"></div>
+              <span class="ml-3 text-xs font-black w-[60px] text-right ${item.available ? 'text-green-400' : 'text-red-500'}">${item.available ? 'DISP.' : 'AGOTADO'}</span>
+          </label>
+        </div>
+      `).join('');
 }
 
 function renderManagerTeamTab(container) {
@@ -5152,27 +5248,7 @@ window.getTeamLogo = function (teamName) {
 
 // --- MANAGER TABS IMPLEMENTATION ---
 
-function renderManagerMenuTab(container) {
-  const div = document.createElement('div');
-  div.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in';
-  div.innerHTML = `
-    <!-- Módulo 86 -->
-    <div onclick="renderInventoryView()" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-red-500 cursor-pointer transition group">
-      <div class="text-4xl mb-4 group-hover:scale-110 transition">🚫</div>
-      <h2 class="text-xl font-bold text-white mb-2">Gestión 86 (Disponibilidad)</h2>
-      <p class="text-gray-400 text-sm">Marca productos como agotados temporalmente</p>
-    </div>
 
-    <!-- Admin Menú -->
-    <div onclick="renderMenuAdminView()" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-yellow-500 cursor-pointer transition group">
-      <div class="text-4xl mb-4 group-hover:scale-110 transition">➕</div>
-      <h2 class="text-xl font-bold text-white mb-2">Administrador de Menú</h2>
-      <p class="text-gray-400 text-sm">Gestiona precios, platillos y bebidas</p>
-    </div>
-  `;
-  container.innerHTML = '';
-  container.appendChild(div);
-}
 
 function renderManagerTeamTab(container) {
   const div = document.createElement('div');
@@ -5830,52 +5906,7 @@ function renderInventoryView() {
   window.TEMP_INVENTORY = allItems;
 }
 
-function _renderInventoryItemsHTML(items) {
-  if (items.length === 0) return '<div class="col-span-full text-center text-gray-500 py-8 text-lg font-bold">No se encontraron productos</div>';
 
-  // Group by Category
-  const grouped = items.reduce((acc, item) => {
-    const cat = item.category || 'Otros';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(item);
-    return acc;
-  }, {});
-
-  // Sort categories alphabetically
-  const sortedCategories = Object.keys(grouped).sort();
-
-  return sortedCategories.map(category => {
-    const catItems = grouped[category].sort((a, b) => a.name.localeCompare(b.name));
-    return `
-      <div class="col-span-full mt-6 mb-2">
-        <h3 class="text-xl font-black text-yellow-500 uppercase border-b-2 border-gray-700 pb-2 flex items-center gap-2">
-           🏷️ ${category} <span class="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded ml-2">${catItems.length} items</span>
-        </h3>
-      </div>
-      ${catItems.map(item => `
-        <div class="inv-item bg-gray-800 p-4 rounded-xl flex justify-between items-center border-l-4 ${item.available ? 'border-green-500' : 'border-red-600'} shadow hover:bg-gray-750 transition-all">
-          <div>
-            <div class="font-bold text-white text-lg leading-tight mb-1">${item.name}</div>
-            <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-              ${item.type === 'Alimento' ? '🍔 Alimento' : '🍹 Bebida'}
-            </div>
-          </div>
-          <label class="relative inline-flex items-center cursor-pointer ml-4 shrink-0">
-            <input type="checkbox" class="sr-only peer" onchange="window.handleAvailabilityToggle('${item.id}', this)" ${item.available ? 'checked' : ''}>
-              <div class="w-14 h-7 bg-red-900/80 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600 peer-checked:after:bg-white shadow-inner"></div>
-              <span class="ml-3 text-xs font-black w-[60px] text-right ${item.available ? 'text-green-400' : 'text-red-500'}">${item.available ? 'DISP.' : 'AGOTADO'}</span>
-          </label>
-        </div>
-      `).join('')}
-    `;
-  }).join('');
-}
-
-window.filterInventory = function (query) {
-  const term = query.toLowerCase();
-  const filtered = window.TEMP_INVENTORY.filter(i => i.name.toLowerCase().includes(term) || i.category.toLowerCase().includes(term));
-  document.getElementById('inv-list').innerHTML = _renderInventoryItemsHTML(filtered);
-}
 
 window.handleAvailabilityToggle = function (id, checkbox) {
   const success = window.db.toggleItemAvailability(id);
