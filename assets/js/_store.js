@@ -2493,9 +2493,10 @@ class Store {
             time: gameData.time || '12:00',
             sport: gameData.sport || 'Futbol',
             league: gameData.league || 'Amistoso',
-            homeTeam: gameData.homeTeam || 'Local',
-            awayTeam: gameData.awayTeam || 'Visitante',
-            match: gameData.match,
+            homeTeam: gameData.homeTeam || '',
+            awayTeam: gameData.awayTeam || '',
+            match: gameData.match || '',
+            mainEvent: gameData.mainEvent || '', // Pelea/partido estelar (UFC, Tenis, Box)
             tvs: gameData.tvs || '',
             audio: gameData.audio || { salon: false, terraza: false }
         };
