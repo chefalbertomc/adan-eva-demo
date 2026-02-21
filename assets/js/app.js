@@ -4734,7 +4734,8 @@ function renderManagerMenuTab(container) {
 
   const div = document.createElement('div');
   div.id = 'inv-manager-container';
-  div.className = 'animate-fade-in pb-32';
+  div.className = 'animate-fade-in';
+  div.style.paddingBottom = '300px'; // Extreme inline padding to guarantee scroll
   container.innerHTML = '';
   container.appendChild(div);
 
