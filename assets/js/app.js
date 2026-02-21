@@ -4809,27 +4809,16 @@ function renderManagerTablesTab(container) {
         }
 
         reasonDisplay = `
-                <div class="mt-3 bg-white/5 p-3 rounded-lg border ${v.isFavoriteTeamMatch ? 'border-yellow-500/40' : 'border-white/10'}">
+                <div class="mt-3 bg-white/5 p-3 rounded-lg border border-white/10">
                   <div class="flex items-start gap-2">
                     <div class="flex items-center gap-1">
-                      ${(() => {
-            // If customer follows a favorite team → show ONLY that team's logo
-            if (v.isFavoriteTeamMatch && v.watchedTeam) {
-              const favLogo = window.getTeamLogo(v.watchedTeam);
-              return favLogo
-                ? `<img src="${favLogo}" style="width:24px;height:24px;max-width:24px;max-height:24px;" class="object-contain rounded border border-yellow-500 bg-black flex-shrink-0">`
-                : `<div class="text-2xl">${sportIcon}</div>`;
-            }
-            // No favorite team → just sport icon
-            return `<div class="text-2xl filter drop-shadow-md">${sportIcon}</div>`;
-          })()}
+                      <div class="text-2xl filter drop-shadow-md">${sportIcon}</div>
                     </div>
                     <div class="flex-1">
-                      <div class="text-[10px] ${v.isFavoriteTeamMatch ? 'text-yellow-400' : 'text-green-400'} font-bold uppercase tracking-widest">${v.isFavoriteTeamMatch ? '⭐ EQUIPO FAVORITO' : 'PARTIDO'}</div>
+                      <div class="text-[10px] text-green-400 font-bold uppercase tracking-widest">PARTIDO</div>
                       <div class="text-sm font-black text-white leading-tight mt-0.5">
-                        ${v.isFavoriteTeamMatch && v.watchedTeam ? v.watchedTeam : (v.selectedGame || 'Seleccionar Partido...')}
+                        ${v.selectedGame || 'Seleccionar Partido...'}
                       </div>
-                      ${v.selectedGame && v.isFavoriteTeamMatch ? `<div class="text-[9px] text-gray-500 mt-0.5">${v.selectedGame}</div>` : ''}
                     </div>
                   </div>
                 </div>
@@ -4863,6 +4852,12 @@ function renderManagerTablesTab(container) {
                            👤 ${(waiter?.name || 'S/A').split(' ')[0]}
                         </div>
                         <div class="text-xl font-bold text-white">${v.pax || 0} <span class="text-sm font-normal text-gray-500">pax</span></div>
+                        ${v.isFavoriteTeamMatch && v.watchedTeam ? (() => {
+        const fl = window.getTeamLogo(v.watchedTeam);
+        return fl
+          ? `<img src="${fl}" style="width:38px;height:38px;max-width:38px;max-height:38px;" class="object-contain mt-1 rounded border border-yellow-500 bg-black inline-block" title="Equipo favorito: ${v.watchedTeam}">`
+          : `<div class="text-xl mt-1" title="Equipo favorito: ${v.watchedTeam}">⭐</div>`;
+      })() : '<div id="mgr-fav-logo-' + v.id + '"></div>'}
                       </div>
                     </div>
                     
@@ -8119,12 +8114,13 @@ window.selectHostessFavoriteTeam = function (teamName, visitId) {
       }
     });
 
-    // Update manager card with team logo
+    // Update manager card: inject logo in header slot
     const logo = window.getTeamLogo(teamName);
-    const mgrDiv = document.getElementById('mgr-reason-' + visitId);
-    if (mgrDiv) {
-      const logoHtml = logo ? `<img src="${logo}" class="w-8 h-8 object-contain inline-block mr-2">` : '⭐';
-      mgrDiv.innerHTML = `<div class="mt-3 bg-white/5 p-3 rounded-lg border border-yellow-500/30 flex items-center gap-2">${logoHtml}<div><div class="text-[10px] text-yellow-400 font-bold uppercase tracking-widest">EQUIPO FAVORITO</div><div class="text-sm font-black text-white leading-tight mt-0.5">${teamName}</div></div></div>`;
+    const mgrLogoSlot = document.getElementById('mgr-fav-logo-' + visitId);
+    if (mgrLogoSlot) {
+      mgrLogoSlot.innerHTML = logo
+        ? `<img src="${logo}" style="width:38px;height:38px;max-width:38px;max-height:38px;" class="object-contain mt-1 rounded border border-yellow-500 bg-black block" title="${teamName}">`
+        : `<div class="text-xl mt-1">⭐</div>`;
     }
 
     if (window.showToast) window.showToast(`⭐ Favorito: ${teamName}`, 'success');
