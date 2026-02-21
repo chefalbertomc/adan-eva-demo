@@ -5152,7 +5152,7 @@ function renderManagerGamesTab(container) {
                         </h2>
                         <p class="text-xs text-purple-300">Agrega partidos para cualquier fecha (hoy, mañana, futuro)</p>
                       </div>
-                      <button onclick="const form = document.getElementById('inline-add-game-form'); form.classList.toggle('hidden'); if(!form.classList.contains('hidden')) form.scrollIntoView({behavior: 'smooth', block: 'center'});"
+                      <button onclick="const form = document.getElementById('inline-add-game-form'); form.classList.toggle('hidden'); if(!form.classList.contains('hidden')) { form.scrollIntoView({behavior: 'smooth', block: 'center'}); window.updateGameFormFields(); }"
                         class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transition">
                         <span>+</span> NUEVO EVENTO
                       </button>
