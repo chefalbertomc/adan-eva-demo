@@ -4723,21 +4723,21 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
 // --- MANAGER TABS IMPLEMENTATION ---
 
 function renderManagerMenuTab(container) {
-  const div = document.createElement('div');
-  div.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in';
-  div.innerHTML = `
-    <!-- Módulo 86 -->
-    <div onclick="renderInventoryView()" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-red-500 cursor-pointer transition group">
-      <div class="text-4xl mb-4 group-hover:scale-110 transition">🚫</div>
-      <h2 class="text-xl font-bold text-white mb-2">Gestión 86 (Disponibilidad)</h2>
-      <p class="text-gray-400 text-sm">Marca productos como agotados temporalmente</p>
-    </div>
+  const menu = window.db.getMenu();
+  const allItems = [
+    ...(menu.alimentos || []).map(i => ({ ...i, type: 'Alimento' })),
+    ...(menu.bebidas || []).map(i => ({ ...i, type: 'Bebida' }))
+  ];
+  window.TEMP_INVENTORY = allItems;
 
-    <!-- Admin Menú -->
-    <div onclick="renderMenuAdminView()" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-yellow-500 cursor-pointer transition group">
-      <div class="text-4xl mb-4 group-hover:scale-110 transition">➕</div>
-      <h2 class="text-xl font-bold text-white mb-2">Administrador de Menú</h2>
-      <p class="text-gray-400 text-sm">Gestiona precios, platillos y bebidas</p>
+  const div = document.createElement('div');
+  div.className = 'animate-fade-in pb-20';
+  div.innerHTML = `
+    <div class="mb-6 sticky top-[72px] z-40 bg-gray-900 py-2">
+      <input type="text" id="inv-search" oninput="filterInventory(this.value)" placeholder="🔍 Buscar platillo o bebida..." class="w-full p-4 bg-gray-800 focus:bg-gray-700 rounded-xl border border-gray-600 text-white text-lg font-bold shadow-lg transition-colors outline-none focus:border-yellow-500">
+    </div>
+    <div id="inv-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      ${_renderInventoryItemsHTML(allItems)}
     </div>
   `;
   container.innerHTML = '';
@@ -4764,7 +4764,7 @@ function renderManagerTeamTab(container) {
   `;
   // If the old renderDailyControlView exists we could use it, but for now we put placeholders
   // as the original code triggered "Módulo de Dinámicas - Próximamente" in app.js line 5655.
-  
+
   container.innerHTML = '';
   container.appendChild(div);
 }
@@ -5194,7 +5194,7 @@ function renderManagerTeamTab(container) {
   `;
   // If the old renderDailyControlView exists we could use it, but for now we put placeholders
   // as the original code triggered "Módulo de Dinámicas - Próximamente" in app.js line 5655.
-  
+
   container.innerHTML = '';
   container.appendChild(div);
 }
@@ -5831,23 +5831,44 @@ function renderInventoryView() {
 }
 
 function _renderInventoryItemsHTML(items) {
-  return items.map(item => `
-                <div class="inv-item bg-gray-800 p-4 rounded-lg flex justify-between items-center border ${item.available ? 'border-green-900/30' : 'border-red-600'} transition-all">
-                  <div>
-                    <div class="font-bold text-white text-lg">${item.name}</div>
-                    <div class="text-xs text-gray-400 flex items-center gap-2">
-                      <span class="uppercase tracking-wider font-bold text-[10px] ${item.type === 'Alimento' ? 'text-orange-400' : 'text-blue-400'}">${item.type}</span>
-                      <span>•</span>
-                      <span class="capitalize">${item.category}</span>
-                    </div>
-                  </div>
-                  <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" class="sr-only peer" onchange="window.handleAvailabilityToggle('${item.id}', this)" ${item.available ? 'checked' : ''}>
-                      <div class="w-14 h-7 bg-red-900/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600 peer-checked:after:bg-white"></div>
-                      <span class="ml-3 text-sm font-bold w-16 text-right ${item.available ? 'text-green-400' : 'text-red-500'}">${item.available ? 'DISP.' : 'AGOTADO'}</span>
-                  </label>
-                </div>
-                `).join('');
+  if (items.length === 0) return '<div class="col-span-full text-center text-gray-500 py-8 text-lg font-bold">No se encontraron productos</div>';
+
+  // Group by Category
+  const grouped = items.reduce((acc, item) => {
+    const cat = item.category || 'Otros';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
+    return acc;
+  }, {});
+
+  // Sort categories alphabetically
+  const sortedCategories = Object.keys(grouped).sort();
+
+  return sortedCategories.map(category => {
+    const catItems = grouped[category].sort((a, b) => a.name.localeCompare(b.name));
+    return `
+      <div class="col-span-full mt-6 mb-2">
+        <h3 class="text-xl font-black text-yellow-500 uppercase border-b-2 border-gray-700 pb-2 flex items-center gap-2">
+           🏷️ ${category} <span class="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded ml-2">${catItems.length} items</span>
+        </h3>
+      </div>
+      ${catItems.map(item => `
+        <div class="inv-item bg-gray-800 p-4 rounded-xl flex justify-between items-center border-l-4 ${item.available ? 'border-green-500' : 'border-red-600'} shadow hover:bg-gray-750 transition-all">
+          <div>
+            <div class="font-bold text-white text-lg leading-tight mb-1">${item.name}</div>
+            <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+              ${item.type === 'Alimento' ? '🍔 Alimento' : '🍹 Bebida'}
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer ml-4 shrink-0">
+            <input type="checkbox" class="sr-only peer" onchange="window.handleAvailabilityToggle('${item.id}', this)" ${item.available ? 'checked' : ''}>
+              <div class="w-14 h-7 bg-red-900/80 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600 peer-checked:after:bg-white shadow-inner"></div>
+              <span class="ml-3 text-xs font-black w-[60px] text-right ${item.available ? 'text-green-400' : 'text-red-500'}">${item.available ? 'DISP.' : 'AGOTADO'}</span>
+          </label>
+        </div>
+      `).join('')}
+    `;
+  }).join('');
 }
 
 window.filterInventory = function (query) {
@@ -7984,7 +8005,7 @@ window.checkInReservation = function (resId) {
 
   firstNameInput.value = res.customerName.split(' ')[0] || '';
   lastNameInput.value = res.customerName.split(' ')[1] || '';
-  
+
   // Store reservation ID
   const resIdInput = document.getElementById('h-reservation-id');
   if (resIdInput) resIdInput.value = res.id;
@@ -8436,9 +8457,9 @@ window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
   const todayStr = new Date().toLocaleDateString('en-CA');
   const resIdInput = document.getElementById('h-reservation-id');
   const specificResId = resIdInput ? resIdInput.value : null;
-  
+
   let pendingRes = null;
-  
+
   if (specificResId) {
     // Exact match from clicking the Check-In button on a reservation card
     pendingRes = window.db.getReservations().find(r => r.id === specificResId);
