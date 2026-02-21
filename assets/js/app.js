@@ -407,7 +407,8 @@ function renderHostessDashboard() {
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-              <input type="text" id="h-firstname" placeholder="NOMBRE" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
+              <input type="hidden" id="h-reservation-id" value="">
+          <input type="text" id="h-firstname" placeholder="NOMBRE" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
                 <input type="text" id="h-lastname" placeholder="APELLIDO PATERNO" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide">
                 </div>
                 <input type="text" id="h-lastname2" placeholder="APELLIDO MATERNO (Opcional)" class="bg-gray-900 text-white border border-gray-700 rounded p-4 uppercase font-bold text-sm tracking-wide w-full">
@@ -7872,6 +7873,10 @@ window.checkInReservation = function (resId) {
 
   firstNameInput.value = res.customerName.split(' ')[0] || '';
   lastNameInput.value = res.customerName.split(' ')[1] || '';
+  
+  // Store reservation ID
+  const resIdInput = document.getElementById('h-reservation-id');
+  if (resIdInput) resIdInput.value = res.id;
 
   // Fill Pax (already declared above)
   if (paxDisplay) paxDisplay.innerText = res.pax;
@@ -8318,12 +8323,23 @@ window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
 
   // 6. If this came from a Reservation, MARK IT AS COMPLETED
   const todayStr = new Date().toLocaleDateString('en-CA');
-  const pendingRes = window.db.getReservations().find(r =>
-    r.customerName.toLowerCase() === fullNameQuery.toLowerCase() &&
-    r.date === todayStr &&
-    r.status !== 'completed' &&
-    r.status !== 'cancelled'
-  );
+  const resIdInput = document.getElementById('h-reservation-id');
+  const specificResId = resIdInput ? resIdInput.value : null;
+  
+  let pendingRes = null;
+  
+  if (specificResId) {
+    // Exact match from clicking the Check-In button on a reservation card
+    pendingRes = window.db.getReservations().find(r => r.id === specificResId);
+  } else {
+    // Fallback: Name match (only for today's reservations)
+    pendingRes = window.db.getReservations().find(r =>
+      r.customerName.toLowerCase() === fullNameQuery.toLowerCase() &&
+      r.date === todayStr &&
+      r.status !== 'completed' &&
+      r.status !== 'cancelled'
+    );
+  }
 
   if (pendingRes) {
     // Update reservation status to completed
@@ -8341,6 +8357,7 @@ window.processHostessCheckIn = function (tableNumberArg, waiterIdArg) {
   // 7. Clear Form
   document.getElementById('h-firstname').value = '';
   document.getElementById('h-lastname').value = '';
+  if (document.getElementById('h-reservation-id')) document.getElementById('h-reservation-id').value = '';
   if (document.getElementById('h-lastname2')) document.getElementById('h-lastname2').value = '';
   document.getElementById('h-table').value = '';
   document.getElementById('h-waiter').value = '';
