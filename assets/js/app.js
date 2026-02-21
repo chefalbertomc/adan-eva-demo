@@ -1830,7 +1830,7 @@ function renderWaiterDashboard() {
         if (v.isFavoriteTeamMatch && v.watchedTeam) {
           const favLogo = window.getTeamLogo(v.watchedTeam);
           gameLogoHTML = favLogo
-            ? `<img src="${favLogo}" class="w-6 h-6 object-contain rounded border border-yellow-500 bg-black">`
+            ? `<img src="${favLogo}" style="width:24px;height:24px;max-width:24px;max-height:24px;" class="object-contain rounded border border-yellow-500 bg-black flex-shrink-0">`
             : `<div class="text-3xl filter drop-shadow-md">${sportIcon}</div>`;
         } else {
           gameLogoHTML = `<div class="text-4xl filter drop-shadow-md">${sportIcon}</div>`;
@@ -4817,7 +4817,7 @@ function renderManagerTablesTab(container) {
             if (v.isFavoriteTeamMatch && v.watchedTeam) {
               const favLogo = window.getTeamLogo(v.watchedTeam);
               return favLogo
-                ? `<img src="${favLogo}" class="w-6 h-6 object-contain rounded border border-yellow-500 bg-black">`
+                ? `<img src="${favLogo}" style="width:24px;height:24px;max-width:24px;max-height:24px;" class="object-contain rounded border border-yellow-500 bg-black flex-shrink-0">`
                 : `<div class="text-2xl">${sportIcon}</div>`;
             }
             // No favorite team → just sport icon
