@@ -5349,12 +5349,14 @@ function renderGameControlCard(game) {
                         <div class="text-xl font-black text-white leading-none">
                           ${(() => {
                             const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
+                            const placeholders = ['visitante', 'equipo visitante', 'local', 'equipo local', ''];
                             if (game.match) return game.match;
-                            if (individualSports.includes(game.league)) {
-                              // For individual sports, only show homeTeam (ignore awayTeam placeholder)
+                            if (individualSports.includes(game.league)) return game.homeTeam || 'Sin nombre';
+                            // If awayTeam is a placeholder, show only homeTeam
+                            if (!game.awayTeam || placeholders.includes((game.awayTeam || '').toLowerCase().trim())) {
                               return game.homeTeam || 'Sin nombre';
                             }
-                            return (game.homeTeam || game.awayTeam) ? `${game.homeTeam} vs ${game.awayTeam}` : 'Sin nombre';
+                            return `${game.homeTeam} vs ${game.awayTeam}`;
                           })()}
                         </div>
                       </div>
