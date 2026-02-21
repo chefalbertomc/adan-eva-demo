@@ -4659,7 +4659,7 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
                   </div>
                 </header>
 
-                <main id="manager-content" class="p-3 pb-24 animate-fade-in"></main>
+                <main id="manager-content" class="p-3 pb-32 has-bottom-nav animate-fade-in"></main>
 
                 <!-- BOTTOM NAVIGATION - GERENTE -->
                 <nav class="bottom-nav">
