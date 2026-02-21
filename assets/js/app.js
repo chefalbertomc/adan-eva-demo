@@ -7290,7 +7290,7 @@ window.renderHostessDashboard = function () {
                                <div id="manual-game-form-${v.id}" class="hidden bg-gray-900 border border-yellow-700/50 p-2 text-xs rounded-lg space-y-2 mt-2">
                                   <label class="text-[10px] text-yellow-500 font-bold uppercase block mb-1">Registro Manual</label>
                                   
-                                  <select id="manual-league-${v.id}" class="w-full bg-black text-white p-2 rounded border border-gray-700 focus:border-yellow-500">
+                                  <select id="manual-league-${v.id}" class="w-full bg-black text-white p-2 rounded border border-gray-700 focus:border-yellow-500" onchange="window.updateHostessGameForm('${v.id}')">
                                       <option value="Liga MX">⚽ Liga MX</option>
                                       <option value="NFL">🏈 NFL</option>
                                       <option value="NBA">🏀 NBA</option>
@@ -7304,8 +7304,10 @@ window.renderHostessDashboard = function () {
                                       <option value="Otro">Otro</option>
                                   </select>
 
-                                  <input type="text" id="manual-home-${v.id}" list="team-suggestions" placeholder="Local / Principal" class="w-full bg-black text-white p-2 rounded border border-gray-700 focus:border-yellow-500">
-                                  <input type="text" id="manual-away-${v.id}" list="team-suggestions" placeholder="Visitante (si aplica)" class="w-full bg-black text-white p-2 rounded border border-gray-700 focus:border-yellow-500">
+                                  <div id="manual-fields-${v.id}">
+                                    <input type="text" id="manual-home-${v.id}" list="team-suggestions" placeholder="Local / Principal" class="w-full bg-black text-white p-2 rounded border border-gray-700 focus:border-yellow-500">
+                                    <input type="text" id="manual-away-${v.id}" list="team-suggestions" placeholder="Visitante (si aplica)" class="w-full bg-black text-white p-2 rounded border border-gray-700 focus:border-yellow-500 mt-1">
+                                  </div>
                                   
                                   <button onclick="window.saveManualGameHostess('${v.id}')" class="w-full bg-blue-600/50 hover:bg-blue-600 text-white font-bold py-2 rounded mt-1 transition">
                                       Vincular Partido
@@ -8177,6 +8179,33 @@ window.selectHostessFavoriteTeam = function (teamName, visitId) {
   }
 };
 
+window.updateHostessGameForm = function(visitId) {
+  const league = document.getElementById('manual-league-' + visitId)?.value;
+  const container = document.getElementById('manual-fields-' + visitId);
+  if (!container || !league) return;
+
+  const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
+  const isIndividual = individualSports.includes(league);
+
+  if (isIndividual) {
+    container.innerHTML = `
+      <div>
+        <label class="text-[10px] uppercase font-bold text-yellow-400 block mb-1">🎯 Nombre del Evento</label>
+        <input id="manual-home-${visitId}" placeholder="Ej: UFC 350, Wimbledon, Gran Premio" class="w-full bg-black text-white p-2 rounded border border-yellow-600 focus:border-yellow-400">
+      </div>
+      <div class="mt-1">
+        <label class="text-[10px] uppercase font-bold text-purple-400 block mb-1">⭐ Pelea / Partido Estelar (opcional)</label>
+        <input id="manual-away-${visitId}" placeholder="Ej: Moreno vs Cejudo, Alcaraz vs Djokovic" class="w-full bg-black text-white p-2 rounded border border-purple-600 focus:border-purple-400">
+      </div>
+    `.replace(/\${visitId}/g, visitId);
+  } else {
+    container.innerHTML = `
+      <input type="text" id="manual-home-${visitId}" list="team-suggestions" placeholder="Local / Principal" class="w-full bg-black text-white p-2 rounded border border-gray-700 focus:border-yellow-500">
+      <input type="text" id="manual-away-${visitId}" list="team-suggestions" placeholder="Visitante (si aplica)" class="w-full bg-black text-white p-2 rounded border border-gray-700 focus:border-yellow-500 mt-1">
+    `.replace(/\${visitId}/g, visitId);
+  }
+};
+
 window.saveManualGameHostess = function (visitId) {
   const league = document.getElementById(`manual-league-${visitId}`).value;
   const home = document.getElementById(`manual-home-${visitId}`).value.trim();
@@ -8196,8 +8225,15 @@ window.saveManualGameHostess = function (visitId) {
     return;
   }
 
+  const away2 = document.getElementById(`manual-away-${visitId}`)?.value.trim() || '';
   // Construct game string
-  const manualGameStr = isIndividual ? home : `${away} @ ${home}`;
+  let manualGameStr;
+  if (isIndividual) {
+    manualGameStr = home;
+    if (away2) manualGameStr += ` • ${away2}`; // Append estelar if entered
+  } else {
+    manualGameStr = `${away} @ ${home}`;
+  }
 
 
   // Remove selection from previous list buttons to show manual is active
