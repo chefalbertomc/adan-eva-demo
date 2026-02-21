@@ -1569,7 +1569,7 @@ window.saveCustomGameSplit = function (visitId) {
       const officialGames = window.db.getMatches();
       // Normalize comparison
       const exists = officialGames.find(g => {
-        const gName = g.match || (["UFC","F1","Tenis","Boxeo"].includes(g.league) ? (g.homeTeam || g.sport || g.league) : `${g.homeTeam} vs ${g.awayTeam}`);
+        const gName = g.match || (["UFC", "F1", "Tenis", "Boxeo"].includes(g.league) ? (g.homeTeam || g.sport || g.league) : `${g.homeTeam} vs ${g.awayTeam}`);
         return gName.toLowerCase() === combinedName.toLowerCase();
       });
 
@@ -5280,7 +5280,7 @@ function renderManagerGamesTab(container) {
                                         </div>
                                         <div class="text-sm font-bold text-white leading-tight flex items-center gap-1">
                                             ${window.getTeamLogo(g.homeTeam) ? `<img src="${window.getTeamLogo(g.homeTeam)}" class="inline-block object-contain" style="width: 20px; height: 20px; max-width: 20px; max-height: 20px;">` : ''}
-                                            <span>${g.match || (["UFC","F1","Tenis","Boxeo"].includes(g.league) ? (g.homeTeam || g.sport || g.league) : `${g.homeTeam} vs ${g.awayTeam}`)}</span>
+                                            <span>${g.match || (["UFC", "F1", "Tenis", "Boxeo"].includes(g.league) ? (g.homeTeam || g.sport || g.league) : `${g.homeTeam} vs ${g.awayTeam}`)}</span>
                                             ${window.getTeamLogo(g.awayTeam) ? `<img src="${window.getTeamLogo(g.awayTeam)}" class="inline-block object-contain" style="width: 20px; height: 20px; max-width: 20px; max-height: 20px;">` : ''}
                                         </div>
                                     </div>
@@ -5355,18 +5355,18 @@ function renderGameControlCard(game) {
                         </div>
                         <div class="text-xl font-black text-white leading-none">
                           ${(() => {
-                            const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
-                            const placeholders = ['visitante', 'equipo visitante', 'local', 'equipo local', ''];
-                            if (game.match) {
-                              const mainEvt = game.mainEvent ? `<div class="text-sm font-bold text-purple-300 mt-0.5">⭐ ${game.mainEvent}</div>` : '';
-                              return game.match + mainEvt;
-                            }
-                            if (individualSports.includes(game.league)) return game.homeTeam || 'Sin nombre';
-                            if (!game.awayTeam || placeholders.includes((game.awayTeam || '').toLowerCase().trim())) {
-                              return game.homeTeam || 'Sin nombre';
-                            }
-                            return `${game.homeTeam} vs ${game.awayTeam}`;
-                          })()}
+      const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
+      const placeholders = ['visitante', 'equipo visitante', 'local', 'equipo local', ''];
+      if (game.match) {
+        const mainEvt = game.mainEvent ? `<div class="text-sm font-bold text-purple-300 mt-0.5">⭐ ${game.mainEvent}</div>` : '';
+        return game.match + mainEvt;
+      }
+      if (individualSports.includes(game.league)) return game.homeTeam || 'Sin nombre';
+      if (!game.awayTeam || placeholders.includes((game.awayTeam || '').toLowerCase().trim())) {
+        return game.homeTeam || 'Sin nombre';
+      }
+      return `${game.homeTeam} vs ${game.awayTeam}`;
+    })()}
                         </div>
                       </div>
                     </div>
@@ -5562,7 +5562,7 @@ function OLD_renderManagerDashboard() {
          ${window.db.getMatches().map(g => `
             <div class="flex justify-between items-center bg-gray-900 p-3 rounded border border-gray-700 hover:border-blue-500 transition relative group">
                 <div>
-                   <div class="font-bold text-white text-lg leading-tight mb-1">${g.match || (["UFC","F1","Tenis","Boxeo"].includes(g.league) ? (g.homeTeam || g.sport || g.league) : `${g.homeTeam || "?"} <span class="text-gray-500 text-sm">vs</span> ${g.awayTeam || "?"}`)}</div>
+                   <div class="font-bold text-white text-lg leading-tight mb-1">${g.match || (["UFC", "F1", "Tenis", "Boxeo"].includes(g.league) ? (g.homeTeam || g.sport || g.league) : `${g.homeTeam || "?"} <span class="text-gray-500 text-sm">vs</span> ${g.awayTeam || "?"}`)}</div>
                    <div class="text-xs text-blue-300 font-bold uppercase tracking-wider bg-blue-900/30 inline-block px-2 py-1 rounded">${g.league} • ⏰ ${g.time}</div>
                 </div>
                 <button onclick="try { if(confirm('¿Borrar partido?')) { window.db.removeGame('${g.id}'); renderManagerDashboard(); } } catch(e) { alert('Error: ' + e.message); console.error(e); }" class="text-red-500 hover:text-red-400 bg-red-900/20 p-2 rounded hover:bg-red-900/40 transition">🗑️</button>
@@ -6957,10 +6957,10 @@ window.renderHostessReservationList = function (dateFilter) {
     // Try to get the input value first, if empty then use today
     const input = document.getElementById('hostess-date-filter');
     if (input && input.value) {
-        dateFilter = input.value;
+      dateFilter = input.value;
     } else {
-        dateFilter = new Date().toLocaleDateString('en-CA');
-        if (input) input.value = dateFilter;
+      dateFilter = new Date().toLocaleDateString('en-CA');
+      if (input) input.value = dateFilter;
     }
   }
 
@@ -7235,9 +7235,9 @@ window.renderHostessDashboard = function () {
                 <div class="border-t border-gray-800 pt-3 mt-2">
                     <div class="font-bold text-white text-lg truncate mb-1 flex items-center gap-2">
                       ${v.isFavoriteTeamMatch && v.watchedTeam ? (() => {
-                        const fl = window.getTeamLogo(v.watchedTeam);
-                        return fl ? `<img src="${fl}" style="width:28px;height:28px;max-width:28px;max-height:28px;" class="object-contain rounded border border-yellow-500 bg-black flex-shrink-0" title="${v.watchedTeam}">` : '';
-                      })() : `<div id="h-fav-logo-${v.id}" class="flex-shrink-0"></div>`}
+        const fl = window.getTeamLogo(v.watchedTeam);
+        return fl ? `<img src="${fl}" style="width:28px;height:28px;max-width:28px;max-height:28px;" class="object-contain rounded border border-yellow-500 bg-black flex-shrink-0" title="${v.watchedTeam}">` : '';
+      })() : `<div id="h-fav-logo-${v.id}" class="flex-shrink-0"></div>`}
                       <span class="truncate">${custName}</span>
                     </div>
                     ${v.vip ? `<div class="inline-block bg-yellow-600/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded border border-yellow-600/50 mb-2 font-bold tracking-wider">VIP ${v.vip.toUpperCase()}</div>` : ''}
@@ -7835,111 +7835,6 @@ window.submitManagerReservation = function () {
   }
 };
 
-// NEW: Render Hostess Reservation List
-window.renderHostessReservationList = function (dateFilter) {
-  const listContainer = document.getElementById('hostess-reservations-list');
-  if (!listContainer) return;
-
-  // Default to today if no date provided
-  if (!dateFilter) {
-    // Use local date string matching Manager's format
-    dateFilter = new Date().toLocaleDateString('en-CA');
-
-    // Update input if exists
-    const input = document.getElementById('hostess-date-filter');
-    if (input) input.value = dateFilter;
-  }
-
-  const branchId = STATE.branch?.id;
-  // Get ALL reservations (don't filter by branch yet, reservations don't have branchId)
-  let reservations = window.db.getReservations ? window.db.getReservations() : [];
-
-  // Filter by date and exclude completed/cancelled
-  reservations = reservations.filter(r =>
-    r.date === dateFilter &&
-    r.status !== 'completed' &&
-    r.status !== 'cancelled'
-  );
-
-  if (reservations.length === 0) {
-    listContainer.innerHTML = `
-            <div class="text-center py-8 text-gray-500">
-                <div class="text-4xl mb-2">📅</div>
-                <p>No hay reservaciones para esta fecha</p>
-            </div>
-        `;
-    return;
-  }
-
-  // Sort by time
-  reservations.sort((a, b) => a.time.localeCompare(b.time));
-
-  const now = new Date();
-  const currentHours = now.getHours();
-  const currentMinutes = now.getMinutes();
-  const currentTimeVal = currentHours * 60 + currentMinutes;
-
-  listContainer.innerHTML = reservations.map(r => {
-    // Traffic Light Logic
-    // Parse reservation time "HH:MM"
-    const [resH, resM] = r.time.split(':').map(Number);
-    const resTimeVal = resH * 60 + resM;
-    const diff = currentTimeVal - resTimeVal; // Positive if late
-
-    let statusColor = 'border-green-500'; // Default Green (On Time / Future)
-    let statusIcon = '🟢';
-    let statusText = 'A Tiempo';
-
-    // Logic: 
-    // If diff > 30 mins -> RED (Expired)
-    // If diff > 0 and <= 30 mins -> YELLOW (Delayed but valid)
-    // If diff <= 0 -> GREEN (On Time)
-
-    // Only apply if looking at TODAY
-    const isToday = dateFilter === new Date().toLocaleDateString('en-CA');
-
-    if (isToday) {
-      if (diff > 30) {
-        statusColor = 'border-red-600';
-        statusIcon = '🔴';
-        statusText = 'Vencida (>30min)';
-      } else if (diff > 0) {
-        statusColor = 'border-yellow-500';
-        statusIcon = '🟡';
-        statusText = 'Retraso Permitido';
-      }
-    }
-
-    return `
-        <div class="bg-gray-800 p-4 rounded-xl border-l-4 ${statusColor} shadow-lg relative animate-fade-in group">
-            <div class="flex justify-between items-start mb-2">
-                <div>
-                    <div class="flex items-center gap-2">
-                         <span class="font-black text-lg text-white uppercase">${r.customerName}</span>
-                         ${r.vip ? `<span class="bg-yellow-900 text-yellow-500 text-[10px] px-2 rounded border border-yellow-600 font-bold">${r.vip.toUpperCase()}</span>` : ''}
-                    </div>
-                    <div class="text-sm text-gray-400 mt-1 flex flex-wrap items-center gap-3">
-                        <span>🕒 ${r.time}</span>
-                        <span>👥 ${r.pax} pax</span>
-                        ${r.phone ? `<span>📞 ${r.phone}</span>` : ''}
-                    </div>
-                </div>
-                <div class="text-right">
-                    <div class="text-xs font-bold text-gray-400 mb-1">${statusIcon} ${statusText}</div>
-                    ${diff > 30 && isToday ? '<span class="text-[10px] text-red-400 font-bold">CANCELAR?</span>' : ''}
-                </div>
-            </div>
-
-            ${r.notes ? `<div class="bg-black/30 p-2 rounded text-xs text-yellow-200 mb-3 border border-yellow-900/30">📝 ${r.notes}</div>` : ''}
-
-            <button onclick="checkInReservation('${r.id}')" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-2 rounded-lg shadow-md uppercase tracking-wide text-sm flex items-center justify-center gap-2">
-                ✅ Check-In / Asignar Mesa
-            </button>
-        </div>
-        `;
-  }).join('');
-};
-
 // Check-In Reservation (Populate Hostess Form)
 window.checkInReservation = function (resId) {
   const branchId = STATE.branch?.id;
@@ -8054,15 +7949,15 @@ window.renderTodaysGamesForHostess = function (visitId) {
   const currentSelected = document.getElementById(`h-selected-game-${visitId}`).value;
 
   const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
-  
+
   let html = '';
   games.forEach((game, index) => {
     const isIndividual = individualSports.includes(game.league);
-    
+
     // Create the proper display string (what the user sees)
     let displayStr = '';
     let gameId = ''; // Used for selection logic
-    
+
     if (isIndividual) {
       displayStr = game.match || game.homeTeam || game.sport || game.league;
       if (game.mainEvent) displayStr += ` • ${game.mainEvent}`;
@@ -8114,11 +8009,11 @@ window.selectHostessGame = function (gameName, league, btnElement, visitId) {
   if (favPanel && favBtns) {
     // Parse team names from "Away @ Home" format
     let teamA = '', teamB = '';
-    
+
     // Check if it's an individual sport by league to be safe
     const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
     const isIndividual = individualSports.includes(league);
-    
+
     // Hide panel for individual sports
     if (isIndividual || (!gameName.includes(' @ ') && !gameName.includes(' vs '))) {
       favPanel.classList.add('hidden');
@@ -8211,7 +8106,7 @@ window.selectHostessFavoriteTeam = function (teamName, visitId) {
   }
 };
 
-window.updateHostessGameForm = function(visitId) {
+window.updateHostessGameForm = function (visitId) {
   const league = document.getElementById('manual-league-' + visitId)?.value;
   const container = document.getElementById('manual-fields-' + visitId);
   if (!container || !league) return;
