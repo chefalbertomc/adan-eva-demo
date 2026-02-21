@@ -4809,17 +4809,9 @@ function renderManagerTablesTab(container) {
         }
 
         reasonDisplay = `
-                <div class="mt-3 bg-white/5 p-3 rounded-lg border border-white/10">
-                  <div class="flex items-start gap-2">
-                    <div class="flex items-center gap-1">
-                      <div class="text-2xl filter drop-shadow-md">${sportIcon}</div>
-                    </div>
-                    <div class="flex-1">
-                      <div class="text-[10px] text-green-400 font-bold uppercase tracking-widest">PARTIDO</div>
-                      <div class="text-sm font-black text-white leading-tight mt-0.5">
-                        ${v.selectedGame || 'Seleccionar Partido...'}
-                      </div>
-                    </div>
+                <div class="mt-2">
+                  <div id="mgr-reason-${v.id}" class="text-[11px] text-yellow-400 font-bold truncate">
+                    📌 Partido: ${v.selectedGame || 'Sin asignar'}
                   </div>
                 </div>
                 `;
@@ -7192,6 +7184,12 @@ window.renderHostessDashboard = function () {
                            👤 ${waiterName.split(' ')[0]}
                         </div>
                         <div class="text-xl font-bold text-white">${v.pax} <span class="text-sm font-normal text-gray-500">pax</span></div>
+                        ${v.isFavoriteTeamMatch && v.watchedTeam ? (() => {
+        const fl = window.getTeamLogo(v.watchedTeam);
+        return fl
+          ? `<img src="${fl}" style="width:38px;height:38px;max-width:38px;max-height:38px;" class="object-contain mt-1 rounded border border-yellow-500 bg-black block ml-auto" title="${v.watchedTeam}">`
+          : `<div class="text-xl mt-1 text-right">⭐</div>`;
+      })() : '<div id="h-fav-logo-' + v.id + '"></div>'}
                     </div>
                 </div>
                 
@@ -7333,8 +7331,8 @@ window.renderHostessDashboard = function () {
                   <select id="wl-waiter-${entry.id}" class="p-2 text-sm bg-gray-900 rounded font-bold border border-green-600">
                     <option value="">Mesero</option>
                     ${window.db.data.users.filter(u => u.role === 'waiter' && (!u.branchId || u.branchId === STATE.branch.id)).map(w =>
-      `<option value="${w.id}">${w.name}</option>`
-    ).join('')}
+        `<option value="${w.id}">${w.name}</option>`
+      ).join('')}
                   </select>
                 </div>
                 <!-- BOTONES DE ACCIÓN -->
@@ -8121,6 +8119,14 @@ window.selectHostessFavoriteTeam = function (teamName, visitId) {
       mgrLogoSlot.innerHTML = logo
         ? `<img src="${logo}" style="width:38px;height:38px;max-width:38px;max-height:38px;" class="object-contain mt-1 rounded border border-yellow-500 bg-black block" title="${teamName}">`
         : `<div class="text-xl mt-1">⭐</div>`;
+    }
+
+    // Also update hostess card header slot
+    const hLogoSlot = document.getElementById('h-fav-logo-' + visitId);
+    if (hLogoSlot) {
+      hLogoSlot.innerHTML = logo
+        ? `<img src="${logo}" style="width:38px;height:38px;max-width:38px;max-height:38px;" class="object-contain mt-1 rounded border border-yellow-500 bg-black block ml-auto" title="${teamName}">`
+        : `<div class="text-xl mt-1 text-right">⭐</div>`;
     }
 
     if (window.showToast) window.showToast(`⭐ Favorito: ${teamName}`, 'success');
