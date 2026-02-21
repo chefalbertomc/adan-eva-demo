@@ -494,7 +494,7 @@ function renderHostessDashboard() {
               <div class="table-card bg-gray-900 border-l-4 border-green-500 rounded-r-xl p-4 shadow-lg relative animate-fade-in" data-waiter-id="${v.waiterId}">
                 <div class="flex justify-between items-start mb-2">
                     <div>
-                        <span class="text-3xl font-black text-white shadow-text">#${v.table}</span>
+                        <span class="text-xl font-black text-white shadow-text uppercase tracking-wide">Mesa <span class="text-3xl">${v.table}</span></span>
                         <div class="text-xs text-gray-400 font-mono mt-1">
                             🕒 ${timeSeated}
                             ${timeElapsed ? `<span class="ml-2 text-yellow-500 font-bold">⏱️ ${timeElapsed}</span>` : ''}
