@@ -1757,7 +1757,7 @@ class Store {
     }
 
     getReservations(branchId, date) {
-        let filtered = this.data.reservations.filter(r => r.branchId === branchId);
+        let filtered = branchId ? this.data.reservations.filter(r => r.branchId === branchId) : this.data.reservations;
         if (date) {
             // Support both ISO date and simple YYYY-MM-DD
             const dateStr = date.includes('T') ? new Date(date).toISOString().split('T')[0] : date;
@@ -2414,9 +2414,9 @@ class Store {
 
     // --- RESERVATIONS SYSTEM ---
 
-    getReservations() {
-        return this.getReservationsByBranch ? this.getReservationsByBranch(STATE.branch?.id) : this.data.reservations;
-    }
+    //     getReservations() {
+    //         return this.getReservationsByBranch ? this.getReservationsByBranch(STATE.branch?.id) : this.data.reservations;
+    //     }
 
     addReservation(data) {
         // Standardize to global system A
