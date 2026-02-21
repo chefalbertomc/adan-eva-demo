@@ -4765,7 +4765,7 @@ window.renderInvUI = function () {
     const cats = [...new Set(typeItems.map(i => i.category || 'Otros'))].sort();
 
     html += `
-      <div class="p-4">
+      <div class="p-4 pb-40">
         <h2 class="text-xl font-black text-white mb-4 uppercase tracking-wider text-center border-b border-gray-700 pb-2">Selecciona Categoría</h2>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
           ${cats.map(c => {
@@ -4793,7 +4793,7 @@ window.renderInvUI = function () {
              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">🔍</div>
          </div>
       </div>
-      <div class="p-4">
+      <div class="p-4 pb-40">
         <h2 class="text-2xl font-black text-yellow-500 uppercase tracking-tighter mb-4 flex items-center gap-2">
           🏷️ ${category}
         </h2>
