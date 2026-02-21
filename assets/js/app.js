@@ -1830,7 +1830,7 @@ function renderWaiterDashboard() {
         if (v.isFavoriteTeamMatch && v.watchedTeam) {
           const favLogo = window.getTeamLogo(v.watchedTeam);
           gameLogoHTML = favLogo
-            ? `<img src="${favLogo}" class="w-12 h-12 object-contain rounded border-2 border-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.5)] p-0.5 bg-black">`
+            ? `<img src="${favLogo}" class="w-6 h-6 object-contain rounded border border-yellow-500 bg-black">`
             : `<div class="text-3xl filter drop-shadow-md">${sportIcon}</div>`;
         } else {
           gameLogoHTML = `<div class="text-4xl filter drop-shadow-md">${sportIcon}</div>`;
@@ -4817,7 +4817,7 @@ function renderManagerTablesTab(container) {
             if (v.isFavoriteTeamMatch && v.watchedTeam) {
               const favLogo = window.getTeamLogo(v.watchedTeam);
               return favLogo
-                ? `<img src="${favLogo}" class="w-10 h-10 object-contain rounded border-2 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.4)] p-0.5 bg-black">`
+                ? `<img src="${favLogo}" class="w-6 h-6 object-contain rounded border border-yellow-500 bg-black">`
                 : `<div class="text-2xl">${sportIcon}</div>`;
             }
             // No favorite team → just sport icon
@@ -8073,14 +8073,12 @@ window.selectHostessGame = function (gameName, league, btnElement, visitId) {
 
     favBtns.innerHTML = `
       <button onclick="window.selectHostessFavoriteTeam('${teamA}', '${visitId}')"
-        class="flex-1 flex flex-col items-center gap-1 p-2 bg-black border border-gray-700 hover:border-yellow-500 rounded text-xs font-bold text-white transition h-fav-btn-${visitId}">
-        ${logoA ? `<img src="${logoA}" class="w-8 h-8 object-contain">` : '<span class="text-xl">🏠</span>'}
-        <span class="truncate max-w-full text-[10px]">${teamA}</span>
+        class="flex-1 py-2 px-3 bg-black border border-gray-700 hover:border-yellow-500 rounded text-xs font-bold text-white transition h-fav-btn-${visitId} truncate">
+        ${teamA}
       </button>
       <button onclick="window.selectHostessFavoriteTeam('${teamB}', '${visitId}')"
-        class="flex-1 flex flex-col items-center gap-1 p-2 bg-black border border-gray-700 hover:border-yellow-500 rounded text-xs font-bold text-white transition h-fav-btn-${visitId}">
-        ${logoB ? `<img src="${logoB}" class="w-8 h-8 object-contain">` : '<span class="text-xl">✈️</span>'}
-        <span class="truncate max-w-full text-[10px]">${teamB}</span>
+        class="flex-1 py-2 px-3 bg-black border border-gray-700 hover:border-yellow-500 rounded text-xs font-bold text-white transition h-fav-btn-${visitId} truncate">
+        ${teamB}
       </button>`;
 
     favPanel.classList.remove('hidden');
