@@ -344,7 +344,7 @@ function renderHostessDashboard() {
   appContainer.innerHTML = '';
 
   // FETCH DATA
-  const waitlist = window.db.getWaitlist();
+  const waitlist = window.db.getWaitlist(STATE.branch.id);
   const activeVisits = window.db.getVisits().filter(v => ['seated', 'active'].includes(v.status));
   // FIX: Define reservations variable to prevent crash
   const reservations = window.db.getReservations ? window.db.getReservations() : [];
@@ -7068,7 +7068,7 @@ window.renderHostessDashboard = function () {
   appContainer.innerHTML = '';
 
   // FETCH DATA
-  const waitlist = window.db.getWaitlist();
+  const waitlist = window.db.getWaitlist(STATE.branch.id);
   const activeVisits = window.db.getVisits().filter(v => ['seated', 'active'].includes(v.status));
   const reservations = window.db.getReservations ? window.db.getReservations() : [];
 
