@@ -4734,7 +4734,7 @@ function renderManagerMenuTab(container) {
 
   const div = document.createElement('div');
   div.id = 'inv-manager-container';
-  div.className = 'animate-fade-in pb-20';
+  div.className = 'animate-fade-in pb-32';
   container.innerHTML = '';
   container.appendChild(div);
 
@@ -4743,9 +4743,9 @@ function renderManagerMenuTab(container) {
   window.renderInvUI();
 }
 
-window.renderInvUI = function() {
+window.renderInvUI = function () {
   const container = document.getElementById('inv-manager-container');
-  if(!container) return;
+  if (!container) return;
 
   const { tab, category, query } = window.INV_STATE;
   const allItems = window.TEMP_INVENTORY || [];
@@ -4763,20 +4763,20 @@ window.renderInvUI = function() {
   if (!category) {
     // CATEGORY VIEW
     const cats = [...new Set(typeItems.map(i => i.category || 'Otros'))].sort();
-    
+
     html += `
       <div class="p-4">
         <h2 class="text-xl font-black text-white mb-4 uppercase tracking-wider text-center border-b border-gray-700 pb-2">Selecciona Categoría</h2>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
           ${cats.map(c => {
-            const count = typeItems.filter(i => (i.category || 'Otros') === c).length;
-            return `
+      const count = typeItems.filter(i => (i.category || 'Otros') === c).length;
+      return `
               <button onclick="window.INV_STATE.category='${c}'; window.renderInvUI();" class="bg-gray-800 hover:bg-yellow-600 hover:text-black border border-gray-700 p-4 rounded-xl font-bold uppercase tracking-wide text-sm flex flex-col items-center justify-center gap-2 transition-all shadow-lg active:scale-95">
                 <span>🏷️ ${c}</span>
                 <span class="text-[10px] bg-black/40 px-2 py-1 rounded-full text-white">${count} items</span>
               </button>
             `;
-          }).join('')}
+    }).join('')}
         </div>
       </div>
     `;
@@ -4807,26 +4807,26 @@ window.renderInvUI = function() {
   container.innerHTML = html;
 }
 
-window.renderInvListOnly = function() {
+window.renderInvListOnly = function () {
   const listContainer = document.getElementById('inv-state-list');
-  if(listContainer) {
-      listContainer.innerHTML = window._renderStateInvListHTML();
+  if (listContainer) {
+    listContainer.innerHTML = window._renderStateInvListHTML();
   }
 }
 
-window._renderStateInvListHTML = function() {
+window._renderStateInvListHTML = function () {
   const { tab, category, query } = window.INV_STATE;
   const allItems = window.TEMP_INVENTORY || [];
-  
+
   let items = allItems.filter(i => i.type === tab && (i.category || 'Otros') === category);
   if (query) {
-      const q = query.toLowerCase();
-      items = items.filter(i => i.name.toLowerCase().includes(q));
+    const q = query.toLowerCase();
+    items = items.filter(i => i.name.toLowerCase().includes(q));
   }
 
   if (items.length === 0) return '<div class="col-span-full text-center text-gray-500 py-8 text-lg font-bold">No se encontraron productos</div>';
 
-  return items.sort((a,b)=> a.name.localeCompare(b.name)).map(item => `
+  return items.sort((a, b) => a.name.localeCompare(b.name)).map(item => `
         <div class="inv-item bg-gray-800 p-4 rounded-xl flex justify-between items-center border-l-4 ${item.available ? 'border-green-500' : 'border-red-600'} shadow-lg hover:bg-gray-750 transition-all group">
           <div class="flex-1 pr-4">
             <div class="font-bold text-white text-lg leading-tight mb-1 group-hover:text-yellow-400 transition-colors">${item.name}</div>
