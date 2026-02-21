@@ -8047,16 +8047,32 @@ window.renderTodaysGamesForHostess = function (visitId) {
 
   const currentSelected = document.getElementById(`h-selected-game-${visitId}`).value;
 
+  const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
+  
   let html = '';
   games.forEach((game, index) => {
-    const gameId = `${game.awayTeam} @ ${game.homeTeam}`;
-    const isSelected = gameId === currentSelected;
+    const isIndividual = individualSports.includes(game.league);
+    
+    // Create the proper display string (what the user sees)
+    let displayStr = '';
+    let gameId = ''; // Used for selection logic
+    
+    if (isIndividual) {
+      displayStr = game.match || game.homeTeam || game.sport || game.league;
+      if (game.mainEvent) displayStr += ` • ${game.mainEvent}`;
+      gameId = displayStr; // Use the full string as ID for these
+    } else {
+      displayStr = `${game.awayTeam} vs ${game.homeTeam}`;
+      gameId = `${game.awayTeam} @ ${game.homeTeam}`;
+    }
+
+    const isSelected = gameId === currentSelected || (game.match && game.match === currentSelected);
     html += `
-      <button type="button" onclick="window.selectHostessGame('${gameId}', '${game.league}', this, '${visitId}')"
+      <button type="button" onclick="window.selectHostessGame('${gameId.replace(/'/g, "\'")}', '${game.league}', this, '${visitId}')"
         class="hostess-game-btn-${visitId} w-full p-3 bg-black border ${isSelected ? 'border-yellow-500 bg-blue-900/40 ring-2 ring-yellow-500/50' : 'border-gray-700'} hover:border-blue-400 rounded text-left transition text-xs flex justify-between items-center group mb-1">
         <div>
           <span class="text-blue-400 font-bold">[${game.league}]</span>
-          <span class="text-white ml-1">${game.awayTeam} vs ${game.homeTeam}</span>
+          <span class="text-white ml-1">${displayStr}</span>
         </div>
         <div class="text-gray-500 font-mono">${game.time}</div>
       </button>`;
@@ -8092,12 +8108,22 @@ window.selectHostessGame = function (gameName, league, btnElement, visitId) {
   if (favPanel && favBtns) {
     // Parse team names from "Away @ Home" format
     let teamA = '', teamB = '';
+    
+    // Check if it's an individual sport by league to be safe
+    const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
+    const isIndividual = individualSports.includes(league);
+    
+    // Hide panel for individual sports
+    if (isIndividual || (!gameName.includes(' @ ') && !gameName.includes(' vs '))) {
+      favPanel.classList.add('hidden');
+      return;
+    }
+
     if (gameName.includes(' @ ')) {
       [teamA, teamB] = gameName.split(' @ ').map(t => t.trim());
     } else if (gameName.includes(' vs ')) {
       [teamA, teamB] = gameName.split(' vs ').map(t => t.trim());
     } else {
-      // Individual sport (F1, UFC) — no teams
       favPanel.classList.add('hidden');
       return;
     }
