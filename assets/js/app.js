@@ -4844,18 +4844,17 @@ function renderManagerTablesTab(container) {
                            👤 ${(waiter?.name || 'S/A').split(' ')[0]}
                         </div>
                         <div class="text-xl font-bold text-white">${v.pax || 0} <span class="text-sm font-normal text-gray-500">pax</span></div>
-                        ${v.isFavoriteTeamMatch && v.watchedTeam ? (() => {
-        const fl = window.getTeamLogo(v.watchedTeam);
-        return fl
-          ? `<img src="${fl}" style="width:38px;height:38px;max-width:38px;max-height:38px;" class="object-contain mt-1 rounded border border-yellow-500 bg-black inline-block" title="Equipo favorito: ${v.watchedTeam}">`
-          : `<div class="text-xl mt-1" title="Equipo favorito: ${v.watchedTeam}">⭐</div>`;
-      })() : '<div id="mgr-fav-logo-' + v.id + '"></div>'}
+                        <div id="mgr-fav-logo-${v.id}"></div>
                       </div>
                     </div>
                     
                     <!-- Customer Details -->
                     <div class="border-t border-gray-700 pt-3 mt-2">
                        <div class="font-bold text-white text-lg truncate flex items-center gap-2">
+                         ${v.isFavoriteTeamMatch && v.watchedTeam ? (() => {
+        const fl = window.getTeamLogo(v.watchedTeam);
+        return fl ? `<img src="${fl}" style="width:30px;height:30px;max-width:30px;max-height:30px;" class="object-contain rounded border border-yellow-500 bg-black flex-shrink-0" title="${v.watchedTeam}">` : '<span class="text-base flex-shrink-0">⭐</span>';
+      })() : ''}
                          <span class="truncate">${custName}</span>
                          <button onclick="event.stopPropagation(); navigateTo('enrich-customer', {customerId: '${v.customerId}', visitId: '${v.id}'})" class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-0.5 flex-shrink-0 rounded text-[10px] font-bold flex items-center gap-1 transition border border-gray-600" title="Editar información del cliente">📝 INFO</button>
                        </div>
