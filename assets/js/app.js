@@ -4855,13 +4855,9 @@ function renderManagerTablesTab(container) {
                     
                     <!-- Customer Details -->
                     <div class="border-t border-gray-700 pt-3 mt-2 flex justify-between items-center">
-                      <div class="font-bold text-white text-lg truncate flex items-center gap-2">
-                        ${v.isFavoriteTeamMatch && v.watchedTeam ? (() => {
-        const fl = window.getTeamLogo(v.watchedTeam);
-        return fl ? `<img src="${fl}" style="width:28px;height:28px;max-width:28px;max-height:28px;" class="object-contain rounded border border-yellow-500 bg-black flex-shrink-0" title="${v.watchedTeam}">` : '';
-      })() : `<div id="mgr-fav-logo-${v.id}" class="flex-shrink-0"></div>`}
-                        <span class="truncate">${custName}</span>
-                      </div>
+                       <div class="font-bold text-white text-lg truncate flex items-center gap-2">
+                         <span class="truncate">${custName}</span>
+                       </div>
                       <button onclick="event.stopPropagation(); navigateTo('enrich-customer', {customerId: '${v.customerId}', visitId: '${v.id}'})"
                         class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 flex-shrink-0 rounded text-xs font-bold flex items-center gap-1 transition shadow border border-gray-600"
                         title="Editar información del cliente">
