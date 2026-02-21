@@ -1568,7 +1568,7 @@ window.saveCustomGameSplit = function (visitId) {
       const officialGames = window.db.getMatches();
       // Normalize comparison
       const exists = officialGames.find(g => {
-        const gName = g.match || `${g.homeTeam} vs ${g.awayTeam}`;
+        const gName = g.match || (["UFC","F1","Tenis","Boxeo"].includes(g.league) ? (g.homeTeam || g.sport || g.league) : `${g.homeTeam} vs ${g.awayTeam}`);
         return gName.toLowerCase() === combinedName.toLowerCase();
       });
 
@@ -5273,7 +5273,7 @@ function renderManagerGamesTab(container) {
                                         </div>
                                         <div class="text-sm font-bold text-white leading-tight flex items-center gap-1">
                                             ${window.getTeamLogo(g.homeTeam) ? `<img src="${window.getTeamLogo(g.homeTeam)}" class="inline-block object-contain" style="width: 20px; height: 20px; max-width: 20px; max-height: 20px;">` : ''}
-                                            <span>${g.match || `${g.homeTeam} vs ${g.awayTeam}`}</span>
+                                            <span>${g.match || (["UFC","F1","Tenis","Boxeo"].includes(g.league) ? (g.homeTeam || g.sport || g.league) : `${g.homeTeam} vs ${g.awayTeam}`)}</span>
                                             ${window.getTeamLogo(g.awayTeam) ? `<img src="${window.getTeamLogo(g.awayTeam)}" class="inline-block object-contain" style="width: 20px; height: 20px; max-width: 20px; max-height: 20px;">` : ''}
                                         </div>
                                     </div>
@@ -5347,7 +5347,15 @@ function renderGameControlCard(game) {
                           ${game.league} • ${game.time}
                         </div>
                         <div class="text-xl font-black text-white leading-none">
-                          ${game.match || ((game.homeTeam || game.awayTeam) ? `${game.homeTeam} vs ${game.awayTeam}` : 'Sin nombre')}
+                          ${(() => {
+                            const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
+                            if (game.match) return game.match;
+                            if (individualSports.includes(game.league)) {
+                              // For individual sports, only show homeTeam (ignore awayTeam placeholder)
+                              return game.homeTeam || 'Sin nombre';
+                            }
+                            return (game.homeTeam || game.awayTeam) ? `${game.homeTeam} vs ${game.awayTeam}` : 'Sin nombre';
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -5543,7 +5551,7 @@ function OLD_renderManagerDashboard() {
          ${window.db.getMatches().map(g => `
             <div class="flex justify-between items-center bg-gray-900 p-3 rounded border border-gray-700 hover:border-blue-500 transition relative group">
                 <div>
-                   <div class="font-bold text-white text-lg leading-tight mb-1">${g.homeTeam || '?'} <span class="text-gray-500 text-sm">vs</span> ${g.awayTeam || '?'}</div>
+                   <div class="font-bold text-white text-lg leading-tight mb-1">${g.match || (["UFC","F1","Tenis","Boxeo"].includes(g.league) ? (g.homeTeam || g.sport || g.league) : `${g.homeTeam || "?"} <span class="text-gray-500 text-sm">vs</span> ${g.awayTeam || "?"}`)}</div>
                    <div class="text-xs text-blue-300 font-bold uppercase tracking-wider bg-blue-900/30 inline-block px-2 py-1 rounded">${g.league} • ⏰ ${g.time}</div>
                 </div>
                 <button onclick="try { if(confirm('¿Borrar partido?')) { window.db.removeGame('${g.id}'); renderManagerDashboard(); } } catch(e) { alert('Error: ' + e.message); console.error(e); }" class="text-red-500 hover:text-red-400 bg-red-900/20 p-2 rounded hover:bg-red-900/40 transition">🗑️</button>
