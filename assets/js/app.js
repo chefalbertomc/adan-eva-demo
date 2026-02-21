@@ -4854,16 +4854,11 @@ function renderManagerTablesTab(container) {
                     </div>
                     
                     <!-- Customer Details -->
-                    <div class="border-t border-gray-700 pt-3 mt-2 flex justify-between items-center">
+                    <div class="border-t border-gray-700 pt-3 mt-2">
                        <div class="font-bold text-white text-lg truncate flex items-center gap-2">
                          <span class="truncate">${custName}</span>
+                         <button onclick="event.stopPropagation(); navigateTo('enrich-customer', {customerId: '${v.customerId}', visitId: '${v.id}'})" class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-0.5 flex-shrink-0 rounded text-[10px] font-bold flex items-center gap-1 transition border border-gray-600" title="Editar información del cliente">📝 INFO</button>
                        </div>
-                      <button onclick="event.stopPropagation(); navigateTo('enrich-customer', {customerId: '${v.customerId}', visitId: '${v.id}'})"
-                        class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 flex-shrink-0 rounded text-xs font-bold flex items-center gap-1 transition shadow border border-gray-600"
-                        title="Editar información del cliente">
-                        📝 Info
-                      </button>
-                    </div>
                     ${v.vip ? `<div class="inline-block bg-yellow-600/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded border border-yellow-600/50 mt-1 font-bold tracking-wider">VIP ${v.vip.toUpperCase()}</div>` : ''}
 
                     <!-- VISIT DETAILS -->
