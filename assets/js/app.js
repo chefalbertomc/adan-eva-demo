@@ -1599,10 +1599,15 @@ window.updateGameFormFields = function () {
 
   if (isIndividual) {
     container.innerHTML = `
-      <div>
-        <label class="text-[10px] uppercase font-bold text-yellow-400 block mb-1">🏎️ Nombre del Evento</label>
-        <input list="team-suggestions" id="new-home" placeholder="Ej: Gran Premio de México, Djokovic vs Alcaraz" class="w-full bg-black text-white rounded p-2 text-sm border border-yellow-500 focus:border-yellow-300">
-        <input type="hidden" id="new-away" value="">
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="text-[10px] uppercase font-bold text-yellow-400 block mb-1">🎯 Nombre del Evento</label>
+          <input id="new-home" placeholder="Ej: UFC 350, Wimbledon, Gran Premio de México" class="w-full bg-black text-white rounded p-2 text-sm border border-yellow-500 focus:border-yellow-300">
+        </div>
+        <div>
+          <label class="text-[10px] uppercase font-bold text-purple-400 block mb-1">⭐ Pelea / Partido Estelar (opcional)</label>
+          <input id="new-away" placeholder="Ej: Moreno vs Cejudo, Alcaraz vs Djokovic" class="w-full bg-black text-white rounded p-2 text-sm border border-purple-500 focus:border-purple-300">
+        </div>
       </div>
     `;
   } else {
@@ -1656,7 +1661,8 @@ window.addGameFromManager = function () {
 
   if (isIndividual) {
     // For individual sports, use "match" field instead of homeTeam/awayTeam
-    gameData.match = home; // E.g. "Hamilton vs Verstappen"
+    gameData.match = home; // Event name e.g. "UFC 350", "Wimbledon"
+    gameData.mainEvent = away || ''; // Optional: "Moreno vs Cejudo"
     gameData.sport = league;
   } else {
     gameData.homeTeam = home;
@@ -5350,9 +5356,11 @@ function renderGameControlCard(game) {
                           ${(() => {
                             const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
                             const placeholders = ['visitante', 'equipo visitante', 'local', 'equipo local', ''];
-                            if (game.match) return game.match;
+                            if (game.match) {
+                              const mainEvt = game.mainEvent ? `<div class="text-sm font-bold text-purple-300 mt-0.5">⭐ ${game.mainEvent}</div>` : '';
+                              return game.match + mainEvt;
+                            }
                             if (individualSports.includes(game.league)) return game.homeTeam || 'Sin nombre';
-                            // If awayTeam is a placeholder, show only homeTeam
                             if (!game.awayTeam || placeholders.includes((game.awayTeam || '').toLowerCase().trim())) {
                               return game.homeTeam || 'Sin nombre';
                             }
