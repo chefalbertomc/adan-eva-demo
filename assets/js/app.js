@@ -1589,6 +1589,32 @@ window.saveCustomGameSplit = function (visitId) {
 };
 
 // Helper for Manager Add Game Form
+window.updateGameFormFields = function () {
+  const league = document.getElementById('new-league')?.value;
+  const container = document.getElementById('game-form-teams');
+  if (!container || !league) return;
+
+  const individualSports = ['UFC', 'F1', 'Tenis', 'Boxeo'];
+  const isIndividual = individualSports.includes(league);
+
+  if (isIndividual) {
+    container.innerHTML = `
+      <div>
+        <label class="text-[10px] uppercase font-bold text-yellow-400 block mb-1">🏎️ Nombre del Evento</label>
+        <input list="team-suggestions" id="new-home" placeholder="Ej: Gran Premio de México, Djokovic vs Alcaraz" class="w-full bg-black text-white rounded p-2 text-sm border border-yellow-500 focus:border-yellow-300">
+        <input type="hidden" id="new-away" value="">
+      </div>
+    `;
+  } else {
+    container.innerHTML = `
+      <div class="grid grid-cols-2 gap-3">
+        <input list="team-suggestions" id="new-home" placeholder="Equipo Local" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600 focus:border-blue-500">
+        <input list="team-suggestions" id="new-away" placeholder="Equipo Visitante" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600 focus:border-blue-500">
+      </div>
+    `;
+  }
+};
+
 window.addGameFromManager = function () {
   const league = document.getElementById('new-league').value;
   const date = document.getElementById('new-date').value; // Now reads the actual date field
@@ -5140,7 +5166,7 @@ function renderManagerGamesTab(container) {
                       <div class="grid grid-cols-2 gap-3 mb-3">
                         <div>
                           <label class="text-[10px] uppercase font-bold text-gray-400">Liga / Deporte</label>
-                          <select id="new-league" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600">
+                          <select id="new-league" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600" onchange="window.updateGameFormFields()">
                             <option value="LIGA MX">🇲🇽 LIGA MX</option>
                             <option value="LIGA INGLESA">🇬🇧 PREMIER</option>
                             <option value="LIGA ESPAÑOLA">🇪🇸 LA LIGA</option>
@@ -5159,11 +5185,10 @@ function renderManagerGamesTab(container) {
                           <input type="time" id="new-time" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600" value="19:00">
                         </div>
                       </div>
-                      <div class="grid grid-cols-2 gap-3 mb-4">
-                        <div>
+                      <div id="game-form-teams" class="mb-4">
+                        <!-- Filled dynamically by updateGameFormFields() -->
+                        <div class="grid grid-cols-2 gap-3">
                           <input list="team-suggestions" id="new-home" placeholder="Equipo Local" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600 focus:border-blue-500">
-                        </div>
-                        <div>
                           <input list="team-suggestions" id="new-away" placeholder="Equipo Visitante" class="w-full bg-black text-white rounded p-2 text-sm border border-gray-600 focus:border-blue-500">
                         </div>
                       </div>
