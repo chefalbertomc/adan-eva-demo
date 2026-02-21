@@ -445,7 +445,7 @@ function renderHostessDashboard() {
                     ✅ INGRESAR MESA
                   </button>
 
-                  <button onclick="addToWaitlist()" class="w-full bg-gray-800 border-2 border-gray-700 text-white font-bold py-3 rounded-lg uppercase tracking-widest text-sm hover:border-blue-500 transition mt-2">
+                  <button onclick="handleAddToWaitlist()" class="w-full bg-gray-800 border-2 border-gray-700 text-white font-bold py-3 rounded-lg uppercase tracking-widest text-sm hover:border-blue-500 transition mt-2">
                     ⏱️ Agregar a Lista de Espera
                   </button>
                 </div>
@@ -1233,6 +1233,7 @@ function handleCheckIn() {
   }
 }
 
+window.handleAddToWaitlist = handleAddToWaitlist;
 function handleAddToWaitlist() {
   try {
     const fname = document.getElementById('h-firstname').value;
@@ -7163,7 +7164,7 @@ window.renderHostessDashboard = function () {
                 ✅ INGRESAR MESA
               </button>
 
-              <button onclick="addToWaitlist()" class="w-full bg-gray-800 border-2 border-gray-700 text-white font-bold py-3 rounded-lg uppercase tracking-widest text-sm hover:border-blue-500 transition mt-2">
+              <button onclick="handleAddToWaitlist()" class="w-full bg-gray-800 border-2 border-gray-700 text-white font-bold py-3 rounded-lg uppercase tracking-widest text-sm hover:border-blue-500 transition mt-2">
                 ⏱️ Agregar a Lista de Espera
               </button>
             </div>
