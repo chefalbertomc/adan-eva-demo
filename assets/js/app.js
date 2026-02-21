@@ -1238,7 +1238,7 @@ function handleAddToWaitlist() {
   try {
     const fname = document.getElementById('h-firstname').value;
     const lname = document.getElementById('h-lastname').value;
-    const pax = document.getElementById('h-pax').value;
+    const pax = document.getElementById('h-pax').innerText || document.getElementById('h-pax').textContent;
 
     if (!fname || !pax) {
       alert('Necesitas al menos Nombre y Pax para agregar a lista de espera.');
