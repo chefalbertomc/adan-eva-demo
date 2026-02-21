@@ -6954,18 +6954,23 @@ window.renderHostessReservationList = function (dateFilter) {
 
   // Default to today if no date provided
   if (!dateFilter) {
-    dateFilter = new Date().toLocaleDateString('en-CA');
+    // Try to get the input value first, if empty then use today
     const input = document.getElementById('hostess-date-filter');
-    if (input) input.value = dateFilter;
+    if (input && input.value) {
+        dateFilter = input.value;
+    } else {
+        dateFilter = new Date().toLocaleDateString('en-CA');
+        if (input) input.value = dateFilter;
+    }
   }
 
   const branchId = STATE.branch?.id;
-  let reservations = (window.db.getReservations && branchId)
-    ? window.db.getReservations(branchId)
-    : [];
+  // Get all reservations either by passing branchId or without it to see all
+  let reservations = window.db.getReservations ? window.db.getReservations(branchId) : [];
 
   if (reservations.length > 0) {
-    reservations = reservations.filter(r => r.date === dateFilter);
+    // Use startsWith just in case there are timestamps in the date
+    reservations = reservations.filter(r => r.date.startsWith(dateFilter));
   }
 
   if (reservations.length === 0) {
