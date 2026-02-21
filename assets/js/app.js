@@ -983,7 +983,7 @@ function doCheckIn() {
     const fname = document.getElementById('h-firstname').value.trim();
     const lname = document.getElementById('h-lastname').value.trim();
     const lname2 = document.getElementById('h-lastname2').value.trim();
-    const pax = document.getElementById('h-pax').value;
+    const pax = document.getElementById('h-pax').textContent || document.getElementById('h-pax').innerText;
     const table = document.getElementById('h-table').value;
     const waiterId = document.getElementById('h-waiter').value;
 
