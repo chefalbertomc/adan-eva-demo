@@ -4684,6 +4684,19 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
                     <span class="bottom-nav-icon">📊</span>
                     <span class="bottom-nav-label">Reportes</span>
                   </button>
+                  
+                  <!-- Menu Management (86 / Admin) -->
+                  <button onclick="renderManagerDashboard('menu')" id="managertab-menu" class="bottom-nav-item ${activeTab === 'menu' ? 'active' : ''}" style="position: relative;">
+                    <span class="bottom-nav-icon">🍔</span>
+                    <span class="bottom-nav-label">Menú</span>
+                  </button>
+                  
+                  <!-- Team / Productivity -->
+                  <button onclick="renderManagerDashboard('team')" id="managertab-team" class="bottom-nav-item ${activeTab === 'team' ? 'active' : ''}" style="position: relative;">
+                    <span class="bottom-nav-icon">👥</span>
+                    <span class="bottom-nav-label">Equipo</span>
+                  </button>
+                  
                   <button onclick="handleLogout()" class="bottom-nav-item" style="position: relative;">
                     <span class="bottom-nav-icon">🚪</span>
                     <span class="bottom-nav-label">Salir</span>
@@ -4701,11 +4714,61 @@ window.renderManagerDashboard = function (activeTab = 'tables') {
   else if (activeTab === 'games') renderManagerGamesTab(content);
   else if (activeTab === 'reservations') renderManagerReservationsTab(content); // NEW TAB
   else if (activeTab === 'reports') renderManagerReportsTab(content);
+  else if (activeTab === 'menu') renderManagerMenuTab(content);
+  else if (activeTab === 'team') renderManagerTeamTab(content);
 };
 
 // NEW: Render Reservations
 
 // --- MANAGER TABS IMPLEMENTATION ---
+
+function renderManagerMenuTab(container) {
+  const div = document.createElement('div');
+  div.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in';
+  div.innerHTML = `
+    <!-- Módulo 86 -->
+    <div onclick="renderInventoryView()" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-red-500 cursor-pointer transition group">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition">🚫</div>
+      <h2 class="text-xl font-bold text-white mb-2">Gestión 86 (Disponibilidad)</h2>
+      <p class="text-gray-400 text-sm">Marca productos como agotados temporalmente</p>
+    </div>
+
+    <!-- Admin Menú -->
+    <div onclick="renderMenuAdminView()" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-yellow-500 cursor-pointer transition group">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition">➕</div>
+      <h2 class="text-xl font-bold text-white mb-2">Administrador de Menú</h2>
+      <p class="text-gray-400 text-sm">Gestiona precios, platillos y bebidas</p>
+    </div>
+  `;
+  container.innerHTML = '';
+  container.appendChild(div);
+}
+
+function renderManagerTeamTab(container) {
+  const div = document.createElement('div');
+  div.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in';
+  div.innerHTML = `
+    <!-- Dinámicas -->
+    <div onclick="alert('Abriendo Módulo de Dinámicas...')" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-orange-500 cursor-pointer transition group">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition">🎯</div>
+      <h2 class="text-xl font-bold text-white mb-2">Dinámicas y Concursos</h2>
+      <p class="text-gray-400 text-sm">Gestionar concursos y dinámicas de ventas del equipo</p>
+    </div>
+
+    <!-- Equipo -->
+    <div onclick="alert('Abriendo Gestión de Equipo...')" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-blue-500 cursor-pointer transition group">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition">👥</div>
+      <h2 class="text-xl font-bold text-white mb-2">Productividad</h2>
+      <p class="text-gray-400 text-sm">Métricas de desempeño, horarios y reportes del equipo</p>
+    </div>
+  `;
+  // If the old renderDailyControlView exists we could use it, but for now we put placeholders
+  // as the original code triggered "Módulo de Dinámicas - Próximamente" in app.js line 5655.
+  
+  container.innerHTML = '';
+  container.appendChild(div);
+}
+
 
 function renderManagerGameRequests(container) {
   const requests = window.db.getDailyInfo().gameRequests || [];
@@ -5088,6 +5151,54 @@ window.getTeamLogo = function (teamName) {
 
 
 // --- MANAGER TABS IMPLEMENTATION ---
+
+function renderManagerMenuTab(container) {
+  const div = document.createElement('div');
+  div.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in';
+  div.innerHTML = `
+    <!-- Módulo 86 -->
+    <div onclick="renderInventoryView()" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-red-500 cursor-pointer transition group">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition">🚫</div>
+      <h2 class="text-xl font-bold text-white mb-2">Gestión 86 (Disponibilidad)</h2>
+      <p class="text-gray-400 text-sm">Marca productos como agotados temporalmente</p>
+    </div>
+
+    <!-- Admin Menú -->
+    <div onclick="renderMenuAdminView()" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-yellow-500 cursor-pointer transition group">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition">➕</div>
+      <h2 class="text-xl font-bold text-white mb-2">Administrador de Menú</h2>
+      <p class="text-gray-400 text-sm">Gestiona precios, platillos y bebidas</p>
+    </div>
+  `;
+  container.innerHTML = '';
+  container.appendChild(div);
+}
+
+function renderManagerTeamTab(container) {
+  const div = document.createElement('div');
+  div.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in';
+  div.innerHTML = `
+    <!-- Dinámicas -->
+    <div onclick="alert('Abriendo Módulo de Dinámicas...')" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-orange-500 cursor-pointer transition group">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition">🎯</div>
+      <h2 class="text-xl font-bold text-white mb-2">Dinámicas y Concursos</h2>
+      <p class="text-gray-400 text-sm">Gestionar concursos y dinámicas de ventas del equipo</p>
+    </div>
+
+    <!-- Equipo -->
+    <div onclick="alert('Abriendo Gestión de Equipo...')" class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-blue-500 cursor-pointer transition group">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition">👥</div>
+      <h2 class="text-xl font-bold text-white mb-2">Productividad</h2>
+      <p class="text-gray-400 text-sm">Métricas de desempeño, horarios y reportes del equipo</p>
+    </div>
+  `;
+  // If the old renderDailyControlView exists we could use it, but for now we put placeholders
+  // as the original code triggered "Módulo de Dinámicas - Próximamente" in app.js line 5655.
+  
+  container.innerHTML = '';
+  container.appendChild(div);
+}
+
 
 function renderManagerGamesTab(container) {
   const games = window.db.getMatches();
